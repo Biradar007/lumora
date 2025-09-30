@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/udaybiradar/lumora-app/lumora/apps/web/src/app/not-found.tsx"],"sourcesContent":["export default function NotFound() {\n  return (\n    <div className=\"min-h-screen flex items-center justify-center p-8 text-center\">\n      <div>\n        <h1 className=\"text-2xl font-semibold\">Page not found</h1>\n        <p className=\"mt-2 text-gray-600\">Please check the URL or return home.</p>\n      </div>\n    </div>\n  );\n}\n\n\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE,8OAAC;QAAI,WAAU;kBACb,cAAA,8OAAC;;8BACC,8OAAC;oBAAG,WAAU;8BAAyB;;;;;;8BACvC,8OAAC;oBAAE,WAAU;8BAAqB;;;;;;;;;;;;;;;;;AAI1C","debugId":null}}]
+}

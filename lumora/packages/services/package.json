@@ -1,0 +1,14 @@
+{
+  "name": "@lumora/services",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "openai": "^5.23.1",
+    "nodemailer": "^6.10.1",
+    "bcryptjs": "^3.0.2",
+    "@lumora/core": "file:../core",
+    "@lumora/db": "file:../db"
+  }
+}

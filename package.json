@@ -1,27 +1,21 @@
 {
-  "name": "lumora-app",
+  "name": "lumora",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "lumora/apps/*",
+    "lumora/packages/*"
+  ],
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.4"
+    "dev": "npm run dev --workspace=lumora/apps/web",
+    "build": "npm run build --workspace=lumora/apps/web",
+    "start": "npm run start --workspace=lumora/apps/web",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "seed:contacts": "npm run seed:contacts --workspace=lumora/apps/web"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.4",
-    "@eslint/eslintrc": "^3"
+    "typescript": "^5"
   }
 }
