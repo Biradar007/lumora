@@ -178,7 +178,7 @@ var _s = __turbopack_context__.k.signature();
 const welcomeMessage = {
     id: '1',
     content: "Hello! I'm Lumora, your AI companion for mental health support. I'm here to listen, provide guidance, and help you navigate your thoughts and feelings. How are you doing today?",
-    sender: 'ai',
+    sender: 'assistant',
     timestamp: new Date()
 };
 function ChatInterface() {
@@ -189,6 +189,16 @@ function ChatInterface() {
     const [inputValue, setInputValue] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
     const [isTyping, setIsTyping] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const messagesEndRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const sessionId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "ChatInterface.useMemo[sessionId]": ()=>{
+            var _document_cookie_split_find;
+            if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+            ;
+            return ((_document_cookie_split_find = document.cookie.split('; ').find({
+                "ChatInterface.useMemo[sessionId]": (cookie)=>cookie.startsWith('lumora_session=')
+            }["ChatInterface.useMemo[sessionId]"])) === null || _document_cookie_split_find === void 0 ? void 0 : _document_cookie_split_find.split('=')[1]) || 'anon';
+        }
+    }["ChatInterface.useMemo[sessionId]"], []);
     const scrollToBottom = ()=>{
         var _messagesEndRef_current;
         (_messagesEndRef_current = messagesEndRef.current) === null || _messagesEndRef_current === void 0 ? void 0 : _messagesEndRef_current.scrollIntoView({
@@ -203,16 +213,6 @@ function ChatInterface() {
         messages,
         isTyping
     ]);
-    const generateAIResponse = (userMessage)=>{
-        const responses = [
-            "I hear you, and I want you to know that your feelings are valid. It's completely normal to experience ups and downs. Can you tell me more about what's been on your mind lately?",
-            "Thank you for sharing that with me. It takes courage to open up about your feelings. How has this been affecting your daily life?",
-            "I can sense that you're going through something difficult right now. Remember that seeking support is a sign of strength, not weakness. What coping strategies have you tried before?",
-            "That sounds really challenging. I'm here to support you through this. Sometimes it helps to break down overwhelming feelings into smaller, more manageable pieces. What's the most pressing concern for you right now?",
-            "I appreciate you trusting me with your thoughts. Your mental health journey is unique, and there's no right or wrong way to feel. What would help you feel more supported today?"
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
-    };
     const handleSendMessage = async ()=>{
         if (!inputValue.trim()) return;
         const userMessage = {
@@ -221,26 +221,57 @@ function ChatInterface() {
             sender: 'user',
             timestamp: new Date()
         };
-        setMessages((prev)=>[
-                ...prev,
-                userMessage
-            ]);
+        const nextMessages = [
+            ...messages,
+            userMessage
+        ];
+        setMessages(nextMessages);
         setInputValue('');
         setIsTyping(true);
-        // Simulate AI response delay
-        setTimeout(()=>{
-            const aiResponse = {
+        try {
+            var _data_reply;
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sessionId,
+                    messages: nextMessages.map((message)=>({
+                            role: message.sender,
+                            content: message.content
+                        }))
+                })
+            });
+            if (!response.ok) {
+                throw new Error('chat_request_failed');
+            }
+            const data = await response.json();
+            const reply = (_data_reply = data.reply) === null || _data_reply === void 0 ? void 0 : _data_reply.trim();
+            const assistantMessage = {
                 id: (Date.now() + 1).toString(),
-                content: generateAIResponse(inputValue),
-                sender: 'ai',
+                content: reply || 'Thank you for sharing. I am here to listen and support you.',
+                sender: 'assistant',
                 timestamp: new Date()
             };
             setMessages((prev)=>[
                     ...prev,
-                    aiResponse
+                    assistantMessage
                 ]);
+        } catch (error) {
+            const fallbackMessage = {
+                id: (Date.now() + 1).toString(),
+                content: 'I had trouble reaching our support service. Please try again in a moment.',
+                sender: 'assistant',
+                timestamp: new Date()
+            };
+            setMessages((prev)=>[
+                    ...prev,
+                    fallbackMessage
+                ]);
+        } finally{
             setIsTyping(false);
-        }, 1500 + Math.random() * 1000);
+        }
     };
     const handleKeyPress = (e)=>{
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -262,12 +293,12 @@ function ChatInterface() {
                                 className: "h-5 w-5 text-white"
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 85,
+                                lineNumber: 110,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 84,
+                            lineNumber: 109,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -277,7 +308,7 @@ function ChatInterface() {
                                     children: "Lumora AI"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 88,
+                                    lineNumber: 113,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -285,24 +316,24 @@ function ChatInterface() {
                                     children: "Online • Always here for you"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 89,
+                                    lineNumber: 114,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 87,
+                            lineNumber: 112,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                    lineNumber: 83,
+                    lineNumber: 108,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                lineNumber: 82,
+                lineNumber: 107,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -319,18 +350,18 @@ function ChatInterface() {
                                             className: "h-4 w-4 text-white"
                                         }, void 0, false, {
                                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                            lineNumber: 110,
+                                            lineNumber: 135,
                                             columnNumber: 19
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bot$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Bot$3e$__["Bot"], {
                                             className: "h-4 w-4 text-white"
                                         }, void 0, false, {
                                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                            lineNumber: 112,
+                                            lineNumber: 137,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 102,
+                                        lineNumber: 127,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -341,7 +372,7 @@ function ChatInterface() {
                                                 children: message.content
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 123,
+                                                lineNumber: 148,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -352,24 +383,24 @@ function ChatInterface() {
                                                 })
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 124,
+                                                lineNumber: 149,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 116,
+                                        lineNumber: 141,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 101,
+                                lineNumber: 126,
                                 columnNumber: 13
                             }, this)
                         }, message.id, false, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 97,
+                            lineNumber: 122,
                             columnNumber: 11
                         }, this)),
                     isTyping && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -383,12 +414,12 @@ function ChatInterface() {
                                         className: "h-4 w-4 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 138,
+                                        lineNumber: 163,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 137,
+                                    lineNumber: 162,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -400,7 +431,7 @@ function ChatInterface() {
                                                 className: "w-2 h-2 bg-gray-400 rounded-full animate-bounce"
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 142,
+                                                lineNumber: 167,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -410,7 +441,7 @@ function ChatInterface() {
                                                 }
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 143,
+                                                lineNumber: 168,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -420,42 +451,42 @@ function ChatInterface() {
                                                 }
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 144,
+                                                lineNumber: 169,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 141,
+                                        lineNumber: 166,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 140,
+                                    lineNumber: 165,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 136,
+                            lineNumber: 161,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 135,
+                        lineNumber: 160,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         ref: messagesEndRef
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 151,
+                        lineNumber: 176,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                lineNumber: 95,
+                lineNumber: 120,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -479,12 +510,12 @@ function ChatInterface() {
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 158,
+                                    lineNumber: 183,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 157,
+                                lineNumber: 182,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -495,18 +526,18 @@ function ChatInterface() {
                                     className: "h-5 w-5"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 173,
+                                    lineNumber: 198,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 168,
+                                lineNumber: 193,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 156,
+                        lineNumber: 181,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -514,23 +545,23 @@ function ChatInterface() {
                         children: "Lumora provides supportive guidance but is not a replacement for professional mental health care."
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 177,
+                        lineNumber: 202,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                lineNumber: 155,
+                lineNumber: 180,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-        lineNumber: 80,
+        lineNumber: 105,
         columnNumber: 5
     }, this);
 }
-_s(ChatInterface, "03hOctfV7eLv7hYNb2tn0AZK3D4=");
+_s(ChatInterface, "lpQ1F7PSJ2y/BobihbbAI4J7GXg=");
 _c = ChatInterface;
 var _c;
 __turbopack_context__.k.register(_c, "ChatInterface");

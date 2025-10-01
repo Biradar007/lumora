@@ -1,17 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 
 interface Message {
   id: string;
   content: string;
-  sender: 'user' | 'ai';
+  sender: 'user' | 'assistant';
   timestamp: Date;
 }
 
 const welcomeMessage: Message = {
   id: '1',
   content: "Hello! I'm Lumora, your AI companion for mental health support. I'm here to listen, provide guidance, and help you navigate your thoughts and feelings. How are you doing today?",
-  sender: 'ai',
+  sender: 'assistant',
   timestamp: new Date()
 };
 
@@ -20,6 +20,15 @@ export function ChatInterface() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sessionId = useMemo(() => {
+    if (typeof window === 'undefined') return 'anon';
+    return (
+      document.cookie
+        .split('; ')
+        .find(cookie => cookie.startsWith('lumora_session='))
+        ?.split('=')[1] || 'anon'
+    );
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,18 +37,6 @@ export function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
-
-  const generateAIResponse = (userMessage: string): string => {
-    const responses = [
-      "I hear you, and I want you to know that your feelings are valid. It's completely normal to experience ups and downs. Can you tell me more about what's been on your mind lately?",
-      "Thank you for sharing that with me. It takes courage to open up about your feelings. How has this been affecting your daily life?",
-      "I can sense that you're going through something difficult right now. Remember that seeking support is a sign of strength, not weakness. What coping strategies have you tried before?",
-      "That sounds really challenging. I'm here to support you through this. Sometimes it helps to break down overwhelming feelings into smaller, more manageable pieces. What's the most pressing concern for you right now?",
-      "I appreciate you trusting me with your thoughts. Your mental health journey is unique, and there's no right or wrong way to feel. What would help you feel more supported today?",
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -51,22 +48,50 @@ export function ChatInterface() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponse: Message = {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          messages: nextMessages.map(message => ({
+            role: message.sender,
+            content: message.content
+          }))
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('chat_request_failed');
+      }
+
+      const data: { reply?: string } = await response.json();
+      const reply = data.reply?.trim();
+
+      const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: generateAIResponse(inputValue),
-        sender: 'ai',
+        content: reply || 'Thank you for sharing. I am here to listen and support you.',
+        sender: 'assistant',
         timestamp: new Date()
       };
-      
-      setMessages(prev => [...prev, aiResponse]);
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'I had trouble reaching our support service. Please try again in a moment.',
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500 + Math.random() * 1000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

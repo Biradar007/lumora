@@ -8,7 +8,7 @@ if [ ! -f ".env.local" ]; then
     echo "Creating .env.local file..."
     cat > .env.local << EOF
 # OpenAI API Key (required)
-OPENAI_API_KEY=sk-your-openai-api-key-here
+OPENAI_API_KEY=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
 
 # MongoDB Connection String (required)
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lumora?retryWrites=true&w=majority
