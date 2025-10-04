@@ -1,78 +1,4 @@
 (globalThis.TURBOPACK || (globalThis.TURBOPACK = [])).push([typeof document === "object" ? document.currentScript : undefined,
-"[project]/lumora/apps/web/src/components/Header.tsx [app-client] (ecmascript)", ((__turbopack_context__) => {
-"use strict";
-
-__turbopack_context__.s([
-    "Header",
-    ()=>Header
-]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$menu$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Menu$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/menu.js [app-client] (ecmascript) <export default as Menu>");
-;
-;
-const viewTitles = {
-    chat: 'Chat with Lumora',
-    mood: 'Mood Tracking',
-    resources: 'Resources & Tools',
-    dashboard: 'Your Journey',
-    crisis: 'Crisis Support'
-};
-function Header(param) {
-    let { onMenuClick, currentView } = param;
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("header", {
-        className: "bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-4 flex items-center justify-between md:hidden",
-        children: [
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "flex items-center gap-4",
-                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                    onClick: onMenuClick,
-                    className: "md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors",
-                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$menu$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Menu$3e$__["Menu"], {
-                        className: "h-5 w-5 text-gray-600"
-                    }, void 0, false, {
-                        fileName: "[project]/lumora/apps/web/src/components/Header.tsx",
-                        lineNumber: 26,
-                        columnNumber: 11
-                    }, this)
-                }, void 0, false, {
-                    fileName: "[project]/lumora/apps/web/src/components/Header.tsx",
-                    lineNumber: 22,
-                    columnNumber: 9
-                }, this)
-            }, void 0, false, {
-                fileName: "[project]/lumora/apps/web/src/components/Header.tsx",
-                lineNumber: 21,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "flex items-center gap-4",
-                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                    className: "hidden sm:block text-left text-lg font-semibold text-gray-800",
-                    children: viewTitles[currentView]
-                }, void 0, false, {
-                    fileName: "[project]/lumora/apps/web/src/components/Header.tsx",
-                    lineNumber: 42,
-                    columnNumber: 9
-                }, this)
-            }, void 0, false, {
-                fileName: "[project]/lumora/apps/web/src/components/Header.tsx",
-                lineNumber: 41,
-                columnNumber: 7
-            }, this)
-        ]
-    }, void 0, true, {
-        fileName: "[project]/lumora/apps/web/src/components/Header.tsx",
-        lineNumber: 20,
-        columnNumber: 5
-    }, this);
-}
-_c = Header;
-var _c;
-__turbopack_context__.k.register(_c, "Header");
-if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
-    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
-}
-}),
 "[project]/lumora/apps/web/src/components/ChatInterface.tsx [app-client] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
@@ -104,7 +30,6 @@ function ChatInterface() {
     const [inputValue, setInputValue] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
     const [isTyping, setIsTyping] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const messagesEndRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
-    const textareaRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const sessionId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
         "ChatInterface.useMemo[sessionId]": ()=>{
             var _document_cookie_split_find;
@@ -189,20 +114,6 @@ function ChatInterface() {
             setIsTyping(false);
         }
     };
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
-        "ChatInterface.useEffect": ()=>{
-            if (!textareaRef.current) return;
-            const textarea = textareaRef.current;
-            const MIN_TEXTAREA_HEIGHT = 48;
-            const MAX_TEXTAREA_HEIGHT = 240;
-            textarea.style.height = 'auto';
-            const nextHeight = Math.min(Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT);
-            textarea.style.height = "".concat(nextHeight, "px");
-            textarea.style.overflowY = textarea.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
-        }
-    }["ChatInterface.useEffect"], [
-        inputValue
-    ]);
     const handleKeyPress = (e)=>{
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -223,12 +134,12 @@ function ChatInterface() {
                                 className: "h-5 w-5 text-white"
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 127,
+                                lineNumber: 110,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 126,
+                            lineNumber: 109,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -238,7 +149,7 @@ function ChatInterface() {
                                     children: "Lumora AI"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 130,
+                                    lineNumber: 113,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -246,24 +157,24 @@ function ChatInterface() {
                                     children: "Online • Always here for you"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 131,
+                                    lineNumber: 114,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 129,
+                            lineNumber: 112,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                    lineNumber: 125,
+                    lineNumber: 108,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                lineNumber: 124,
+                lineNumber: 107,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -280,18 +191,18 @@ function ChatInterface() {
                                             className: "h-4 w-4 text-white"
                                         }, void 0, false, {
                                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                            lineNumber: 152,
+                                            lineNumber: 135,
                                             columnNumber: 19
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bot$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Bot$3e$__["Bot"], {
                                             className: "h-4 w-4 text-white"
                                         }, void 0, false, {
                                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                            lineNumber: 154,
+                                            lineNumber: 137,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 144,
+                                        lineNumber: 127,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -302,7 +213,7 @@ function ChatInterface() {
                                                 children: message.content
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 165,
+                                                lineNumber: 148,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -313,24 +224,24 @@ function ChatInterface() {
                                                 })
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 166,
+                                                lineNumber: 149,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 158,
+                                        lineNumber: 141,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 143,
+                                lineNumber: 126,
                                 columnNumber: 13
                             }, this)
                         }, message.id, false, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 139,
+                            lineNumber: 122,
                             columnNumber: 11
                         }, this)),
                     isTyping && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -344,12 +255,12 @@ function ChatInterface() {
                                         className: "h-4 w-4 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 180,
+                                        lineNumber: 163,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 179,
+                                    lineNumber: 162,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -361,7 +272,7 @@ function ChatInterface() {
                                                 className: "w-2 h-2 bg-gray-400 rounded-full animate-bounce"
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 184,
+                                                lineNumber: 167,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -371,7 +282,7 @@ function ChatInterface() {
                                                 }
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 185,
+                                                lineNumber: 168,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -381,42 +292,42 @@ function ChatInterface() {
                                                 }
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                                lineNumber: 186,
+                                                lineNumber: 169,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                        lineNumber: 183,
+                                        lineNumber: 166,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 182,
+                                    lineNumber: 165,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                            lineNumber: 178,
+                            lineNumber: 161,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 177,
+                        lineNumber: 160,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         ref: messagesEndRef
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 193,
+                        lineNumber: 176,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                lineNumber: 137,
+                lineNumber: 120,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -428,7 +339,6 @@ function ChatInterface() {
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex-1 relative",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
-                                    ref: textareaRef,
                                     value: inputValue,
                                     onChange: (e)=>setInputValue(e.target.value),
                                     onKeyPress: handleKeyPress,
@@ -436,16 +346,17 @@ function ChatInterface() {
                                     className: "w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none",
                                     rows: 1,
                                     style: {
-                                        minHeight: '48px'
+                                        minHeight: '48px',
+                                        maxHeight: '120px'
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 200,
+                                    lineNumber: 183,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 199,
+                                lineNumber: 182,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -456,18 +367,18 @@ function ChatInterface() {
                                     className: "h-5 w-5"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                    lineNumber: 216,
+                                    lineNumber: 198,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                                lineNumber: 211,
+                                lineNumber: 193,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 198,
+                        lineNumber: 181,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -475,23 +386,23 @@ function ChatInterface() {
                         children: "Lumora provides supportive guidance but is not a replacement for professional mental health care."
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                        lineNumber: 220,
+                        lineNumber: 202,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-                lineNumber: 197,
+                lineNumber: 180,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/lumora/apps/web/src/components/ChatInterface.tsx",
-        lineNumber: 122,
+        lineNumber: 105,
         columnNumber: 5
     }, this);
 }
-_s(ChatInterface, "qNxBAI4xhkUPkodTm3NZxtmttu8=");
+_s(ChatInterface, "lpQ1F7PSJ2y/BobihbbAI4J7GXg=");
 _c = ChatInterface;
 var _c;
 __turbopack_context__.k.register(_c, "ChatInterface");
@@ -556,83 +467,36 @@ function Sidebar(param) {
                 className: "flex flex-col h-full",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "p-6 border-b border-gray-200",
-                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "flex items-center justify-between",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "flex items-center gap-3",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center",
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$heart$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Heart$3e$__["Heart"], {
-                                                className: "h-4 w-4 text-white"
-                                            }, void 0, false, {
-                                                fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                                lineNumber: 35,
-                                                columnNumber: 13
-                                            }, this)
-                                        }, void 0, false, {
-                                            fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                            lineNumber: 34,
-                                            columnNumber: 11
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                                                    className: "text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent",
-                                                    children: "Lumora"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                                    lineNumber: 38,
-                                                    columnNumber: 13
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "text-sm text-gray-500 hidden sm:block",
-                                                    children: "Light for the mind"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                                    lineNumber: 41,
-                                                    columnNumber: 13
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                            lineNumber: 37,
-                                            columnNumber: 11
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                    lineNumber: 33,
-                                    columnNumber: 9
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                    onClick: onClose,
-                                    className: "md:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors",
-                                    "aria-label": "Close menu",
-                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
-                                        className: "w-5 h-5 text-gray-500"
-                                    }, void 0, false, {
-                                        fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                        lineNumber: 49,
-                                        columnNumber: 13
-                                    }, this)
+                        className: "flex items-center justify-between p-4 border-b border-gray-200 md:hidden",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                className: "text-lg font-semibold text-gray-800",
+                                children: "Menu"
+                            }, void 0, false, {
+                                fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
+                                lineNumber: 31,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: onClose,
+                                className: "p-2 hover:bg-gray-100 rounded-lg transition-colors",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                    className: "h-5 w-5 text-gray-600"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                    lineNumber: 44,
-                                    columnNumber: 11
+                                    lineNumber: 36,
+                                    columnNumber: 15
                                 }, this)
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                            lineNumber: 32,
-                            columnNumber: 9
-                        }, this)
-                    }, void 0, false, {
+                            }, void 0, false, {
+                                fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
+                                lineNumber: 32,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
                         fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                        lineNumber: 31,
-                        columnNumber: 7
+                        lineNumber: 30,
+                        columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
                         className: "flex-1 p-4 space-y-2",
@@ -650,7 +514,7 @@ function Sidebar(param) {
                                         className: "h-5 w-5 ".concat(isActive ? 'text-blue-600' : item.color)
                                     }, void 0, false, {
                                         fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                        lineNumber: 75,
+                                        lineNumber: 61,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -658,19 +522,19 @@ function Sidebar(param) {
                                         children: item.label
                                     }, void 0, false, {
                                         fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                        lineNumber: 76,
+                                        lineNumber: 62,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, item.id, true, {
                                 fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                lineNumber: 61,
+                                lineNumber: 47,
                                 columnNumber: 17
                             }, this);
                         })
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                        lineNumber: 55,
+                        lineNumber: 41,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -683,7 +547,7 @@ function Sidebar(param) {
                                     children: "Emergency?"
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                    lineNumber: 85,
+                                    lineNumber: 71,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -691,18 +555,18 @@ function Sidebar(param) {
                                     children: "If you're in crisis, call 988 (Suicide & Crisis Lifeline) or go to your nearest emergency room."
                                 }, void 0, false, {
                                     fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                                    lineNumber: 86,
+                                    lineNumber: 72,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                            lineNumber: 84,
+                            lineNumber: 70,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/lumora/apps/web/src/components/Sidebar.tsx",
-                        lineNumber: 83,
+                        lineNumber: 69,
                         columnNumber: 11
                     }, this)
                 ]
@@ -2247,7 +2111,7 @@ function CrisisSupport() {
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                 className: "text-lg font-semibold text-red-800 mb-2",
-                                children: "🚨 If you're in immediate danger, call 988"
+                                children: "🚨 If you're in immediate danger, call 911"
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/CrisisSupport.tsx",
                                 lineNumber: 93,
@@ -2680,7 +2544,7 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$apps$2f$web$2f$src$2f$components$2f$Header$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lumora/apps/web/src/components/Header.tsx [app-client] (ecmascript)");
+// import { Header } from './components/Header';
 var __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$apps$2f$web$2f$src$2f$components$2f$ChatInterface$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lumora/apps/web/src/components/ChatInterface.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$apps$2f$web$2f$src$2f$components$2f$Sidebar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lumora/apps/web/src/components/Sidebar.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$apps$2f$web$2f$src$2f$components$2f$MoodTracker$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lumora/apps/web/src/components/MoodTracker.tsx [app-client] (ecmascript)");
@@ -2690,7 +2554,6 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$apps$2f$web$2f$src
 ;
 var _s = __turbopack_context__.k.signature();
 "use client";
-;
 ;
 ;
 ;
@@ -2760,7 +2623,7 @@ function AppShell() {
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex-1 flex flex-col overflow-hidden",
                 children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$apps$2f$web$2f$src$2f$components$2f$Header$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Header"], {
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Header, {
                         onMenuClick: ()=>setSidebarOpen(true),
                         currentView: currentView
                     }, void 0, false, {
@@ -2834,4 +2697,4 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 }),
 ]);
 
-//# sourceMappingURL=lumora_apps_web_src_63ab0f16._.js.map
+//# sourceMappingURL=lumora_apps_web_src_a94b5b22._.js.map

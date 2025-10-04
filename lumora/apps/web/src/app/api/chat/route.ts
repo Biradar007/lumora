@@ -3,8 +3,7 @@ import { env } from '@lumora/db';
 import { SYSTEM_PROMPT } from '@lumora/core';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: 'TestKey' });
-// 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
+const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
 export async function POST(request: Request) {
   try {

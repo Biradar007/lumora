@@ -20,6 +20,7 @@ export function ChatInterface() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sessionId = useMemo(() => {
     if (typeof window === 'undefined') return 'anon';
     return (
@@ -93,6 +94,22 @@ export function ChatInterface() {
       setIsTyping(false);
     }
   };
+
+  useEffect(() => {
+    if (!textareaRef.current) return;
+
+    const textarea = textareaRef.current;
+    const MIN_TEXTAREA_HEIGHT = 48;
+    const MAX_TEXTAREA_HEIGHT = 240;
+
+    textarea.style.height = 'auto';
+    const nextHeight = Math.min(
+      Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT),
+      MAX_TEXTAREA_HEIGHT
+    );
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+  }, [inputValue]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -181,13 +198,14 @@ export function ChatInterface() {
         <div className="flex items-end gap-3">
           <div className="flex-1 relative">
             <textarea
+              ref={textareaRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Share what's on your mind..."
               className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               rows={1}
-              style={{ minHeight: '48px', maxHeight: '120px' }}
+              style={{ minHeight: '48px' }}
             />
           </div>
           <button

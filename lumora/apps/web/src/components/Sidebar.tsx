@@ -27,15 +27,29 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
       `}>
         <div className="flex flex-col h-full">
           {/* Mobile close button */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 md:hidden">
-            <h2 className="text-lg font-semibold text-gray-800">Menu</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5 text-gray-600" />
-            </button>
+           {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <Heart className="h-4 w-4 text-white" />
           </div>
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Lumora
+            </h1>
+            <p className="text-sm text-gray-500 hidden sm:block">Light for the mind</p>
+          </div>
+        </div>
+          <button
+            onClick={onClose}
+            className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+      </div>
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2">

@@ -91,7 +91,7 @@ export function CrisisSupport() {
         </div>
         <div className="bg-white rounded-lg p-4 border border-red-200">
           <p className="text-lg font-semibold text-red-800 mb-2">
-            🚨 If you're in immediate danger, call 911
+            🚨 If you're in immediate danger, call 988
           </p>
           <p className="text-red-700">
             This page provides crisis resources, but if you're experiencing a medical emergency or are in immediate physical danger, please call emergency services right away.

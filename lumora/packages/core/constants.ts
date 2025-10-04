@@ -64,3 +64,4 @@ export const RISK_KEYWORDS = {
 export const SESSION_COOKIE_NAME = "lumora_session";
 export const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90; // 90 days
 export const DATA_RETENTION_DAYS = 30;
+

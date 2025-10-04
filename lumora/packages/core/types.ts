@@ -25,3 +25,4 @@ export type OutreachPayload = {
   studentId?: string;
   preferredTime?: string;
 };
+
