@@ -27,7 +27,9 @@ npm install
 
 2. Create `.env.local` in `lumora/apps/web/` with:
 ```env
+AI_PROVIDER=openai
 OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
 MONGODB_URI=mongodb+srv://...
 MAIL_HOST=smtp.example.com
 MAIL_PORT=587
@@ -36,6 +38,8 @@ MAIL_PASSWORD=secret
 COUNSELING_INBOX=caps@example.edu
 COUNSELING_CONTACTS_JSON='[{"name":"CSUF CAPS","phone":"+1-xxx-xxx-xxxx","email":"caps@csuf.edu","hours":"Mon–Fri 9–5","locationUrl":"https://..."}]'
 ```
+
+- Set `AI_PROVIDER` to `openai` or `gemini`. Provide the corresponding API key(s) based on which providers you plan to use.
 
 3. Run development server:
 ```bash

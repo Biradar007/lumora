@@ -96,8 +96,13 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__ = __turbopack_context__.i("[project]/node_modules/zod/v3/external.js [app-route] (ecmascript) <export * as z>");
 ;
-const EnvSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].object({
-    OPENAI_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1),
+const RawEnvSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].object({
+    AI_PROVIDER: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].enum([
+        'openai',
+        'gemini'
+    ]).optional(),
+    OPENAI_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1).optional(),
+    GEMINI_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1).optional(),
     MONGODB_URI: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1),
     MAIL_HOST: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
     MAIL_PORT: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
@@ -106,9 +111,41 @@ const EnvSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2
     MAIL_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
     COUNSELING_INBOX: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().email().optional(),
     COUNSELING_CONTACTS_JSON: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional()
+}).superRefine((val, ctx)=>{
+    const provider = val.AI_PROVIDER ?? (val.OPENAI_API_KEY ? 'openai' : val.GEMINI_API_KEY ? 'gemini' : undefined);
+    if (!provider) {
+        ctx.addIssue({
+            code: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].ZodIssueCode.custom,
+            message: 'Configure AI_PROVIDER or provide at least one API key for OpenAI or Gemini.',
+            path: [
+                'AI_PROVIDER'
+            ]
+        });
+        return;
+    }
+    if (provider === 'openai' && !val.OPENAI_API_KEY) {
+        ctx.addIssue({
+            code: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].ZodIssueCode.custom,
+            message: 'OPENAI_API_KEY is required when AI_PROVIDER resolves to "openai".',
+            path: [
+                'OPENAI_API_KEY'
+            ]
+        });
+    }
+    if (provider === 'gemini' && !val.GEMINI_API_KEY) {
+        ctx.addIssue({
+            code: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].ZodIssueCode.custom,
+            message: 'GEMINI_API_KEY is required when AI_PROVIDER resolves to "gemini".',
+            path: [
+                'GEMINI_API_KEY'
+            ]
+        });
+    }
 });
-const env = EnvSchema.parse({
+const rawEnv = RawEnvSchema.parse({
+    AI_PROVIDER: process.env.AI_PROVIDER,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     MONGODB_URI: process.env.MONGODB_URI,
     MAIL_HOST: process.env.MAIL_HOST,
     MAIL_PORT: process.env.MAIL_PORT,
@@ -118,6 +155,19 @@ const env = EnvSchema.parse({
     COUNSELING_INBOX: process.env.COUNSELING_INBOX,
     COUNSELING_CONTACTS_JSON: process.env.COUNSELING_CONTACTS_JSON
 });
+const computedProvider = (()=>{
+    if (rawEnv.AI_PROVIDER) {
+        return rawEnv.AI_PROVIDER;
+    }
+    if (rawEnv.OPENAI_API_KEY) {
+        return 'openai';
+    }
+    return 'gemini';
+})();
+const env = {
+    ...rawEnv,
+    AI_PROVIDER: computedProvider
+};
 }),
 "[project]/lumora/packages/db/AnalyticsEvent.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
 "use strict";

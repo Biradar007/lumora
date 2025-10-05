@@ -49,7 +49,7 @@ function AppShell() {
           currentView={currentView}
         />
         
-        <main className="flex-1 overflow-hidden">
+        <main className={`flex-1 ${currentView === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {renderContent()}
         </main>
       </div>

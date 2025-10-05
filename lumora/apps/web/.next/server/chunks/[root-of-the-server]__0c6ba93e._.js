@@ -96,8 +96,13 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__ = __turbopack_context__.i("[project]/node_modules/zod/v3/external.js [app-route] (ecmascript) <export * as z>");
 ;
-const EnvSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].object({
-    OPENAI_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1),
+const RawEnvSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].object({
+    AI_PROVIDER: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].enum([
+        'openai',
+        'gemini'
+    ]).optional(),
+    OPENAI_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1).optional(),
+    GEMINI_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1).optional(),
     MONGODB_URI: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1),
     MAIL_HOST: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
     MAIL_PORT: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
@@ -106,9 +111,41 @@ const EnvSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2
     MAIL_API_KEY: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
     COUNSELING_INBOX: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().email().optional(),
     COUNSELING_CONTACTS_JSON: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional()
+}).superRefine((val, ctx)=>{
+    const provider = val.AI_PROVIDER ?? (val.OPENAI_API_KEY ? 'openai' : val.GEMINI_API_KEY ? 'gemini' : undefined);
+    if (!provider) {
+        ctx.addIssue({
+            code: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].ZodIssueCode.custom,
+            message: 'Configure AI_PROVIDER or provide at least one API key for OpenAI or Gemini.',
+            path: [
+                'AI_PROVIDER'
+            ]
+        });
+        return;
+    }
+    if (provider === 'openai' && !val.OPENAI_API_KEY) {
+        ctx.addIssue({
+            code: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].ZodIssueCode.custom,
+            message: 'OPENAI_API_KEY is required when AI_PROVIDER resolves to "openai".',
+            path: [
+                'OPENAI_API_KEY'
+            ]
+        });
+    }
+    if (provider === 'gemini' && !val.GEMINI_API_KEY) {
+        ctx.addIssue({
+            code: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].ZodIssueCode.custom,
+            message: 'GEMINI_API_KEY is required when AI_PROVIDER resolves to "gemini".',
+            path: [
+                'GEMINI_API_KEY'
+            ]
+        });
+    }
 });
-const env = EnvSchema.parse({
+const rawEnv = RawEnvSchema.parse({
+    AI_PROVIDER: process.env.AI_PROVIDER,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     MONGODB_URI: process.env.MONGODB_URI,
     MAIL_HOST: process.env.MAIL_HOST,
     MAIL_PORT: process.env.MAIL_PORT,
@@ -118,6 +155,19 @@ const env = EnvSchema.parse({
     COUNSELING_INBOX: process.env.COUNSELING_INBOX,
     COUNSELING_CONTACTS_JSON: process.env.COUNSELING_CONTACTS_JSON
 });
+const computedProvider = (()=>{
+    if (rawEnv.AI_PROVIDER) {
+        return rawEnv.AI_PROVIDER;
+    }
+    if (rawEnv.OPENAI_API_KEY) {
+        return 'openai';
+    }
+    return 'gemini';
+})();
+const env = {
+    ...rawEnv,
+    AI_PROVIDER: computedProvider
+};
 }),
 "[project]/lumora/packages/db/AnalyticsEvent.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -418,16 +468,40 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$core$2
 var __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$core$2f$constants$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lumora/packages/core/constants.ts [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$openai$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/openai/index.mjs [app-route] (ecmascript) <locals>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$openai$2f$client$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__OpenAI__as__default$3e$__ = __turbopack_context__.i("[project]/node_modules/openai/client.mjs [app-route] (ecmascript) <export OpenAI as default>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$google$2f$generative$2d$ai$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/@google/generative-ai/dist/index.mjs [app-route] (ecmascript)");
 ;
 ;
 ;
 ;
-const openai = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$openai$2f$client$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__OpenAI__as__default$3e$__["default"]({
-    apiKey: __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$db$2f$env$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["env"].OPENAI_API_KEY
-});
+;
+const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+let openaiClient;
+let geminiClient;
+const getOpenAIClient = ()=>{
+    if (!__TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$db$2f$env$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["env"].OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY is not configured');
+    }
+    if (!openaiClient) {
+        openaiClient = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$openai$2f$client$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__OpenAI__as__default$3e$__["default"]({
+            apiKey: __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$db$2f$env$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["env"].OPENAI_API_KEY
+        });
+    }
+    return openaiClient;
+};
+const getGeminiClient = ()=>{
+    if (!__TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$db$2f$env$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["env"].GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY is not configured');
+    }
+    if (!geminiClient) {
+        geminiClient = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$google$2f$generative$2d$ai$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GoogleGenerativeAI"](__TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$db$2f$env$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["env"].GEMINI_API_KEY);
+    }
+    return geminiClient;
+};
+const isProvider = (value)=>value === 'openai' || value === 'gemini';
 async function POST(request) {
     try {
-        const { sessionId, messages } = await request.json();
+        const { sessionId, messages, provider } = await request.json();
         if (!sessionId || !messages?.length) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 error: 'invalid_request'
@@ -435,25 +509,67 @@ async function POST(request) {
                 status: 400
             });
         }
-        const convo = [
-            {
-                role: 'system',
-                content: __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$core$2f$constants$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["SYSTEM_PROMPT"]
-            },
-            ...messages.map((m)=>({
-                    role: m.role,
-                    content: m.content
-                }))
-        ];
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: convo,
-            temperature: 0.7,
-            max_tokens: 200
-        });
-        const reply = completion.choices[0]?.message?.content?.trim() || 'Thank you for sharing. I am here to listen.';
+        const resolvedProvider = isProvider(provider) ? provider : __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$db$2f$env$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["env"].AI_PROVIDER;
+        let reply;
+        if (resolvedProvider === 'gemini') {
+            try {
+                const model = getGeminiClient().getGenerativeModel({
+                    model: DEFAULT_GEMINI_MODEL
+                });
+                const completion = await model.generateContent({
+                    contents: messages.filter((m)=>m.role !== 'system').map((m)=>({
+                            role: m.role === 'assistant' ? 'model' : 'user',
+                            parts: [
+                                {
+                                    text: m.content
+                                }
+                            ]
+                        })),
+                    systemInstruction: {
+                        role: 'system',
+                        parts: [
+                            {
+                                text: __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$core$2f$constants$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["SYSTEM_PROMPT"]
+                            }
+                        ]
+                    },
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 400
+                    }
+                });
+                reply = completion.response.text()?.trim();
+            } catch (err) {
+                console.error('[api/chat] gemini error', err);
+                return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                    error: 'gemini_error'
+                }, {
+                    status: 500
+                });
+            }
+        } else {
+            const convo = [
+                {
+                    role: 'system',
+                    content: __TURBOPACK__imported__module__$5b$project$5d2f$lumora$2f$packages$2f$core$2f$constants$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["SYSTEM_PROMPT"]
+                },
+                ...messages.map((m)=>({
+                        role: m.role,
+                        content: m.content
+                    }))
+            ];
+            const completion = await getOpenAIClient().chat.completions.create({
+                model: DEFAULT_OPENAI_MODEL,
+                messages: convo,
+                temperature: 0.7,
+                max_tokens: 200
+            });
+            reply = completion.choices[0]?.message?.content?.trim();
+        }
+        const safeReply = reply || 'Thank you for sharing. I am here to listen.';
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            reply
+            reply: safeReply,
+            provider: resolvedProvider
         });
     } catch (err) {
         console.error('[api/chat] unexpected error', err);
