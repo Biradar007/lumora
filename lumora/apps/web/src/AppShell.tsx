@@ -8,10 +8,11 @@ import { MoodTracker } from './components/MoodTracker';
 import { Resources } from './components/Resources';
 import { Dashboard } from './components/Dashboard';
 import { CrisisSupport } from './components/CrisisSupport';
+import LandingPage from './components/LandingPage';
 
 export type ViewType = 'chat' | 'mood' | 'resources' | 'dashboard' | 'crisis';
 
-function AppShell() {
+function CoreAppShell() {
   const [currentView, setCurrentView] = useState<ViewType>('chat');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -34,29 +35,23 @@ function AppShell() {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Sidebar */}
-      <Sidebar 
+      <Sidebar
         currentView={currentView}
         setCurrentView={setCurrentView}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
-      
-      {/* Main Content */}
+
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
-          onMenuClick={() => setSidebarOpen(true)}
-          currentView={currentView}
-        />
-        
+        <Header onMenuClick={() => setSidebarOpen(true)} currentView={currentView} />
+
         <main className={`flex-1 ${currentView === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {renderContent()}
         </main>
       </div>
 
-      {/* Mobile backdrop */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -65,4 +60,14 @@ function AppShell() {
   );
 }
 
-export default AppShell;
+export default function AppShell() {
+  const [showLanding, setShowLanding] = useState(true);
+
+  if (showLanding) {
+    return <LandingPage onEnterApp={() => setShowLanding(false)} />;
+  }
+
+  return <CoreAppShell />;
+}
+
+export { CoreAppShell };

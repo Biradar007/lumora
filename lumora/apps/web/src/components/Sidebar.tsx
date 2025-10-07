@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { MessageCircle, Heart, BookOpen, BarChart3, AlertCircle, X } from 'lucide-react';
 import { ViewType } from '../AppShell';
 
@@ -28,12 +29,17 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
         <div className="flex flex-col h-full">
           {/* Mobile close button */}
            {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      {/* <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <Heart className="h-4 w-4 text-white" />
-          </div>
+          <Image
+            src="/Logo1.png"
+            alt="Lumora logo"
+            width={40}
+            height={40}
+            className="object-cover rounded-full"
+            priority
+          />
           <div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Lumora
@@ -49,7 +55,32 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-      </div>
+      </div> */}
+
+      <div className="p-6 border-b border-gray-200">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      {/* Gradient Circle instead of Image */}
+      <div className="relative w-12 h-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
+          <div>
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Lumora
+              </h1>
+                <span className="text-sm text-gray-500">(Beta)</span>
+            </div>
+            <p className="text-sm font-bold text-gray-500 hidden sm:block">Light for the mind</p>
+          </div>
+    </div>
+    <button
+      onClick={onClose}
+      className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+      aria-label="Close menu"
+    >
+      <X className="w-5 h-5 text-gray-500" />
+    </button>
+  </div>
+</div>
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2">
