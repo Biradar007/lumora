@@ -487,9 +487,17 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         <footer className="relative z-10 border-t border-calm-200/60 bg-white/80 backdrop-blur-sm py-16">
           <div className="max-w-7xl mx-auto flex flex-col gap-10 px-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16">
+              {/* <div className="relative w-16 h-16">
                 <Image src="/logo.png" alt="Lumora" width={64} height={64} className="object-contain" />
-              </div>
+              </div> */}
+              <div className="flex flex-col items-center gap-2 text-center">
+            <div className="relative w-9 h-9 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
+            <div className="flex flex-col items-center leading-tight">
+              <h1 className="text-l font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Lumora
+              </h1>
+            </div>
+          </div>
               <div>
                 <p className="text-sm text-muted-foreground">Light for the mind. Becoming.</p>
               </div>

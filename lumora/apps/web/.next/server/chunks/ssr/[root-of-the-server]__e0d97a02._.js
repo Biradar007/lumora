@@ -2638,9 +2638,7 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/image.js [app-ssr] (ecmascript)");
 "use client";
-;
 ;
 ;
 const FORM_ENDPOINT = "https://formspree.io/f/mzzanbqy";
@@ -3294,21 +3292,34 @@ function LandingPage({ onEnterApp }) {
                                         className: "flex items-center gap-4",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "relative w-16 h-16",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
-                                                    src: "/logo.png",
-                                                    alt: "Lumora",
-                                                    width: 64,
-                                                    height: 64,
-                                                    className: "object-contain"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                    lineNumber: 491,
-                                                    columnNumber: 17
-                                                }, this)
-                                            }, void 0, false, {
+                                                className: "flex flex-col items-center gap-2 text-center",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "relative w-9 h-9 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
+                                                        lineNumber: 494,
+                                                        columnNumber: 13
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "flex flex-col items-center leading-tight",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
+                                                            className: "text-l font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent",
+                                                            children: "Lumora"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
+                                                            lineNumber: 496,
+                                                            columnNumber: 15
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
+                                                        lineNumber: 495,
+                                                        columnNumber: 13
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
                                                 fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                lineNumber: 490,
+                                                lineNumber: 493,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3317,12 +3328,12 @@ function LandingPage({ onEnterApp }) {
                                                     children: "Light for the mind. Becoming."
                                                 }, void 0, false, {
                                                     fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                    lineNumber: 494,
+                                                    lineNumber: 502,
                                                     columnNumber: 17
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                lineNumber: 493,
+                                                lineNumber: 501,
                                                 columnNumber: 15
                                             }, this)
                                         ]
@@ -3346,14 +3357,14 @@ function LandingPage({ onEnterApp }) {
                                                         className: "h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                        lineNumber: 505,
+                                                        lineNumber: 513,
                                                         columnNumber: 17
                                                     }, this),
                                                     "LinkedIn"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                lineNumber: 498,
+                                                lineNumber: 506,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -3365,20 +3376,20 @@ function LandingPage({ onEnterApp }) {
                                                         className: "h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                        lineNumber: 512,
+                                                        lineNumber: 520,
                                                         columnNumber: 17
                                                     }, this),
                                                     "Say hello"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                                lineNumber: 508,
+                                                lineNumber: 516,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                        lineNumber: 497,
+                                        lineNumber: 505,
                                         columnNumber: 13
                                     }, this)
                                 ]
@@ -3392,7 +3403,7 @@ function LandingPage({ onEnterApp }) {
                                 children: "© 2025 Lumora. All rights reserved. "
                             }, void 0, false, {
                                 fileName: "[project]/lumora/apps/web/src/components/LandingPage.tsx",
-                                lineNumber: 517,
+                                lineNumber: 525,
                                 columnNumber: 11
                             }, this)
                         ]
