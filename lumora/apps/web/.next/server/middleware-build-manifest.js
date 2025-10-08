@@ -1,23 +1,27 @@
 globalThis.__BUILD_MANIFEST = {
   "pages": {
-    "/_app": []
+    "/_app": [
+      "static/chunks/e60ef129113f6e24.js",
+      "static/chunks/a687954c84b58131.js",
+      "static/chunks/turbopack-8692bcea260d8a22.js"
+    ],
+    "/_error": [
+      "static/chunks/17722e3ac4e00587.js",
+      "static/chunks/a687954c84b58131.js",
+      "static/chunks/turbopack-0caa9f4af753344d.js"
+    ]
   },
   "devFiles": [],
   "ampDevFiles": [],
   "polyfillFiles": [
-    "static/chunks/node_modules_next_dist_build_polyfills_polyfill-nomodule.js"
+    "static/chunks/a6dad97d9634a72d.js"
   ],
   "lowPriorityFiles": [],
   "rootMainFiles": [
-    "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_57d40746._.js",
-    "static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js",
-    "static/chunks/node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js",
-    "static/chunks/node_modules_next_dist_compiled_5150ccfd._.js",
-    "static/chunks/node_modules_next_dist_client_cf1d9188._.js",
-    "static/chunks/node_modules_next_dist_b0daae9a._.js",
-    "static/chunks/node_modules_@swc_helpers_cjs_b3dc30d6._.js",
-    "static/chunks/lumora_apps_web_a0ff3932._.js",
-    "static/chunks/turbopack-lumora_apps_web_cdba956c._.js"
+    "static/chunks/3996deeca1881b47.js",
+    "static/chunks/6c1d949039ca8e4a.js",
+    "static/chunks/47f477e3d2ef265b.js",
+    "static/chunks/turbopack-71f4b37f03c9db15.js"
   ],
   "ampFirstPages": []
 };

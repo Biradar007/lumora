@@ -3,9 +3,9 @@
   "middleware": {
     "/": {
       "files": [
-        "server/edge/chunks/_1e8f6541._.js",
-        "server/edge/chunks/[root-of-the-server]__8b624663._.js",
-        "server/edge/chunks/turbopack-lumora_apps_web_edge-wrapper_3f482ec0.js"
+        "server/edge/chunks/lumora_apps_web_edge-wrapper_53973db9.js",
+        "server/edge/chunks/[root-of-the-server]__67767c85._.js",
+        "server/edge/chunks/turbopack-lumora_apps_web_edge-wrapper_ecbaaa22.js"
       ],
       "name": "middleware",
       "page": "/",
@@ -18,11 +18,11 @@
       "wasm": [],
       "assets": [],
       "env": {
-        "__NEXT_BUILD_ID": "development",
+        "__NEXT_BUILD_ID": "oVSPGDbuseXJsENp-q20q",
         "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "vA+X3vbc8syPS6uTidG1y32i1pd2wTmC4jsgilNRoxI=",
-        "__NEXT_PREVIEW_MODE_ID": "071d89c53f3d569d47ed76d37d708e90",
-        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "44c1b281789e19c733a587c3acea0e3bddd370606cdc41587002032753e72feb",
-        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "4767f42295ed75e7c509a8b8cc2ad0c23446942a404aa0e3b730445cde03b550"
+        "__NEXT_PREVIEW_MODE_ID": "d1640dd013005f1fe1bc9a993fe1ff98",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "7db2f5857a3bc2dd39a3937656f66a6dffef5edb6ab0ecb329e4950b201b80ab",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "5203b52f41c68b7a10e4126d340613b2eb0c4a42bd202e25855166fded84dc24"
       }
     }
   },
