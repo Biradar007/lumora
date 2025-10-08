@@ -344,7 +344,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <div className="mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-success/20 to-success/10 shadow-sm">
                   <i data-feather="command" className="h-6 w-6 text-success" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-3">CAPS Connection</h3>
+                <h3 className="text-xl font-bold text-foreground mb-3">CSUF-CAPS Connection</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
                   Book appointments or reach out directly to CSUF Counseling and Psychological Services from within the app.
                 </p>
