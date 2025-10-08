@@ -1,0 +1,3 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["chunks/lumora_apps_web_edge-wrapper_53973db9.js",84210,(e,t,h)=>{self._ENTRIES||={};let l=Promise.resolve().then(()=>e.i(41455));l.catch(()=>{}),self._ENTRIES.middleware_middleware=new Proxy(l,{get(e,t){if("then"===t)return(t,h)=>e.then(t,h);let h=(...h)=>e.then(e=>(0,e[t])(...h));return h.then=(h,l)=>e.then(e=>e[t]).then(h,l),h}})}]);
+
+//# sourceMappingURL=lumora_apps_web_edge-wrapper_53973db9.js.map

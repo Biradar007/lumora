@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 55, "column": 0}, "map": {"version":3,"sources":["file:///Users/udaybiradar/lumora-app/lumora/apps/web/src/app/api/resources/route.ts"],"sourcesContent":["import { NextResponse } from 'next/server';\n// import { connectToDatabase, CounselingContact } from '@lumora/db';\n\nexport async function GET() {\n  try {\n    // await connectToDatabase();\n    // const contacts = await CounselingContact.find({}).lean();\n    // return NextResponse.json({ contacts });\n  } catch (err) {\n    return NextResponse.json({ error: 'server_error' }, { status: 500 });\n  }\n}\n\n\n"],"names":[],"mappings":";;;;AAAA;;AAGO,eAAe;IACpB,IAAI;IACF,6BAA6B;IAC7B,4DAA4D;IAC5D,0CAA0C;IAC5C,EAAE,OAAO,KAAK;QACZ,OAAO,gJAAY,CAAC,IAAI,CAAC;YAAE,OAAO;QAAe,GAAG;YAAE,QAAQ;QAAI;IACpE;AACF","debugId":null}}]
+}

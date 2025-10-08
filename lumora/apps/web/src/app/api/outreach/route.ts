@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createHash } from 'crypto';
 import nodemailer from 'nodemailer';
 import { env } from '@lumora/db';
-import { connectToDatabase, OutreachAudit } from '@lumora/db';
+// import { connectToDatabase, OutreachAudit } from '@lumora/db';
 
 const schema = z.object({
   sessionId: z.string().min(6),
@@ -48,8 +48,8 @@ export async function POST(request: Request) {
     });
 
     const hash = createHash('sha256').update(JSON.stringify({ ...payload, consent: true })).digest('hex');
-    await connectToDatabase();
-    await OutreachAudit.create({ sessionId: payload.sessionId, consent: true, payloadHash: hash });
+    // await connectToDatabase();
+    // await OutreachAudit.create({ sessionId: payload.sessionId, consent: true, payloadHash: hash });
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 });

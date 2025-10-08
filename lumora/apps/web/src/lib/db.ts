@@ -1,30 +1,30 @@
-import mongoose from 'mongoose';
+// import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+// const MONGODB_URI = process.env.MONGODB_URI as string;
 
-if (!MONGODB_URI) {
-  throw new Error('MONGODB_URI is not set');
-}
+// if (!MONGODB_URI) {
+//   throw new Error('MONGODB_URI is not set');
+// }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var mongooseConn: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null } | undefined;
-}
+// declare global {
+//   // eslint-disable-next-line no-var
+//   var mongooseConn: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null } | undefined;
+// }
 
-let cached = global.mongooseConn;
-if (!cached) {
-  cached = global.mongooseConn = { conn: null, promise: null };
-}
+// let cached = global.mongooseConn;
+// if (!cached) {
+//   cached = global.mongooseConn = { conn: null, promise: null };
+// }
 
-export async function connectToDatabase(): Promise<typeof mongoose> {
-  if (cached.conn) return cached.conn;
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      dbName: 'lumora',
-    });
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
-}
+// export async function connectToDatabase(): Promise<typeof mongoose> {
+//   if (cached.conn) return cached.conn;
+//   if (!cached.promise) {
+//     cached.promise = mongoose.connect(MONGODB_URI, {
+//       dbName: 'lumora',
+//     });
+//   }
+//   cached.conn = await cached.promise;
+//   return cached.conn;
+// }
 
 

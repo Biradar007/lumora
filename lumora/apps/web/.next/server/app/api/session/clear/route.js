@@ -1,6 +1,7 @@
 var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/session/clear/route.js")
-R.c("server/chunks/node_modules_6ef9838d._.js")
-R.c("server/chunks/[root-of-the-server]__aa535ebf._.js")
-R.m("[project]/lumora/apps/web/.next-internal/server/app/api/session/clear/route/actions.js [app-rsc] (server actions loader, ecmascript)")
-R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/lumora/apps/web/src/app/api/session/clear/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
-module.exports=R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/lumora/apps/web/src/app/api/session/clear/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports
+R.c("server/chunks/[root-of-the-server]__bb07bdf0._.js")
+R.c("server/chunks/[root-of-the-server]__703022d1._.js")
+R.c("server/chunks/node_modules_zod_v3_external_d1e61c8a.js")
+R.m(21525)
+R.m(59783)
+module.exports=R.m(59783).exports

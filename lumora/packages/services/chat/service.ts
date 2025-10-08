@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SYSTEM_PROMPT } from '@lumora/core';
-import { connectToDatabase, MessageLog } from '@lumora/db';
+// import { connectToDatabase, MessageLog } from '@lumora/db';
 import { Message } from '@lumora/core';
 
 type Provider = 'openai' | 'gemini';
@@ -40,7 +40,7 @@ export class ChatService {
   }
 
   async generateResponse(sessionId: string, messages: Message[], provider?: Provider): Promise<string> {
-    await connectToDatabase();
+    // await connectToDatabase();
 
     const convo = [
       { role: 'system' as const, content: SYSTEM_PROMPT },
@@ -91,16 +91,16 @@ export class ChatService {
     const safeReply = reply || 'Thank you for sharing. I am here to listen.';
 
     // Log the conversation
-    await MessageLog.create({ 
-      sessionId, 
-      role: 'user', 
-      content: messages[messages.length - 1]?.content || '' 
-    });
-    await MessageLog.create({ 
-      sessionId, 
-      role: 'assistant', 
-      content: safeReply 
-    });
+    // await MessageLog.create({ 
+    //   sessionId, 
+    //   role: 'user', 
+    //   content: messages[messages.length - 1]?.content || '' 
+    // });
+    // await MessageLog.create({ 
+    //   sessionId, 
+    //   role: 'assistant', 
+    //   content: safeReply 
+    // });
 
     return safeReply;
   }

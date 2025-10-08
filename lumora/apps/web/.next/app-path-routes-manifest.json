@@ -1,0 +1,13 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/analytics/event/route": "/api/analytics/event",
+  "/api/chat/route": "/api/chat",
+  "/api/cron/purge/route": "/api/cron/purge",
+  "/api/outreach/route": "/api/outreach",
+  "/api/resources/route": "/api/resources",
+  "/api/risk-check/route": "/api/risk-check",
+  "/api/session/clear/route": "/api/session/clear",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/",
+  "/privacy/page": "/privacy"
+}
