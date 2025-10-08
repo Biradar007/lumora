@@ -12,6 +12,7 @@
     "seed:contacts": "cross-env NODE_OPTIONS='--import tsx' tsx ../../infra/scripts/seed-contacts.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@lumora/core": "file:../../packages/core",
     "@lumora/db": "file:../../packages/db",
     "@lumora/services": "file:../../packages/services",
@@ -19,6 +20,7 @@
     "lucide-react": "^0.544.0",
     "next": "15.5.4",
     "next-auth": "^4.24.11",
+    "openai": "^6.2.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "swr": "^2.3.6"

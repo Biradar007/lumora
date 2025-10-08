@@ -5,10 +5,11 @@
   "main": "index.ts",
   "types": "index.ts",
   "dependencies": {
-    "openai": "^5.23.1",
-    "nodemailer": "^6.10.1",
-    "bcryptjs": "^3.0.2",
+    "@google/generative-ai": "^0.24.1",
     "@lumora/core": "file:../core",
-    "@lumora/db": "file:../db"
+    "@lumora/db": "file:../db",
+    "bcryptjs": "^3.0.2",
+    "nodemailer": "^6.10.1",
+    "openai": "^5.23.2"
   }
 }
