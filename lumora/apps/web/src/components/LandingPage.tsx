@@ -174,7 +174,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
     <div className="min-h-screen font-sans antialiased bg-gradient-to-br from-calm-50 via-white to-serene-50">
       <div ref={vantaContainerRef} className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-x-1/2 top-[-10%] h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-serene-400/30 via-accent/30 to-primary/20 blur-3xl" />
+          {/* <div className="absolute inset-x-1/2 top-[-10%] h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-serene-400/30 via-accent/30 to-primary/20 opacity-60" /> */}
           <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-gradient-to-tr from-serene-400/20 via-white/10 to-transparent blur-3xl" />
           <div className="absolute -bottom-48 -right-24 h-[30rem] w-[30rem] rounded-full bg-accent/30 blur-[160px]" />
         </div>
