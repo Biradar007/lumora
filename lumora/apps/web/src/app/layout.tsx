@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Lumora - Light for the mind",
   description: "Emotional support available to everyone, anytime, anywhere.",
+  icons: {
+    icon: [{ url: "/logo.png", type: "image/png", sizes: "1024x1024" }],
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
