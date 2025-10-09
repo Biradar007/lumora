@@ -1,0 +1,10 @@
+{
+  "pages": {
+    "/icon.png/route": [
+      "static/chunks/aaea1e64ef7e0faa.js",
+      "static/chunks/f471ac2339220d44.js",
+      "static/chunks/569f8ca39997ccda.js",
+      "static/chunks/turbopack-3ef6ad8d7d9b69dc.js"
+    ]
+  }
+}

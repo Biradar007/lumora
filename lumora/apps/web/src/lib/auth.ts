@@ -9,7 +9,7 @@ import {
   type UserCredential,
 } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, set } from 'firebase/database';
+import { doc, getFirestore, setDoc } from 'firebase/firestore';
 
 export type RegistrationPayload = {
   email: string;
@@ -33,10 +33,10 @@ export async function registerUser(payload: RegistrationPayload): Promise<UserCr
     await updateProfile(credential.user, { displayName: payload.name });
   }
 
-  const db = getDatabase(getFirebaseApp());
-  const userRef = ref(db, `users/${credential.user.uid}`);
+  const db = getFirestore(getFirebaseApp());
+  const userDoc = doc(db, 'users', credential.user.uid);
 
-  await set(userRef, {
+  await setDoc(userDoc, {
     uid: credential.user.uid,
     email: payload.email,
     name: payload.name,

@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getFirebaseApp } from '@/lib/firebase';
 import { getAuth, onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth';
-import { getDatabase, ref, get } from 'firebase/database';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
 type AccountType = 'user' | 'therapist';
 
@@ -32,12 +32,12 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
   try {
-    const db = getDatabase(getFirebaseApp());
-    const snapshot = await get(ref(db, `users/${uid}`));
+    const db = getFirestore(getFirebaseApp());
+    const snapshot = await getDoc(doc(db, 'users', uid));
     if (!snapshot.exists()) {
       return null;
     }
-    const value = snapshot.val();
+    const value = snapshot.data() ?? {};
     return {
       uid,
       email: value.email ?? '',
