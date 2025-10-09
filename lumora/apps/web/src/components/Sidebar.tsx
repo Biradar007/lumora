@@ -1,4 +1,8 @@
+'use client';
+
 import { MessageCircle, Heart, BookOpen, BarChart3, AlertCircle, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAuthUI } from '@/contexts/AuthUIContext';
 import { ViewType } from '../AppShell';
 import { UserProfileMenu } from './UserProfileMenu';
 
@@ -10,14 +14,53 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { id: 'chat' as ViewType, label: 'Chat Support', icon: MessageCircle, color: 'text-blue-600', preview: false },
-  { id: 'mood' as ViewType, label: 'Mood Tracker', icon: Heart, color: 'text-pink-600', preview: true },
-  { id: 'resources' as ViewType, label: 'Resources', icon: BookOpen, color: 'text-green-600', preview: true },
-  { id: 'dashboard' as ViewType, label: 'Dashboard', icon: BarChart3, color: 'text-purple-600', preview: true },
-  { id: 'crisis' as ViewType, label: 'Crisis Support', icon: AlertCircle, color: 'text-red-600', preview: false },
+  {
+    id: 'chat' as ViewType,
+    label: 'Chat Support',
+    icon: MessageCircle,
+    color: 'text-blue-600',
+    preview: false,
+    requiresAuth: false,
+  },
+  {
+    id: 'mood' as ViewType,
+    label: 'Mood Tracker',
+    icon: Heart,
+    color: 'text-pink-600',
+    preview: true,
+    requiresAuth: true,
+  },
+  {
+    id: 'resources' as ViewType,
+    label: 'Resources',
+    icon: BookOpen,
+    color: 'text-green-600',
+    preview: true,
+    requiresAuth: true,
+  },
+  {
+    id: 'dashboard' as ViewType,
+    label: 'Dashboard',
+    icon: BarChart3,
+    color: 'text-purple-600',
+    preview: true,
+    requiresAuth: true,
+  },
+  {
+    id: 'crisis' as ViewType,
+    label: 'Crisis Support',
+    icon: AlertCircle,
+    color: 'text-red-600',
+    preview: false,
+    requiresAuth: false,
+  },
 ];
 
 export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: SidebarProps) {
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user);
+  const { requestLogin } = useAuthUI();
+
   return (
     <>
       <aside className={`
@@ -86,24 +129,37 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
+              const isDisabled = !isAuthenticated && item.requiresAuth;
               
               return (
                 <button
                   key={item.id}
+                  type="button"
                   onClick={() => {
+                    if (isDisabled) {
+                      requestLogin();
+                      return;
+                    }
                     setCurrentView(item.id);
                     onClose();
                   }}
                   className={`
                     w-full flex items-center justify-between gap-3 px-4 py-3 text-left rounded-xl transition-all duration-200
+                    ${isDisabled
+                      ? 'cursor-not-allowed opacity-60 hover:bg-transparent hover:text-gray-500'
+                      : ''
+                    }
                     ${isActive 
                       ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 text-blue-700' 
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
                     }
                   `}
+                  aria-disabled={isDisabled}
+                  tabIndex={isDisabled ? -1 : 0}
+                  title={isDisabled ? 'Log in to view this module' : undefined}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : item.color}`} />
+                    <Icon className={`h-5 w-5 ${isDisabled ? 'text-gray-400' : isActive ? 'text-blue-600' : item.color}`} />
                     <span className="font-medium">{item.label}</span>
                   </span>
                   {item.preview && (

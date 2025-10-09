@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
@@ -10,6 +10,7 @@ import { Dashboard } from './components/Dashboard';
 import { CrisisSupport } from './components/CrisisSupport';
 import LandingPage from './components/LandingPage';
 import { AuthGate } from './components/AuthGate';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type ViewType = 'chat' | 'mood' | 'resources' | 'dashboard' | 'crisis';
 
@@ -63,6 +64,20 @@ function CoreAppShell() {
 
 export default function AppShell() {
   const [showLanding, setShowLanding] = useState(true);
+  const { user, loading } = useAuth();
+  const wasAuthenticatedRef = useRef(false);
+
+  useEffect(() => {
+    if (user) {
+      wasAuthenticatedRef.current = true;
+      return;
+    }
+
+    if (!loading && wasAuthenticatedRef.current) {
+      setShowLanding(true);
+      wasAuthenticatedRef.current = false;
+    }
+  }, [loading, user]);
 
   if (showLanding) {
     return <LandingPage onEnterApp={() => setShowLanding(false)} />;
