@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/udaybiradar/lumora-app/lumora/apps/web/src/app/error.tsx"],"sourcesContent":["'use client';\n\nexport default function Error({ error }: { error: Error & { digest?: string } }) {\n  return (\n    <div className=\"min-h-screen flex items-center justify-center p-8 text-center\">\n      <div>\n        <h1 className=\"text-2xl font-semibold\">Something went wrong</h1>\n        <p className=\"mt-2 text-gray-600\">Please refresh the page or try again later.</p>\n        {error?.digest ? <p className=\"mt-1 text-xs text-gray-400\">Ref: {error.digest}</p> : null}\n      </div>\n    </div>\n  );\n}\n\n\n"],"names":[],"mappings":";;;;;AAAA;;AAEe,SAAS,MAAM,KAAiD;QAAjD,EAAE,KAAK,EAA0C,GAAjD;IAC5B,qBACE,6LAAC;QAAI,WAAU;kBACb,cAAA,6LAAC;;8BACC,6LAAC;oBAAG,WAAU;8BAAyB;;;;;;8BACvC,6LAAC;oBAAE,WAAU;8BAAqB;;;;;;gBACjC,CAAA,kBAAA,4BAAA,MAAO,MAAM,kBAAG,6LAAC;oBAAE,WAAU;;wBAA6B;wBAAM,MAAM,MAAM;;;;;;2BAAQ;;;;;;;;;;;;AAI7F;KAVwB","debugId":null}}]
+}

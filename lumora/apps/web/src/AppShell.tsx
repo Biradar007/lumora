@@ -9,6 +9,7 @@ import { Resources } from './components/Resources';
 import { Dashboard } from './components/Dashboard';
 import { CrisisSupport } from './components/CrisisSupport';
 import LandingPage from './components/LandingPage';
+import { AuthGate } from './components/AuthGate';
 
 export type ViewType = 'chat' | 'mood' | 'resources' | 'dashboard' | 'crisis';
 
@@ -67,7 +68,11 @@ export default function AppShell() {
     return <LandingPage onEnterApp={() => setShowLanding(false)} />;
   }
 
-  return <CoreAppShell />;
+  return (
+    <AuthGate>
+      <CoreAppShell />
+    </AuthGate>
+  );
 }
 
 export { CoreAppShell };

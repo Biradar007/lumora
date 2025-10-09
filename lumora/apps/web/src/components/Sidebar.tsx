@@ -1,7 +1,6 @@
-import React from 'react';
-import Image from 'next/image';
 import { MessageCircle, Heart, BookOpen, BarChart3, AlertCircle, X } from 'lucide-react';
 import { ViewType } from '../AppShell';
+import { UserProfileMenu } from './UserProfileMenu';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -117,12 +116,14 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
             })}
           </nav>
 
-          {/* Emergency notice */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 space-y-4">
+            <UserProfileMenu />
+
+            {/* Emergency notice */}
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-sm text-red-800 font-medium mb-1">Emergency?</p>
               <p className="text-xs text-red-600">
-                If you're in crisis, call 988 (Suicide & Crisis Lifeline) or go to your nearest emergency room.
+                If you&apos;re in crisis, call 988 (Suicide & Crisis Lifeline) or go to your nearest emergency room.
               </p>
             </div>
           </div>
