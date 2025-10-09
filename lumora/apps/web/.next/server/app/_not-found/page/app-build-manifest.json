@@ -1,21 +1,16 @@
 {
   "pages": {
     "/_not-found/page": [
-      "static/chunks/node_modules_next_dist_8db7fb1f._.js",
-      "static/chunks/lumora_apps_web_src_app_favicon_ico_mjs_89d4c516._.js",
-      "static/chunks/[root-of-the-server]__01515c54._.css",
-      "static/chunks/lumora_apps_web_src_app_layout_tsx_0a548d63._.js",
-      "static/chunks/_5d1d5d05._.js",
-      "static/chunks/lumora_apps_web_src_app_error_tsx_190de7b8._.js",
-      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_57d40746._.js",
-      "static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js",
-      "static/chunks/node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js",
-      "static/chunks/node_modules_next_dist_compiled_5150ccfd._.js",
-      "static/chunks/node_modules_next_dist_client_cf1d9188._.js",
-      "static/chunks/node_modules_next_dist_b0daae9a._.js",
-      "static/chunks/node_modules_@swc_helpers_cjs_b3dc30d6._.js",
-      "static/chunks/lumora_apps_web_a0ff3932._.js",
-      "static/chunks/turbopack-lumora_apps_web_cdba956c._.js"
+      "static/chunks/ceca5df1284216b7.js",
+      "static/chunks/ca8bc879f05c2d8f.css",
+      "static/chunks/652334a77c4e5aec.js",
+      "static/chunks/1b849e6f2a279394.js",
+      "static/chunks/7df0a387c998da1f.js",
+      "static/chunks/adfb899f0d0e81ba.js",
+      "static/chunks/aaea1e64ef7e0faa.js",
+      "static/chunks/f471ac2339220d44.js",
+      "static/chunks/569f8ca39997ccda.js",
+      "static/chunks/turbopack-3ef6ad8d7d9b69dc.js"
     ]
   }
 }

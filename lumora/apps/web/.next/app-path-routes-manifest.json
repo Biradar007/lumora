@@ -7,7 +7,7 @@
   "/api/resources/route": "/api/resources",
   "/api/risk-check/route": "/api/risk-check",
   "/api/session/clear/route": "/api/session/clear",
-  "/favicon.ico/route": "/favicon.ico",
+  "/icon.png/route": "/icon.png",
   "/page": "/",
   "/privacy/page": "/privacy"
 }
