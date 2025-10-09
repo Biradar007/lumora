@@ -16,9 +16,7 @@ export const metadata: Metadata = {
   title: "Lumora - Light for the mind",
   description: "Emotional support available to everyone, anytime, anywhere.",
   icons: {
-    icon: [{ url: "/Users/udaybiradar/lumora-app/lumora/apps/web/public/logo.png", type: "image/png", sizes: "1024x1024" }],
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/logo.png",
   },
 };
 
