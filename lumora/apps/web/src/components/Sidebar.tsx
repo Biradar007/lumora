@@ -11,11 +11,11 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { id: 'chat' as ViewType, label: 'Chat Support', icon: MessageCircle, color: 'text-blue-600' },
-  { id: 'mood' as ViewType, label: 'Mood Tracker', icon: Heart, color: 'text-pink-600' },
-  { id: 'resources' as ViewType, label: 'Resources', icon: BookOpen, color: 'text-green-600' },
-  { id: 'dashboard' as ViewType, label: 'Dashboard', icon: BarChart3, color: 'text-purple-600' },
-  { id: 'crisis' as ViewType, label: 'Crisis Support', icon: AlertCircle, color: 'text-red-600' },
+  { id: 'chat' as ViewType, label: 'Chat Support', icon: MessageCircle, color: 'text-blue-600', preview: false },
+  { id: 'mood' as ViewType, label: 'Mood Tracker', icon: Heart, color: 'text-pink-600', preview: true },
+  { id: 'resources' as ViewType, label: 'Resources', icon: BookOpen, color: 'text-green-600', preview: true },
+  { id: 'dashboard' as ViewType, label: 'Dashboard', icon: BarChart3, color: 'text-purple-600', preview: true },
+  { id: 'crisis' as ViewType, label: 'Crisis Support', icon: AlertCircle, color: 'text-red-600', preview: false },
 ];
 
 export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: SidebarProps) {
@@ -96,15 +96,22 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
                     onClose();
                   }}
                   className={`
-                    w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl transition-all duration-200
+                    w-full flex items-center justify-between gap-3 px-4 py-3 text-left rounded-xl transition-all duration-200
                     ${isActive 
                       ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 text-blue-700' 
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
                     }
                   `}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : item.color}`} />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="flex items-center gap-3">
+                    <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : item.color}`} />
+                    <span className="font-medium">{item.label}</span>
+                  </span>
+                  {item.preview && (
+                    <span className="rounded-full border border-serene-200 bg-serene-50 px-2 py-0.5 text-xs font-semibold text-serene-600">
+                      Preview
+                    </span>
+                  )}
                 </button>
               );
             })}

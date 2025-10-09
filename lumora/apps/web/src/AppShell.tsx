@@ -27,7 +27,7 @@ function CoreAppShell() {
       case 'dashboard':
         return <Dashboard />;
       case 'crisis':
-        return <CrisisSupport />;
+        return <CrisisSupport onReturnToChat={() => setCurrentView('chat')} />;
       default:
         return <ChatInterface />;
     }

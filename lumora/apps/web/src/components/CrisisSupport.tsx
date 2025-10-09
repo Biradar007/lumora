@@ -75,7 +75,11 @@ const safetyTips = [
   'Practice grounding techniques like deep breathing or mindfulness'
 ];
 
-export function CrisisSupport() {
+interface CrisisSupportProps {
+  onReturnToChat?: () => void;
+}
+
+export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Emergency Alert */}
@@ -202,7 +206,11 @@ export function CrisisSupport() {
         <p className="text-gray-600 mb-4">
           After getting the support you need, Lumora is here to help you continue your mental health journey.
         </p>
-        <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200">
+        <button
+          type="button"
+          onClick={onReturnToChat}
+          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+        >
           Return to Chat
         </button>
       </div>
