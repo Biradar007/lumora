@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Clock, Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   addMessage,
@@ -467,7 +470,24 @@ export function ChatInterface() {
                       : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
                   }`}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeSanitize]}
+                    components={{
+                      a: ({ children, ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" className="underline">
+                          {children}
+                        </a>
+                      ),
+                    }}
+                    className={`prose prose-sm max-w-none break-words ${
+                      message.sender === 'user'
+                        ? 'prose-invert prose-headings:text-white prose-strong:text-white prose-em:text-white'
+                        : 'prose-headings:text-gray-800 prose-p:text-gray-800'
+                    } prose-p:my-2 first:prose-p:mt-0 last:prose-p:mb-0 prose-ul:my-2 prose-ol:my-2 prose-li:my-1`}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                   <p
                     className={`text-xs mt-2 ${
                       message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'

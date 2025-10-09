@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     const auth = getAuth(getFirebaseApp());
     await signOut(auth);
-    setGuestMode(false);
+    setGuestMode(true);
   }, []);
 
   const refreshProfile = useCallback(async () => {

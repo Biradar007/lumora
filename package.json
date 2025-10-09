@@ -21,7 +21,9 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "firebase": "^12.3.0",
-    "openai": "^6.0.0"
+    "openai": "^6.0.0",
+    "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1"
   }
 }
-

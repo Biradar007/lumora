@@ -1109,6 +1109,10 @@
     max-width: var(--container-md);
   }
 
+  .max-w-none {
+    max-width: none;
+  }
+
   .max-w-xl {
     max-width: var(--container-xl);
   }
@@ -2364,8 +2368,8 @@
     text-wrap: pretty;
   }
 
-  .whitespace-pre-line {
-    white-space: pre-line;
+  .break-words {
+    overflow-wrap: break-word;
   }
 
   .text-accent {
@@ -2542,6 +2546,11 @@
 
   .italic {
     font-style: italic;
+  }
+
+  .underline {
+    -webkit-text-decoration-line: underline;
+    text-decoration-line: underline;
   }
 
   .antialiased {
