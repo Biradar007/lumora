@@ -176,10 +176,12 @@ export function ChatInterface() {
     if (!uid || !activeSessionId) {
       return guestMessages;
     }
-    if (!messages.length) {
-      return [welcomeMessage];
+    const mapped = mapRecordToDisplay(messages);
+    const hasWelcome = mapped.some((message) => message.id === welcomeMessage.id);
+    if (hasWelcome) {
+      return mapped;
     }
-    return mapRecordToDisplay(messages);
+    return [welcomeMessage, ...mapped];
   }, [uid, activeSessionId, messages, guestMessages]);
 
   const handleCreateSession = async () => {
