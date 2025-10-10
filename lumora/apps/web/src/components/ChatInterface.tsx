@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User } from 'lucide-react';
+import { Clock, Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
@@ -75,6 +75,7 @@ export function ChatInterface() {
     guestMessageCache = [welcomeMessage];
     return guestMessageCache;
   });
+  const [mobileSessionsOpen, setMobileSessionsOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -361,110 +362,142 @@ export function ChatInterface() {
     setMessagesLimit((prev) => prev + 50);
   };
 
+  const SessionsPane = ({ onClose }: { onClose?: () => void }) => (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-indigo-500" />
+          <span className="font-semibold text-gray-700">Conversations</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              handleCreateSession();
+              onClose?.();
+            }}
+            className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New
+          </button>
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-100"
+              aria-label="Close conversations"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
+        {sessionsLoading && sessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-gray-500">
+            <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+            Loading conversations…
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="rounded-lg bg-indigo-50 p-4 text-xs text-indigo-700">
+            Start a new conversation to save your progress.
+          </div>
+        ) : (
+          sessions.map((session) => {
+            const isActive = session.id === activeSessionId;
+            return (
+              <div
+                key={session.id}
+                className={`group rounded-xl px-3 py-2 transition ${
+                  isActive ? 'bg-indigo-100/80 border border-indigo-200' : 'hover:bg-gray-100/60'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveSessionId(session.id);
+                    setMessagesLimit(50);
+                    onClose?.();
+                  }}
+                  className="flex w-full items-start justify-between gap-2 text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {session.title || session.lastMessagePreview || 'Untitled conversation'}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                      {session.lastMessagePreview || 'No messages yet'}
+                    </p>
+                  </div>
+                  <span className="mt-1 text-[10px] uppercase tracking-wide text-gray-400">
+                    {formatTimestamp(session.updatedAt ?? session.createdAt)}
+                  </span>
+                </button>
+                <div className="mt-1 hidden items-center justify-end gap-2 group-hover:flex">
+                  <button
+                    type="button"
+                    onClick={() => handleRenameSession(session)}
+                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-100"
+                  >
+                    <PenLine className="h-3 w-3" />
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSession(session)}
+                    className="inline-flex items-center gap-1 rounded-md border border-red-200 px-1.5 py-1 text-[11px] text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {sessions.length >= sessionsLimit && (
+        <div className="border-t border-gray-200 p-3">
+          <button
+            type="button"
+            onClick={loadMoreSessions}
+            className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50"
+          >
+            Load more
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex h-full bg-gradient-to-br from-white to-blue-50/40">
       {uid ? (
         <aside className="hidden w-72 border-r border-gray-200 bg-white/70 backdrop-blur-sm lg:flex lg:flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-indigo-500" />
-              <span className="font-semibold text-gray-700">Conversations</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleCreateSession}
-              className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
-            {sessionsLoading && sessions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-gray-500">
-                <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-                Loading conversations…
-              </div>
-            ) : sessions.length === 0 ? (
-              <div className="rounded-lg bg-indigo-50 p-4 text-xs text-indigo-700">
-                Start a new conversation to save your progress.
-              </div>
-            ) : (
-              sessions.map((session) => {
-                const isActive = session.id === activeSessionId;
-                return (
-                  <div
-                    key={session.id}
-                    className={`group rounded-xl px-3 py-2 transition ${
-                      isActive ? 'bg-indigo-100/80 border border-indigo-200' : 'hover:bg-gray-100/60'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveSessionId(session.id);
-                        setMessagesLimit(50);
-                      }}
-                      className="flex w-full items-start justify-between gap-2 text-left"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-800 truncate">
-                          {session.title || session.lastMessagePreview || 'Untitled conversation'}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                          {session.lastMessagePreview || 'No messages yet'}
-                        </p>
-                      </div>
-                      <span className="mt-1 text-[10px] uppercase tracking-wide text-gray-400">
-                        {formatTimestamp(session.updatedAt ?? session.createdAt)}
-                      </span>
-                    </button>
-                    <div className="mt-1 hidden items-center justify-end gap-2 group-hover:flex">
-                      <button
-                        type="button"
-                        onClick={() => handleRenameSession(session)}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-100"
-                      >
-                        <PenLine className="h-3 w-3" />
-                        Rename
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSession(session)}
-                        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-1.5 py-1 text-[11px] text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {sessions.length >= sessionsLimit && (
-            <div className="border-t border-gray-200 p-3">
-              <button
-                type="button"
-                onClick={loadMoreSessions}
-                className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50"
-              >
-                Load more
-              </button>
-            </div>
-          )}
+          <SessionsPane />
         </aside>
       ) : null}
 
       <div className="flex flex-1 flex-col">
         <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="font-semibold text-gray-800">Chat</h3>
               <p className="text-sm text-green-600">Online • Always here for you</p>
             </div>
+            {uid ? (
+              <button
+                type="button"
+                onClick={() => setMobileSessionsOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 lg:hidden"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Conversations
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -579,6 +612,20 @@ export function ChatInterface() {
           </div>
         </div>
       </div>
+
+      {uid && mobileSessionsOpen ? (
+        <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-black/40 backdrop-blur-sm lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0"
+            aria-label="Close conversations overlay"
+            onClick={() => setMobileSessionsOpen(false)}
+          />
+          <div className="relative z-10 h-full w-full max-w-xs bg-white shadow-2xl">
+            <SessionsPane onClose={() => setMobileSessionsOpen(false)} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
