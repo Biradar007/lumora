@@ -32,6 +32,7 @@ const welcomeMessage: DisplayMessage = {
 };
 
 let guestMessageCache: DisplayMessage[] | null = null;
+const typingDotDelays = [0, 0.18, 0.36];
 
 function formatTimestamp(date?: Date) {
   if (!date) return '';
@@ -578,9 +579,22 @@ export function ChatInterface() {
           ) : null}
 
           {isTyping ? (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
-              Lumora is thinking…
+            <div className="flex justify-start">
+              <div className="flex items-start gap-3 max-w-3xl">
+                <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.30)] ring-1 ring-white/20" />
+                <div className="rounded-2xl rounded-bl-md border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-sm font-medium text-gray-600">Lumora is typing…</p>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    {typingDotDelays.map((delay) => (
+                      <span
+                        key={delay}
+                        className="h-2 w-2 rounded-full bg-indigo-300/80 animate-pulse"
+                        style={{ animationDelay: `${delay}s` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
 
