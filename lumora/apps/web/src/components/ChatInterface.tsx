@@ -31,6 +31,8 @@ const welcomeMessage: DisplayMessage = {
   timestamp: new Date(),
 };
 
+let guestMessageCache: DisplayMessage[] | null = null;
+
 function formatTimestamp(date?: Date) {
   if (!date) return '';
   const now = new Date();
@@ -66,7 +68,13 @@ export function ChatInterface() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  const [guestMessages, setGuestMessages] = useState<DisplayMessage[]>([welcomeMessage]);
+  const [guestMessages, setGuestMessages] = useState<DisplayMessage[]>(() => {
+    if (guestMessageCache && guestMessageCache.length) {
+      return guestMessageCache;
+    }
+    guestMessageCache = [welcomeMessage];
+    return guestMessageCache;
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -141,10 +149,26 @@ export function ChatInterface() {
   }, [messages, guestMessages, isTyping]);
 
   useEffect(() => {
-    if (!uid) {
-      setGuestMessages((prev) => (prev.length ? prev : [welcomeMessage]));
+    if (uid) {
+      guestMessageCache = [welcomeMessage];
+      return;
     }
+
+    setGuestMessages((prev) => {
+      if (prev.length) {
+        return prev;
+      }
+      const initial = guestMessageCache && guestMessageCache.length ? guestMessageCache : [welcomeMessage];
+      guestMessageCache = initial;
+      return initial;
+    });
   }, [uid]);
+
+  useEffect(() => {
+    if (!uid) {
+      guestMessageCache = guestMessages;
+    }
+  }, [guestMessages, uid]);
 
   const displayMessages: DisplayMessage[] = useMemo(() => {
     if (!uid || !activeSessionId) {
