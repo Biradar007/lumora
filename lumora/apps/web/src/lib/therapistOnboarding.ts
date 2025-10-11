@@ -1,7 +1,7 @@
 import type { TherapistProfile } from '@/types/domain';
 
 export interface TherapistOnboardingStep {
-  key: 'basics' | 'professional' | 'modality' | 'docs' | 'visibility' | 'review';
+  key: 'basics' | 'professional' | 'modality' | 'visibility' | 'review';
   label: string;
   href: string;
   description: string;
@@ -21,7 +21,6 @@ export const THERAPIST_ONBOARDING_STEPS: TherapistOnboardingStep[] = [
     href: '/therapist/onboarding/modality',
     description: 'Describe how and when you offer care.',
   },
-  { key: 'docs', label: 'Docs', href: '/therapist/onboarding/docs', description: 'Upload license documentation.' },
   {
     key: 'visibility',
     label: 'Visibility & notifications',
@@ -42,8 +41,6 @@ export function isTherapistStepComplete(profile: TherapistProfile | null, key: T
       return Boolean(profile.credentials?.length && profile.specialties?.length);
     case 'modality':
       return Boolean(profile.modality?.telehealth || profile.modality?.inPerson);
-    case 'docs':
-      return Boolean(profile.license?.docUrl);
     case 'visibility':
       return true;
     case 'review':

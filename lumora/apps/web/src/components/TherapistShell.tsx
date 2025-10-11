@@ -44,23 +44,8 @@ export function TherapistShell({ children }: TherapistShellProps) {
         classes: 'border-emerald-200 bg-emerald-50 text-emerald-700',
       };
     }
-    if (profile?.status === 'PENDING_REVIEW') {
-      return {
-        text: 'Pending Lumora review',
-        classes: 'border-amber-200 bg-amber-50 text-amber-700',
-      };
-    }
-    if (!profile) {
-      return {
-        text: 'Complete your onboarding',
-        classes: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-      };
-    }
-    return {
-      text: 'Onboarding in progress',
-      classes: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-    };
-  }, [profile]);
+    return null;
+  }, [profile?.status]);
 
   const handleLogout = async () => {
     try {
@@ -92,11 +77,13 @@ export function TherapistShell({ children }: TherapistShellProps) {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex flex-col items-end">
               <span className="text-sm font-semibold text-slate-900">{therapistName}</span>
-              <span
-                className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
-              >
-                {statusBadge.text}
-              </span>
+              {statusBadge ? (
+                <span
+                  className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
+                >
+                  {statusBadge.text}
+                </span>
+              ) : null}
             </div>
             <button
               type="button"

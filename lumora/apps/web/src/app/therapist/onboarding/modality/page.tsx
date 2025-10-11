@@ -56,7 +56,7 @@ export default function ModalityStep() {
       setError(data.error ?? 'Failed to save profile');
       return;
     }
-    router.push('/therapist/onboarding/docs');
+    router.push('/therapist/onboarding/visibility');
   };
 
   return (
