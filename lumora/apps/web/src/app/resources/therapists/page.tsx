@@ -36,7 +36,21 @@ export default function TherapistDirectoryPage() {
         return;
       }
       const data = (await response.json()) as { therapists: TherapistProfile[] };
-      setTherapists(data.therapists ?? []);
+      const verifiedTherapists = (data.therapists ?? []).filter((entry) => entry.status === 'VERIFIED');
+      if (verifiedTherapists.length === 0) {
+        const db = getFirestore(getFirebaseApp());
+        const snapshot = await getDocs(
+          query(
+            collection(db, 'therapistProfiles'),
+            where('status', '==', 'VERIFIED'),
+            where('visible', '==', true)
+          )
+        );
+        const fallbackTherapists = snapshot.docs.map((docSnapshot) => docSnapshot.data() as TherapistProfile);
+        setTherapists(fallbackTherapists);
+        return;
+      }
+      setTherapists(verifiedTherapists);
     };
     void loadDirectory();
   }, [headers]);

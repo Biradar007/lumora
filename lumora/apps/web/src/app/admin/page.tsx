@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
+import { useAdminSection } from '@/components/AdminShell';
 import type { TherapistProfile } from '@/types/domain';
 
 interface AdminTherapist {
@@ -30,6 +31,7 @@ const formatter = new Intl.DateTimeFormat(undefined, {
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
+  const { activeSection } = useAdminSection();
   const headers = useApiHeaders();
   const [therapists, setTherapists] = useState<AdminTherapist[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -63,8 +65,8 @@ export default function AdminDashboard() {
     () => therapists.filter((entry) => entry.profile.status === 'PENDING_REVIEW'),
     [therapists]
   );
-  const otherTherapists = useMemo(
-    () => therapists.filter((entry) => entry.profile.status !== 'PENDING_REVIEW'),
+  const approvedTherapists = useMemo(
+    () => therapists.filter((entry) => entry.profile.status === 'VERIFIED'),
     [therapists]
   );
 
@@ -129,21 +131,14 @@ export default function AdminDashboard() {
     return null;
   }
 
-  return (
-    <div className="flex flex-col gap-8">
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-          Failed to load therapist data. Please refresh the page.
+  const pendingSection = (
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <header className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Pending approval ({pendingTherapists.length})</h2>
+          <p className="text-xs text-slate-500">Review submissions that need your attention.</p>
         </div>
-      ) : null}
-
-      <section id="pending" className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <header className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Pending approval ({pendingTherapists.length})</h2>
-            <p className="text-xs text-slate-500">Review submissions that need your attention.</p>
-          </div>
-        </header>
+      </header>
 
         {fetching && therapists.length === 0 ? (
           <div className="flex items-center justify-center gap-2 px-6 py-10 text-sm text-slate-500">
@@ -199,16 +194,18 @@ export default function AdminDashboard() {
             })}
           </div>
         )}
-      </section>
+    </section>
+  );
 
-      <section id="all" className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <header className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">All therapists ({therapists.length})</h2>
-            <p className="text-xs text-slate-500">Search and manage existing therapist profiles.</p>
-          </div>
-        </header>
-        {otherTherapists.length === 0 ? (
+  const allSection = (
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <header className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Approved therapists ({approvedTherapists.length})</h2>
+          <p className="text-xs text-slate-500">Verified clinicians who are live in the Lumora directory.</p>
+        </div>
+      </header>
+        {approvedTherapists.length === 0 ? (
           <div className="px-6 py-8 text-sm text-slate-500">No therapists found.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -222,13 +219,13 @@ export default function AdminDashboard() {
                   <th className="px-6 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {otherTherapists.map((entry) => {
-                  const state = actionState[entry.id];
-                  return (
-                    <tr key={entry.id} className="align-top">
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">{entry.user.displayName ?? 'Unnamed therapist'}</div>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {approvedTherapists.map((entry) => {
+                    const state = actionState[entry.id];
+                    return (
+                      <tr key={entry.id} className="align-top">
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-slate-900">{entry.user.displayName ?? 'Unnamed therapist'}</div>
                         <div className="text-xs text-slate-500">{entry.user.email ?? '—'}</div>
                       </td>
                       <td className="px-6 py-4">
@@ -252,24 +249,16 @@ export default function AdminDashboard() {
                         {entry.profile.updatedAt ? formatter.format(entry.profile.updatedAt) : '—'}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          <button
-                            type="button"
-                            onClick={() => handleApprove(entry.id)}
-                            disabled={state === 'pending' || entry.profile.status === 'VERIFIED'}
-                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <CheckCircle2 className="h-4 w-4" /> Approve
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReject(entry.id)}
-                            disabled={state === 'pending'}
-                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 font-semibold text-rose-700 transition hover:border-rose-300 hover:text-rose-900 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <XCircle className="h-4 w-4" /> Reject
-                          </button>
-                        </div>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => handleReject(entry.id)}
+                              disabled={state === 'pending'}
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 font-semibold text-rose-700 transition hover:border-rose-300 hover:text-rose-900 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <XCircle className="h-4 w-4" /> Reject
+                            </button>
+                          </div>
                       </td>
                     </tr>
                   );
@@ -278,7 +267,18 @@ export default function AdminDashboard() {
             </table>
           </div>
         )}
-      </section>
+    </section>
+  );
+
+  return (
+    <div className="flex flex-col gap-8">
+      {error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          Failed to load therapist data. Please refresh the page.
+        </div>
+      ) : null}
+
+      {activeSection === 'pending' ? pendingSection : allSection}
     </div>
   );
 }
