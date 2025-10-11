@@ -79,8 +79,9 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
 
         await registerUser(registrationPayload);
         await refreshProfile();
-        const role = registrationPayload.accountType;
-        router.push(role === 'therapist' ? '/therapist/onboarding' : '/home');
+        if (registrationPayload.accountType === 'therapist') {
+          router.push('/therapist/onboarding');
+        }
         return;
       }
 
@@ -96,7 +97,9 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const data = userDoc.data() ?? {};
       const role = data.role === 'therapist' || data.accountType === 'therapist' ? 'therapist' : 'user';
-      router.push(role === 'therapist' ? '/therapist/onboarding' : '/home');
+      if (role === 'therapist') {
+        router.push('/therapist/dashboard');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setError(message);

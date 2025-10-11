@@ -11,6 +11,7 @@ import { CrisisSupport } from './components/CrisisSupport';
 import LandingPage from './components/LandingPage';
 import { AuthGate } from './components/AuthGate';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export type ViewType = 'chat' | 'mood' | 'resources' | 'dashboard' | 'crisis';
 
@@ -64,8 +65,15 @@ function CoreAppShell() {
 
 export default function AppShell() {
   const [showLanding, setShowLanding] = useState(true);
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
   const wasAuthenticatedRef = useRef(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && profile?.role === 'therapist' && !showLanding) {
+      router.replace('/therapist/dashboard');
+    }
+  }, [loading, profile?.role, router, showLanding]);
 
   useEffect(() => {
     if (user) {
@@ -78,6 +86,16 @@ export default function AppShell() {
       wasAuthenticatedRef.current = false;
     }
   }, [loading, user]);
+
+  if (!loading && profile?.role === 'therapist') {
+    const handleEnterTherapistApp = () => {
+      router.replace('/therapist/dashboard');
+    };
+    if (showLanding) {
+      return <LandingPage onEnterApp={handleEnterTherapistApp} />;
+    }
+    return null;
+  }
 
   if (showLanding) {
     return <LandingPage onEnterApp={() => setShowLanding(false)} />;
