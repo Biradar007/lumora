@@ -2,12 +2,12 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTherapistProfile } from '@/hooks/useTherapistProfile';
 import { computeTherapistProgress } from '@/lib/therapistOnboarding';
+import { TherapistSidebar } from './TherapistSidebar';
 
 interface TherapistShellProps {
   children: ReactNode;
@@ -16,9 +16,10 @@ interface TherapistShellProps {
 export function TherapistShell({ children }: TherapistShellProps) {
   const { user, profile: userProfile, logout } = useAuth();
   const { profile } = useTherapistProfile(user?.uid);
-  const showBanner = !profile || profile.status !== 'VERIFIED';
   const router = useRouter();
+  const pathname = usePathname();
   const progress = computeTherapistProgress(profile ?? null);
+  const onboardingPending = progress.percent < 100;
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
@@ -47,6 +48,10 @@ export function TherapistShell({ children }: TherapistShellProps) {
     return null;
   }, [profile?.status]);
 
+  const handleEditProfile = () => {
+    router.push('/therapist/onboarding');
+  };
+
   const handleLogout = async () => {
     try {
       setSigningOut(true);
@@ -59,67 +64,75 @@ export function TherapistShell({ children }: TherapistShellProps) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_25px_10px_rgba(147,112,219,0.25)]" />
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Lumora
-                </span>
-                <span className="text-xs font-semibold text-slate-500">(Beta)</span>
+      <div className="flex min-h-screen">
+        <TherapistSidebar
+          therapistName={therapistName}
+          progress={progress}
+          onboardingPending={onboardingPending}
+          status={profile?.status}
+          onLogout={handleLogout}
+          signingOut={signingOut}
+        />
+        <div className="flex flex-1 flex-col">
+          <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
+            <div className="flex items-center justify-between gap-4 px-6 py-4">
+              <div>
+                <p className="text-3xl font-semibold uppercase tracking-wide text-slate-500">Therapist workspace</p>
+                {statusBadge ? (
+                  <span
+                    className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
+                  >
+                    {statusBadge.text}
+                  </span>
+                ) : null}
               </div>
-              <p className="text-sm text-slate-500">Clinical workspace</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex flex-col items-end">
-              <span className="text-sm font-semibold text-slate-900">{therapistName}</span>
-              {statusBadge ? (
-                <span
-                  className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
+              <div className="flex flex-1 justify-center gap-2 md:hidden">
+                <Link
+                  href="/therapist/dashboard"
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                    pathname.startsWith('/therapist/dashboard')
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  {statusBadge.text}
-                </span>
-              ) : null}
+                  Dashboard
+                </Link>
+                <Link
+                  href="/therapist/profile"
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                    pathname.startsWith('/therapist/profile')
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Profile
+                </Link>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={signingOut}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-75"
-            >
-              <LogOut className="h-4 w-4" />
-              {signingOut ? 'Signing out…' : 'Log out'}
-            </button>
-          </div>
-        </div>
-      </header>
+          </header>
 
-      {showBanner && (
-        <div className="border-b border-indigo-100 bg-indigo-50/80">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-indigo-900">
-                Finish onboarding to unlock the full therapist experience.
-              </p>
-              <p className="text-xs text-indigo-700/80">
-                {progress.completed} of {progress.total} steps completed • {progress.percent}% done
-              </p>
+          {onboardingPending && (
+            <div className="border-b border-indigo-100 bg-indigo-50/80">
+              <div className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-900">Finish onboarding to unlock the full experience.</p>
+                  <p className="text-xs text-indigo-700/80">
+                    {progress.completed} of {progress.total} steps completed • {progress.percent}% done
+                  </p>
+                </div>
+                <Link
+                  href="/therapist/onboarding"
+                  className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-900"
+                >
+                  Continue onboarding
+                </Link>
+              </div>
             </div>
-            <Link
-              href="/therapist/onboarding"
-              className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-900"
-            >
-              Continue onboarding
-            </Link>
-          </div>
-        </div>
-      )}
+          )}
 
-      <div className="mx-auto max-w-6xl px-4 py-6">{children}</div>
+          <main className="flex-1 overflow-y-auto px-6 py-6">{children}</main>
+        </div>
+      </div>
     </div>
   );
 }

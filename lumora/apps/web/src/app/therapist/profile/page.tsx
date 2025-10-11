@@ -37,10 +37,10 @@ export default function TherapistProfilePage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      {/* <header>
         <h1 className="text-2xl font-semibold text-slate-900">Therapist profile</h1>
         <p className="text-sm text-slate-600">Update key details or revisit onboarding steps.</p>
-      </header>
+      </header> */}
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
           <p className="text-sm font-medium text-slate-700">Profile status</p>
