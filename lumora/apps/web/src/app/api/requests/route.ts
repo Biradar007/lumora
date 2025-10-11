@@ -49,15 +49,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'duplicate_request' }, { status: 409 });
     }
 
-    const since = now - DAY_MS;
-    const rateSnapshot = await requestsRef
-      .where('userId', '==', auth.userId)
-      .where('createdAt', '>=', since)
-      .get();
-    if (rateSnapshot.size >= 5) {
-      return NextResponse.json({ error: 'rate_limit' }, { status: 429 });
-    }
-
     const newRequestRef = requestsRef.doc();
     const newRequest: ConnectionRequest = {
       id: newRequestRef.id,

@@ -1,14 +1,15 @@
 "use client";
 
-import useSWR from 'swr';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { Phone, Mail, MapPin, Clock, ExternalLink, HeartHandshake, ArrowRight, Award, Languages, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
-import type { TherapistProfile } from '@/types/domain';
+import type { TherapistProfile, ConnectionRequest, Connection } from '@/types/domain';
 import { collection, doc, getDoc, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
+import { RequestButton } from '@/components/RequestButton';
 
 type Contact = {
   name: string;
@@ -36,6 +37,8 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   );
 
   const [therapistDetails, setTherapistDetails] = useState<(TherapistProfile & { displayName?: string; email?: string })[]>([]);
+  const [requests, setRequests] = useState<ConnectionRequest[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
 
   const {
     data: therapistData,
@@ -52,6 +55,28 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     () => (therapistData?.therapists ?? []).filter((therapist) => therapist.status === 'VERIFIED'),
     [therapistData?.therapists]
   );
+
+  useEffect(() => {
+    if (!user || !headers['x-user-id']) {
+      return;
+    }
+    const loadDirectory = async () => {
+      try {
+        const response = await fetch('/api/directory/therapists', { headers });
+        if (!response.ok) {
+          return;
+        }
+        const data = (await response.json()) as { therapists: TherapistProfile[] };
+        const verified = (data.therapists ?? []).filter((profile) => profile.status === 'VERIFIED');
+        if (verified.length > 0) {
+          setTherapistDetails(verified);
+        }
+      } catch (innerError) {
+        console.error('Failed to load therapist directory', innerError);
+      }
+    };
+    void loadDirectory();
+  }, [headers, user]);
 
   useEffect(() => {
     const hydrate = async (profiles: TherapistProfile[]) => {
@@ -109,6 +134,61 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
 
     void loadFallback();
   }, [verifiedTherapists, user]);
+
+  useEffect(() => {
+    if (!user?.uid || !headers['x-user-id']) {
+      return;
+    }
+    const db = getFirestore(getFirebaseApp());
+    const load = async () => {
+      const requestsSnapshot = await getDocs(
+        query(collection(db, 'connectionRequests'), where('userId', '==', user.uid))
+      );
+      const connectionsResponse = await fetch('/api/connections', { headers }).catch(() => null);
+      const connectionData = connectionsResponse?.ok
+        ? ((await connectionsResponse.json()) as { connections: Connection[] }).connections ?? []
+        : [];
+      setConnections(connectionData);
+      setRequests(requestsSnapshot.docs.map((docSnapshot) => docSnapshot.data() as ConnectionRequest));
+    };
+    void load();
+  }, [headers, user?.uid]);
+
+  const determineStatus = (therapistId: string) => {
+    const activeConnection = connections.find(
+      (connection) => connection.therapistId === therapistId && connection.status === 'ACTIVE'
+    );
+    if (activeConnection) {
+      return 'CONNECTED' as const;
+    }
+    const pendingRequest = requests.find(
+      (request) => request.therapistId === therapistId && request.status === 'PENDING'
+    );
+    if (pendingRequest) {
+      return pendingRequest.status;
+    }
+    const declined = requests.find((request) => request.therapistId === therapistId && request.status === 'DECLINED');
+    if (declined) {
+      return declined.status;
+    }
+    return 'AVAILABLE' as const;
+  };
+
+  const sendRequest = async (therapistId: string) => {
+    if (!user?.uid) {
+      return;
+    }
+    const message = typeof window !== 'undefined' ? window.prompt('Share an optional note for the therapist') : undefined;
+    const response = await fetch('/api/requests', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ therapistId, message: message || undefined }),
+    });
+    if (response.ok) {
+      const data = (await response.json()) as { request: ConnectionRequest };
+      setRequests((prev) => [...prev, data.request]);
+    }
+  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -257,13 +337,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                       </span>
                     ) : null}
                   </div>
-                  <Link
-                    href="/resources/therapists"
-                    className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:text-indigo-900"
-                  >
-                    Request to connect
-                    <ArrowRight className="h-3 w-3" />
-                  </Link>
+                  <RequestButton status={determineStatus(therapist.id)} onRequest={() => sendRequest(therapist.id)} />
                 </article>
               ))}
             </div>
