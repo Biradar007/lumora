@@ -14,9 +14,10 @@ interface HeaderProps {
 const viewTitles: Record<ViewType, string> = {
   chat: 'Chat with Lumora',
   mood: 'Mood Tracking',
+  journal: 'Daily Journal',
   resources: 'Resources & Tools',
   dashboard: 'Your Journey',
-  crisis: 'Crisis Support'
+  crisis: 'Crisis Support',
 };
 
 export function Header({ onMenuClick, currentView }: HeaderProps) {

@@ -3,11 +3,14 @@ import { getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer'
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { Connection, ConnectionRequest, Consent } from '@/types/domain';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function POST(request: Request, context: RouteContext) {
   try {
     const auth = requireAuth(request, { roles: ['therapist'] });
     const db = getServerFirestore();
-    const requestRef = db.collection('connectionRequests').doc(params.id);
+    const { id } = await context.params;
+    const requestRef = db.collection('connectionRequests').doc(id);
     const snapshot = await requestRef.get();
     if (!snapshot.exists) {
       return NextResponse.json({ error: 'request_not_found' }, { status: 404 });

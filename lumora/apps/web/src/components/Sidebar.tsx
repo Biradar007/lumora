@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, Heart, BookOpen, BarChart3, AlertCircle, X } from 'lucide-react';
+import { MessageCircle, Heart, BookOpen, BarChart3, AlertCircle, PenSquare, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
 import { ViewType } from '../AppShell';
@@ -28,6 +28,14 @@ const menuItems = [
     icon: Heart,
     color: 'text-pink-600',
     preview: true,
+    requiresAuth: true,
+  },
+  {
+    id: 'journal' as ViewType,
+    label: 'Journal',
+    icon: PenSquare,
+    color: 'text-amber-600',
+    preview: false,
     requiresAuth: true,
   },
   {

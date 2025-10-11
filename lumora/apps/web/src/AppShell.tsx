@@ -8,12 +8,13 @@ import { MoodTracker } from './components/MoodTracker';
 import { Resources } from './components/Resources';
 import { Dashboard } from './components/Dashboard';
 import { CrisisSupport } from './components/CrisisSupport';
+import { Journal } from './components/Journal';
 import LandingPage from './components/LandingPage';
 import { AuthGate } from './components/AuthGate';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
-export type ViewType = 'chat' | 'mood' | 'resources' | 'dashboard' | 'crisis';
+export type ViewType = 'chat' | 'mood' | 'journal' | 'resources' | 'dashboard' | 'crisis';
 
 function CoreAppShell() {
   const [currentView, setCurrentView] = useState<ViewType>('chat');
@@ -25,6 +26,8 @@ function CoreAppShell() {
         return <ChatInterface />;
       case 'mood':
         return <MoodTracker />;
+      case 'journal':
+        return <Journal />;
       case 'resources':
         return <Resources onNavigateToCrisis={() => setCurrentView('crisis')} />;
       case 'dashboard':

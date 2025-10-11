@@ -19,7 +19,7 @@ export default function TherapistClientsPage() {
         return;
       }
       const data = (await response.json()) as { connections: Connection[] };
-      setConnections((data.connections ?? []).filter((connection) => connection.status === 'ACTIVE'));
+      setConnections(data.connections ?? []);
     };
     void load();
   }, [headers]);
@@ -27,11 +27,11 @@ export default function TherapistClientsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Active clients</h1>
-        <p className="text-sm text-slate-600">Manage your connections and open chats.</p>
+        <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
+        <p className="text-sm text-slate-600">View and manage all client connections.</p>
       </header>
       <div className="grid gap-4">
-        {connections.length === 0 && <p className="text-sm text-slate-500">No active connections yet.</p>}
+        {connections.length === 0 && <p className="text-sm text-slate-500">No connections yet.</p>}
         {connections.map((connection) => (
           <div
             key={connection.id}
@@ -41,6 +41,7 @@ export default function TherapistClientsPage() {
               <p className="text-sm font-medium text-slate-700">User {connection.userId}</p>
               <p className="text-xs text-slate-500">
                 Connected since {new Date(connection.startedAt).toLocaleDateString()}
+                {connection.status !== 'ACTIVE' ? ` • Status: ${connection.status.toLowerCase()}` : ''}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

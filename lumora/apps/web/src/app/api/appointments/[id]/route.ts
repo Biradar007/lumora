@@ -4,16 +4,18 @@ import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { Appointment } from '@/types/domain';
 
 type MutableFields = Partial<Pick<Appointment, 'status' | 'start' | 'end' | 'videoLink'>>;
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, context: RouteContext) {
   try {
     const auth = requireAuth(request, { roles: ['therapist'] });
+    const { id } = await context.params;
     const body = (await request.json()) as MutableFields;
     if (!body) {
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
     }
     const db = getServerFirestore();
-    const appointmentRef = db.collection('appointments').doc(params.id);
+    const appointmentRef = db.collection('appointments').doc(id);
     const snapshot = await appointmentRef.get();
     if (!snapshot.exists) {
       return NextResponse.json({ error: 'appointment_not_found' }, { status: 404 });

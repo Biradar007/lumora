@@ -1,27 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
-import { useTherapistProfile } from '@/hooks/useTherapistProfile';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ConnectionRequest, Appointment } from '@/types/domain';
+import type { ConnectionRequest, Appointment, Connection } from '@/types/domain';
 
 export default function TherapistDashboard() {
   const headers = useApiHeaders();
   const { user } = useAuth();
-  const { profile } = useTherapistProfile(user?.uid);
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
 
   useEffect(() => {
     if (!headers['x-user-id']) {
       return;
     }
     const load = async () => {
-      const [requestsRes, appointmentsRes] = await Promise.all([
+      const [requestsRes, appointmentsRes, connectionsRes] = await Promise.all([
         fetch('/api/requests/inbox', { headers }),
         fetch('/api/appointments', { headers }).catch(() => null),
+        fetch('/api/connections', { headers }).catch(() => null),
       ]);
       if (requestsRes?.ok) {
         const data = (await requestsRes.json()) as { requests: ConnectionRequest[] };
@@ -31,15 +31,30 @@ export default function TherapistDashboard() {
         const data = (await appointmentsRes.json()) as { appointments: Appointment[] };
         setAppointments(data.appointments ?? []);
       }
+      if (connectionsRes?.ok) {
+        const data = (await connectionsRes.json()) as { connections: Connection[] };
+        setConnections(data.connections ?? []);
+      } else {
+        setConnections([]);
+      }
     };
     void load();
   }, [headers]);
 
-  const todaysAppointments = appointments.filter((appointment) => {
-    const start = new Date(appointment.start);
-    const now = new Date();
-    return start.toDateString() === now.toDateString();
-  });
+  const todaysAppointments = useMemo(
+    () =>
+      appointments.filter((appointment) => {
+        const start = new Date(appointment.start);
+        const now = new Date();
+        return start.toDateString() === now.toDateString();
+      }),
+    [appointments]
+  );
+
+  const activeConnections = useMemo(
+    () => connections.filter((connection) => connection.status === 'ACTIVE'),
+    [connections]
+  );
 
   return (
     <div className="space-y-6">
@@ -61,17 +76,15 @@ export default function TherapistDashboard() {
           </Link>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-medium text-slate-700">Profile visibility</h2>
-          <p className="mt-3 text-lg font-semibold text-slate-900">
-            {profile?.status === 'VERIFIED' ? (profile.visible ? 'Live in directory' : 'Hidden') : 'Needs verification'}
-          </p>
+          <h2 className="text-sm font-medium text-slate-700">Connected Clients</h2>
+          <p className="mt-3 text-3xl font-semibold text-indigo-600">{activeConnections.length}</p>
           <p className="text-xs text-slate-500">
-            {profile?.status === 'VERIFIED'
-              ? 'Toggle visibility from your profile settings.'
-              : 'Finish onboarding and verify to appear in the directory.'}
+            {activeConnections.length === 0
+              ? 'No connected clients yet.'
+              : 'Manage your active client connections.'}
           </p>
-          <Link href="/therapist/profile" className="mt-4 inline-flex text-sm font-medium text-indigo-600">
-            Manage profile
+          <Link href="/therapist/clients" className="mt-4 inline-flex text-sm font-medium text-indigo-600">
+            Manage clients
           </Link>
         </div>
       </div>

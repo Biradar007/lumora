@@ -21,15 +21,18 @@ async function ensureConnection(connectionId: string, userId: string) {
   return connection;
 }
 
-export async function GET(request: Request, { params }: { params: { connectionId: string } }) {
+type RouteContext = { params: Promise<{ connectionId: string }> };
+
+export async function GET(request: Request, context: RouteContext) {
   try {
     const auth = requireAuth(request, { roles: ['user', 'therapist'] });
-    const connection = await ensureConnection(params.connectionId, auth.userId);
+    const { connectionId } = await context.params;
+    const connection = await ensureConnection(connectionId, auth.userId);
     if (!connection) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
     const db = getServerFirestore();
-    const messagesRef = db.collection('chats').doc(params.connectionId).collection('messages');
+    const messagesRef = db.collection('chats').doc(connectionId).collection('messages');
     const snapshot = await messagesRef.orderBy('createdAt', 'asc').get();
     const messages: ChatMessage[] = snapshot.docs.map((docSnapshot) => docSnapshot.data() as ChatMessage);
     return NextResponse.json({ messages });
@@ -38,14 +41,15 @@ export async function GET(request: Request, { params }: { params: { connectionId
   }
 }
 
-export async function POST(request: Request, { params }: { params: { connectionId: string } }) {
+export async function POST(request: Request, context: RouteContext) {
   try {
     const auth = requireAuth(request, { roles: ['user', 'therapist'] });
+    const { connectionId } = await context.params;
     const body = (await request.json()) as SendMessagePayload;
     if (!body?.content || body.content.trim().length === 0) {
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
     }
-    const connection = await ensureConnection(params.connectionId, auth.userId);
+    const connection = await ensureConnection(connectionId, auth.userId);
     if (!connection) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
@@ -54,22 +58,22 @@ export async function POST(request: Request, { params }: { params: { connectionI
     }
 
     const db = getServerFirestore();
-    const messagesRef = db.collection('chats').doc(params.connectionId).collection('messages');
+    const messagesRef = db.collection('chats').doc(connectionId).collection('messages');
     const messageRef = messagesRef.doc();
     const now = Date.now();
     const message: ChatMessage = {
       id: messageRef.id,
-      chatId: params.connectionId,
+      chatId: connectionId,
       senderId: auth.userId,
       content: body.content,
       createdAt: now,
     };
     await messageRef.set(message);
-    const chatRef = db.collection('chats').doc(params.connectionId);
+    const chatRef = db.collection('chats').doc(connectionId);
     await chatRef.set(
       {
-        id: params.connectionId,
-        connectionId: params.connectionId,
+        id: connectionId,
+        connectionId,
         lastMessageAt: now,
       },
       { merge: true }

@@ -8,10 +8,12 @@ interface UpdatePayload {
   reason?: string;
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function PATCH(request: Request, context: RouteContext) {
   try {
     requireAuth(request, { roles: ['admin'] });
-    const { id } = params;
+    const { id } = await context.params;
     const payload = (await request.json()) as UpdatePayload;
     if (payload.action !== 'approve' && payload.action !== 'reject') {
       return NextResponse.json({ error: 'invalid_action' }, { status: 400 });

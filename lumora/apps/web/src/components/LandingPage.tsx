@@ -239,7 +239,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 onClick={onEnterApp}
                 className="w-full sm:w-auto rounded-full border-2 border-calm-200/60 bg-white/80 backdrop-blur-sm px-9 py-4 text-[15px] font-semibold text-foreground transition-all hover:bg-white hover:shadow-md hover:scale-105 active:scale-95"
               >
-                Enter the App
+                Start Exploring
               </button>
             </div>
             <div

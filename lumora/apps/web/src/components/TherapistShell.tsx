@@ -49,16 +49,6 @@ export function TherapistShell({ children }: TherapistShellProps) {
     [user, userProfile]
   );
 
-  const statusBadge = useMemo(() => {
-    if (profile?.status === 'VERIFIED') {
-      return {
-        text: 'Verified therapist',
-        classes: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-      };
-    }
-    return null;
-  }, [profile?.status]);
-
   const handleEditProfile = () => {
     router.push('/therapist/onboarding');
   };
@@ -93,13 +83,6 @@ export function TherapistShell({ children }: TherapistShellProps) {
             <div className="flex items-center justify-between gap-4 px-6 py-4">
               <div>
                 <p className="text-3xl font-semibold uppercase tracking-wide text-slate-500">Therapist workspace</p>
-                {statusBadge ? (
-                  <span
-                    className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
-                  >
-                    {statusBadge.text}
-                  </span>
-                ) : null}
               </div>
               <div className="flex flex-1 justify-center gap-2 md:hidden">
                 <Link

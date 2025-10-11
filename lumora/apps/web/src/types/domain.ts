@@ -114,3 +114,12 @@ export interface Appointment {
   location: 'video' | 'in-person';
   videoLink?: string;
 }
+
+export interface JournalEntry {
+  id: string;
+  userId: string;
+  tenantId?: string;
+  content: string;
+  createdAt: number;
+  updatedAt?: number;
+}

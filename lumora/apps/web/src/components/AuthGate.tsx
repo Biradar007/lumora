@@ -78,7 +78,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                       onClick={handleContinueAsGuest}
                       className="inline-flex justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                     >
-                      Continue without saving
+                      No Thanks, Just Browse
                     </button>
                   </div>
                 </div>

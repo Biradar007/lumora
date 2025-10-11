@@ -36,6 +36,13 @@ export function TherapistSidebar({
   signingOut,
 }: TherapistSidebarProps) {
   const pathname = usePathname();
+  const statusBadge =
+    status === 'VERIFIED'
+      ? {
+          text: 'Verified',
+          classes: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        }
+      : null;
 
   return (
     <aside className="hidden md:flex md:w-64 lg:w-72 flex-col border-r border-slate-200 bg-white">
@@ -77,7 +84,14 @@ export function TherapistSidebar({
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Therapist</p>
           <p className="mt-1 text-sm font-semibold text-slate-900">{therapistName}</p>
-          {typeof status === 'string' && (
+          {statusBadge ? (
+            <span
+              className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
+            >
+              {statusBadge.text}
+            </span>
+          ) : null}
+          {typeof status === 'string' && !statusBadge && (
             <p className="mt-0.5 text-xs text-slate-500">Status: {status}</p>
           )}
         </div>
