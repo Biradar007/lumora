@@ -14,7 +14,7 @@ interface TherapistShellProps {
 }
 
 export function TherapistShell({ children }: TherapistShellProps) {
-  const { user, profile: userProfile, logout } = useAuth();
+  const { user, profile: userProfile, logout, loading } = useAuth();
   const { profile } = useTherapistProfile(user?.uid);
   const router = useRouter();
   const pathname = usePathname();
@@ -23,10 +23,21 @@ export function TherapistShell({ children }: TherapistShellProps) {
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    if (user && userProfile && userProfile.role !== 'therapist') {
-      router.replace('/home');
+    if (loading) {
+      return;
     }
-  }, [router, user, userProfile]);
+    if (!user) {
+      router.replace('/');
+      return;
+    }
+    if (userProfile?.role !== 'therapist') {
+      if (userProfile?.role === 'admin') {
+        router.replace('/admin');
+      } else {
+        router.replace('/home');
+      }
+    }
+  }, [loading, router, user, userProfile?.role]);
 
   const therapistName = useMemo(
     () =>
@@ -61,6 +72,10 @@ export function TherapistShell({ children }: TherapistShellProps) {
       setSigningOut(false);
     }
   };
+
+  if (loading || !user || userProfile?.role !== 'therapist') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">

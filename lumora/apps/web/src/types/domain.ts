@@ -1,4 +1,4 @@
-export type Role = 'user' | 'therapist';
+export type Role = 'user' | 'therapist' | 'admin';
 
 export interface AppUser {
   id: string;
@@ -16,6 +16,7 @@ export interface TherapistProfile {
   id: string; // == userId
   tenantId?: string;
   status: ProfileStatus;
+  rejectionReason?: string | null;
   visible: boolean;
   bio?: string;
   languages: string[];

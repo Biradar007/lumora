@@ -96,8 +96,13 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
       const db = getFirestore(getFirebaseApp());
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const data = userDoc.data() ?? {};
-      const role = data.role === 'therapist' || data.accountType === 'therapist' ? 'therapist' : 'user';
-      if (role === 'therapist') {
+      const rawRole =
+        typeof data.role === 'string' ? data.role : typeof data.accountType === 'string' ? data.accountType : undefined;
+      if (rawRole === 'admin') {
+        router.push('/admin');
+        return;
+      }
+      if (rawRole === 'therapist') {
         router.push('/therapist/dashboard');
       }
     } catch (err) {

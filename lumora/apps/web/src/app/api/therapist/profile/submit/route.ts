@@ -15,11 +15,11 @@ export async function POST(request: Request) {
     const profile = snapshot.data() as TherapistProfile;
     const now = Date.now();
     await profileRef.set(
-      profileRef,
       {
         status: 'PENDING_REVIEW',
         updatedAt: now,
         createdAt: profile.createdAt ?? now,
+        rejectionReason: null,
       },
       { merge: true }
     );

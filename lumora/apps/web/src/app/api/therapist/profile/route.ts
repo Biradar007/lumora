@@ -32,11 +32,12 @@ export async function POST(request: Request) {
 
     const nextStatus: ProfileStatus = existing?.status ?? 'INCOMPLETE';
 
-    const profile: TherapistProfile = {
-      id: auth.userId,
-      tenantId: payload.tenantId ?? auth.tenantId ?? existing?.tenantId,
-      status: nextStatus,
-      visible: payload.visible ?? existing?.visible ?? false,
+  const profile: TherapistProfile = {
+    id: auth.userId,
+    tenantId: payload.tenantId ?? auth.tenantId ?? existing?.tenantId,
+    status: nextStatus,
+    rejectionReason: existing?.rejectionReason,
+    visible: payload.visible ?? existing?.visible ?? false,
       bio: payload.bio ?? existing?.bio,
       languages: payload.languages ?? existing?.languages ?? [],
       specialties: payload.specialties ?? existing?.specialties ?? [],

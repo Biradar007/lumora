@@ -35,7 +35,14 @@ async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
       return null;
     }
     const value = snapshot.data() ?? {};
-    const role: Role = value.role === 'therapist' || value.accountType === 'therapist' ? 'therapist' : 'user';
+    const rawRole: string | undefined =
+      typeof value.role === 'string' ? value.role : typeof value.accountType === 'string' ? value.accountType : undefined;
+    let role: Role = 'user';
+    if (rawRole === 'admin') {
+      role = 'admin';
+    } else if (rawRole === 'therapist') {
+      role = 'therapist';
+    }
     const createdAtNumber =
       typeof value.createdAt === 'number'
         ? value.createdAt

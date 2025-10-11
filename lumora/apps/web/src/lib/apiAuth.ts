@@ -19,7 +19,7 @@ function normalizeRole(value: string | null): Role | null {
   if (!value) {
     return null;
   }
-  if (value === 'therapist' || value === 'user') {
+  if (value === 'therapist' || value === 'user' || value === 'admin') {
     return value;
   }
   return null;

@@ -43,10 +43,6 @@ export default function TherapistDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* <header className="space-y-1">
-        <h1 className="text-3xl font-semibold text-slate-900">Therapist dashboard</h1>
-        <p className="text-slate-600">Stay on top of requests, sessions, and profile visibility.</p>
-      </header> */}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-medium text-slate-700">Requests inbox</h2>

@@ -70,8 +70,13 @@ export default function AppShell() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && profile?.role === 'therapist' && !showLanding) {
+    if (loading || showLanding) {
+      return;
+    }
+    if (profile?.role === 'therapist') {
       router.replace('/therapist/dashboard');
+    } else if (profile?.role === 'admin') {
+      router.replace('/admin');
     }
   }, [loading, profile?.role, router, showLanding]);
 
@@ -93,6 +98,16 @@ export default function AppShell() {
     };
     if (showLanding) {
       return <LandingPage onEnterApp={handleEnterTherapistApp} />;
+    }
+    return null;
+  }
+
+  if (!loading && profile?.role === 'admin') {
+    const handleEnterAdminApp = () => {
+      router.replace('/admin');
+    };
+    if (showLanding) {
+      return <LandingPage onEnterApp={handleEnterAdminApp} />;
     }
     return null;
   }

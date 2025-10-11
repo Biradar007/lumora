@@ -31,6 +31,7 @@ function mergeProfile(existing: TherapistProfile | null, userId: string, data: U
     id: userId,
     tenantId: data.tenantId ?? existing?.tenantId,
     status: nextStatus,
+    rejectionReason: existing?.rejectionReason,
     visible: data.visible ?? existing?.visible ?? false,
     bio: data.bio ?? existing?.bio,
     languages: data.languages ?? existing?.languages ?? [],
@@ -79,6 +80,7 @@ export async function submitTherapistProfile(userId: string) {
       status: 'PENDING_REVIEW',
       updatedAt: now,
       createdAt: profile.createdAt ?? now,
+      rejectionReason: null,
     },
     { merge: true }
   );
@@ -114,6 +116,8 @@ export async function markTherapistVerified(userId: string) {
   await profileRef.set(
     {
       status: 'VERIFIED',
+      visible: true,
+      rejectionReason: null,
       updatedAt: Date.now(),
     },
     { merge: true }
