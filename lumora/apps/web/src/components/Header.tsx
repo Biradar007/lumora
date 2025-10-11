@@ -24,7 +24,12 @@ export function Header({ onMenuClick, currentView }: HeaderProps) {
   const { requestLogin } = useAuthUI();
   const [signingOut, setSigningOut] = useState(false);
 
-  const displayName = profile?.name || user?.displayName || user?.email || (guestMode ? 'Guest session' : 'Lumora');
+  const displayName =
+    profile?.displayName ||
+    profile?.name ||
+    user?.displayName ||
+    user?.email ||
+    (guestMode ? 'Guest session' : 'Lumora');
 
   const handleLogout = async () => {
     try {

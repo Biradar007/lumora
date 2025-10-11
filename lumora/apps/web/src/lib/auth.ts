@@ -35,15 +35,20 @@ export async function registerUser(payload: RegistrationPayload): Promise<UserCr
 
   const db = getFirestore(getFirebaseApp());
   const userDoc = doc(db, 'users', credential.user.uid);
+  const createdAt = Date.now();
 
   await setDoc(userDoc, {
     uid: credential.user.uid,
     email: payload.email,
+    id: credential.user.uid,
+    role: payload.accountType,
+    displayName: payload.name,
     name: payload.name,
     age: payload.age,
     gender: payload.gender,
     accountType: payload.accountType,
-    createdAt: new Date().toISOString(),
+    createdAt,
+    createdAtIso: new Date(createdAt).toISOString(),
   });
 
   return credential;
