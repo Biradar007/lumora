@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Menu, LogIn, LogOut } from 'lucide-react';
-import { ViewType } from '../AppShell';
+import type { ViewType } from './user/viewTypes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
 
@@ -14,9 +14,10 @@ interface HeaderProps {
 const viewTitles: Record<ViewType, string> = {
   chat: 'Chat with Lumora',
   mood: 'Mood Tracking',
+  journal: 'Daily Journal',
   resources: 'Resources & Tools',
   dashboard: 'Your Journey',
-  crisis: 'Crisis Support'
+  crisis: 'Crisis Support',
 };
 
 export function Header({ onMenuClick, currentView }: HeaderProps) {
@@ -24,7 +25,12 @@ export function Header({ onMenuClick, currentView }: HeaderProps) {
   const { requestLogin } = useAuthUI();
   const [signingOut, setSigningOut] = useState(false);
 
-  const displayName = profile?.name || user?.displayName || user?.email || (guestMode ? 'Guest session' : 'Lumora');
+  const displayName =
+    profile?.displayName ||
+    profile?.name ||
+    user?.displayName ||
+    user?.email ||
+    (guestMode ? 'Guest session' : 'Lumora');
 
   const handleLogout = async () => {
     try {

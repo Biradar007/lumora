@@ -4,17 +4,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { getFirebaseApp } from '@/lib/firebase';
 import { getAuth, onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import type { AppUser, Role } from '@/types/domain';
 
-type AccountType = 'user' | 'therapist';
-
-export interface UserProfile {
+export interface UserProfile extends AppUser {
   uid: string;
-  email: string;
-  name: string;
-  age: number;
-  gender: string;
-  accountType: AccountType;
-  createdAt?: string;
+  name?: string;
+  age?: number;
+  gender?: string;
+  createdAtIso?: string;
 }
 
 interface AuthContextValue {
@@ -38,14 +35,34 @@ async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
       return null;
     }
     const value = snapshot.data() ?? {};
+    const rawRole: string | undefined =
+      typeof value.role === 'string' ? value.role : typeof value.accountType === 'string' ? value.accountType : undefined;
+    let role: Role = 'user';
+    if (rawRole === 'admin') {
+      role = 'admin';
+    } else if (rawRole === 'therapist') {
+      role = 'therapist';
+    }
+    const createdAtNumber =
+      typeof value.createdAt === 'number'
+        ? value.createdAt
+        : typeof value.createdAt === 'string'
+          ? Date.parse(value.createdAt) || Date.now()
+          : Date.now();
+
     return {
+      id: uid,
       uid,
       email: value.email ?? '',
-      name: value.name ?? '',
-      age: typeof value.age === 'number' ? value.age : Number(value.age) || 0,
-      gender: value.gender ?? '',
-      accountType: value.accountType === 'therapist' ? 'therapist' : 'user',
-      createdAt: value.createdAt,
+      role,
+      displayName: value.displayName ?? value.name ?? undefined,
+      photoUrl: value.photoUrl ?? value.photoURL ?? undefined,
+      tenantId: value.tenantId ?? undefined,
+      createdAt: createdAtNumber,
+      name: value.name ?? value.displayName ?? undefined,
+      age: typeof value.age === 'number' ? value.age : Number(value.age) || undefined,
+      gender: typeof value.gender === 'string' ? value.gender : undefined,
+      createdAtIso: typeof value.createdAt === 'string' ? value.createdAt : undefined,
     };
   } catch (error) {
     console.error('Failed to fetch user profile:', error);

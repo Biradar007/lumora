@@ -6,9 +6,9 @@ export async function GET() {
     // await connectToDatabase();
     // const contacts = await CounselingContact.find({}).lean();
     // return NextResponse.json({ contacts });
+    return NextResponse.json({ contacts: [] });
   } catch (err) {
     return NextResponse.json({ error: 'server_error' }, { status: 500 });
   }
 }
-
 

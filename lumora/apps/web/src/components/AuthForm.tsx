@@ -2,6 +2,10 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { getFirebaseApp } from '@/lib/firebase';
 import { loginUser, registerUser } from '@/lib/auth';
 
 type Mode = 'login' | 'register';
@@ -18,9 +22,14 @@ const accountTypeOptions = [
   { value: 'therapist', label: 'Therapist' },
 ];
 
-export function AuthForm() {
+interface AuthFormProps {
+  initialMode?: Mode;
+}
+
+export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
   const { refreshProfile } = useAuth();
-  const [mode, setMode] = useState<Mode>('login');
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const router = useRouter();
   const [formValues, setFormValues] = useState({
     email: '',
     password: '',
@@ -59,20 +68,43 @@ export function AuthForm() {
           throw new Error('Please select a gender.');
         }
 
-        await registerUser({
+        const registrationPayload = {
           email: formValues.email,
           password: formValues.password,
           name: formValues.name,
           age: parsedAge,
           gender: formValues.gender,
           accountType: (formValues.accountType as 'user' | 'therapist') ?? 'user',
-        });
+        } as const;
+
+        await registerUser(registrationPayload);
         await refreshProfile();
+        if (registrationPayload.accountType === 'therapist') {
+          router.push('/therapist/onboarding');
+        }
         return;
       }
 
       await loginUser(formValues.email, formValues.password);
       await refreshProfile();
+      const authInstance = getAuth(getFirebaseApp());
+      const currentUser = authInstance.currentUser;
+      if (!currentUser) {
+        router.push('/home');
+        return;
+      }
+      const db = getFirestore(getFirebaseApp());
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const data = userDoc.data() ?? {};
+      const rawRole =
+        typeof data.role === 'string' ? data.role : typeof data.accountType === 'string' ? data.accountType : undefined;
+      if (rawRole === 'admin') {
+        router.push('/admin');
+        return;
+      }
+      if (rawRole === 'therapist') {
+        router.push('/therapist/dashboard');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setError(message);

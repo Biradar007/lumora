@@ -1,0 +1,382 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useApiHeaders } from '@/hooks/useApiHeaders';
+import type {
+  Connection,
+  Consent,
+  ConsentScopes,
+  JournalEntry,
+  AiChatSession,
+  AiChatMessage,
+} from '@/types/domain';
+
+const EMPTY_SCOPES: ConsentScopes = {
+  chatSummary: false,
+  moodTrends: false,
+  journals: false,
+};
+
+export default function TherapistClientsPage() {
+  const headers = useApiHeaders();
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [consents, setConsents] = useState<Record<string, ConsentScopes>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [journalEntries, setJournalEntries] = useState<Record<string, JournalEntry[]>>({});
+  const [journalLoading, setJournalLoading] = useState<Record<string, boolean>>({});
+  const [journalError, setJournalError] = useState<Record<string, string>>({});
+  const [sessionsByConnection, setSessionsByConnection] = useState<Record<string, AiChatSession[]>>({});
+  const [sessionsLoading, setSessionsLoading] = useState<Record<string, boolean>>({});
+  const [sessionsError, setSessionsError] = useState<Record<string, string>>({});
+  const [sessionsExpanded, setSessionsExpanded] = useState<Record<string, boolean>>({});
+  const [sessionMessages, setSessionMessages] = useState<Record<string, AiChatMessage[]>>({});
+  const [sessionMessagesLoading, setSessionMessagesLoading] = useState<Record<string, boolean>>({});
+  const [sessionMessagesError, setSessionMessagesError] = useState<Record<string, string>>({});
+  const [sessionMessagesExpanded, setSessionMessagesExpanded] = useState<Record<string, boolean>>({});
+  const [journalExpanded, setJournalExpanded] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!headers['x-user-id']) {
+      return;
+    }
+    const load = async () => {
+      try {
+        setLoading(true);
+        const [connectionsResponse, consentsResponse] = await Promise.all([
+          fetch('/api/connections', { headers }),
+          fetch('/api/consents', { headers }),
+        ]);
+        if (!connectionsResponse.ok) {
+          throw new Error('Failed to load connections');
+        }
+        const connectionsData = (await connectionsResponse.json()) as { connections: Connection[] };
+        setConnections(connectionsData.connections ?? []);
+
+        if (consentsResponse.ok) {
+          const consentData = (await consentsResponse.json()) as { consents: Consent[] };
+          const map: Record<string, ConsentScopes> = {};
+          (consentData.consents ?? []).forEach((consent) => {
+            map[consent.connectionId] = {
+              ...EMPTY_SCOPES,
+              ...(consent.scopes ?? {}),
+            };
+          });
+          setConsents(map);
+        } else {
+          setError('Unable to load shared data preferences right now.');
+        }
+      } catch (err) {
+        console.error(err);
+        setError('Unable to load client data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, [headers]);
+
+  const hasConnections = connections.length > 0;
+
+  const sharedConnections = useMemo(() => {
+    const map: Record<string, ConsentScopes> = {};
+    connections.forEach((connection) => {
+      map[connection.id] = consents[connection.id] ?? EMPTY_SCOPES;
+    });
+    return map;
+  }, [connections, consents]);
+
+  const ensureSessions = async (connectionId: string) => {
+    if (sessionsByConnection[connectionId] || sessionsLoading[connectionId]) {
+      return;
+    }
+    setSessionsLoading((prev) => ({ ...prev, [connectionId]: true }));
+    try {
+      const response = await fetch(`/api/connections/${connectionId}/sessions`, { headers });
+      if (!response.ok) {
+        throw new Error('Failed to load sessions');
+      }
+      const data = (await response.json()) as { sessions: AiChatSession[] };
+      setSessionsByConnection((prev) => ({ ...prev, [connectionId]: data.sessions ?? [] }));
+      setSessionsError((prev) => {
+        const copy = { ...prev };
+        delete copy[connectionId];
+        return copy;
+      });
+    } catch (err) {
+      console.error(err);
+      setSessionsError((prev) => ({
+        ...prev,
+        [connectionId]: 'Unable to load AI chat sessions.',
+      }));
+    } finally {
+      setSessionsLoading((prev) => {
+        const copy = { ...prev };
+        delete copy[connectionId];
+        return copy;
+      });
+    }
+  };
+
+  const ensureSessionMessages = async (connectionId: string, sessionId: string) => {
+    const key = `${connectionId}:${sessionId}`;
+    if (sessionMessages[key] || sessionMessagesLoading[key]) {
+      return;
+    }
+    setSessionMessagesLoading((prev) => ({ ...prev, [key]: true }));
+    try {
+      const response = await fetch(`/api/connections/${connectionId}/sessions/${sessionId}/messages`, { headers });
+      if (!response.ok) {
+        throw new Error('Failed to load session messages');
+      }
+      const data = (await response.json()) as { messages: AiChatMessage[] };
+      setSessionMessages((prev) => ({ ...prev, [key]: data.messages ?? [] }));
+      setSessionMessagesError((prev) => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+    } catch (err) {
+      console.error(err);
+      setSessionMessagesError((prev) => ({
+        ...prev,
+        [key]: 'Unable to load messages for this session.',
+      }));
+    } finally {
+      setSessionMessagesLoading((prev) => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+    }
+  };
+
+  const loadJournals = async (connectionId: string) => {
+    if (journalEntries[connectionId] || journalLoading[connectionId]) {
+      return;
+    }
+    setJournalLoading((prev) => ({ ...prev, [connectionId]: true }));
+    try {
+      const response = await fetch(`/api/connections/${connectionId}/journals`, { headers });
+      if (!response.ok) {
+        throw new Error('Failed to load journals');
+      }
+      const data = (await response.json()) as { entries: JournalEntry[] };
+      setJournalEntries((prev) => ({ ...prev, [connectionId]: data.entries ?? [] }));
+      setJournalError((prev) => {
+        const copy = { ...prev };
+        delete copy[connectionId];
+        return copy;
+      });
+    } catch (err) {
+      console.error(err);
+      setJournalError((prev) => ({
+        ...prev,
+        [connectionId]: 'Unable to load shared journals.',
+      }));
+    } finally {
+      setJournalLoading((prev) => {
+        const copy = { ...prev };
+        delete copy[connectionId];
+        return copy;
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
+          <p className="text-sm text-slate-600">View and manage all client connections.</p>
+        </header>
+        <p className="text-sm text-slate-500">Loading clients…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
+        <p className="text-sm text-slate-600">View and manage all client connections.</p>
+      </header>
+      {error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>
+      ) : null}
+      <div className="grid gap-4">
+        {!hasConnections && <p className="text-sm text-slate-500">No connections yet.</p>}
+        {connections.map((connection) => (
+          <div
+            key={connection.id}
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
+          >
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium text-slate-700">User {connection.userId}</p>
+              <p className="text-xs text-slate-500">
+                Connected since {new Date(connection.startedAt).toLocaleDateString()}
+                {connection.status !== 'ACTIVE' ? ` • Status: ${connection.status.toLowerCase()}` : ''}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/chat/${connection.id}`}
+                className="inline-flex items-center rounded-lg border border-indigo-200 px-3 py-1.5 text-sm font-medium text-indigo-600"
+              >
+                Open chat
+              </Link>
+              <Link
+                href={`/schedule/${connection.id}`}
+                className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600"
+              >
+                View schedule
+              </Link>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-xs text-slate-600">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Shared data
+              </p>
+              {sharedConnections[connection.id]?.chatSummary ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-700">AI chat sessions</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !sessionsExpanded[connection.id];
+                        setSessionsExpanded((prev) => ({ ...prev, [connection.id]: next }));
+                        if (next) {
+                          void ensureSessions(connection.id);
+                        }
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                    >
+                      {sessionsExpanded[connection.id] ? 'Hide' : 'View'}
+                    </button>
+                  </div>
+                  {sessionsExpanded[connection.id] ? (
+                    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                      {sessionsLoading[connection.id] ? (
+                        <p className="text-[11px] text-slate-500">Loading shared sessions…</p>
+                      ) : sessionsError[connection.id] ? (
+                        <p className="text-[11px] text-rose-600 font-medium">{sessionsError[connection.id]}</p>
+                      ) : sessionsByConnection[connection.id]?.length ? (
+                        <div className="space-y-2">
+                          {sessionsByConnection[connection.id].map((session) => {
+                            const sessionKey = `${connection.id}:${session.id}`;
+                            const sessionOpen = sessionMessagesExpanded[sessionKey] ?? false;
+                            const messages = sessionMessages[sessionKey] ?? [];
+                            const messageLoading = sessionMessagesLoading[sessionKey];
+                            const messageError = sessionMessagesError[sessionKey];
+                            return (
+                              <div key={session.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-semibold text-slate-700">
+                                      {session.title ?? 'Conversation'}
+                                    </span>
+                                    <span className="text-[11px] text-slate-500">
+                                      Updated {session.updatedAt ? new Date(session.updatedAt).toLocaleString() : '—'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const next = !sessionOpen;
+                                      setSessionMessagesExpanded((prev) => ({ ...prev, [sessionKey]: next }));
+                                      if (next) {
+                                        void ensureSessionMessages(connection.id, session.id);
+                                      }
+                                    }}
+                                    className="text-indigo-600 hover:text-indigo-700 font-semibold text-xs"
+                                  >
+                                    {sessionOpen ? 'Hide messages' : 'View messages'}
+                                  </button>
+                                </div>
+                                {sessionOpen ? (
+                                  <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3 max-h-64 overflow-y-auto">
+                                    {messageLoading ? (
+                                      <p className="text-[11px] text-slate-500">Loading messages…</p>
+                                    ) : messageError ? (
+                                      <p className="text-[11px] text-rose-600 font-medium">{messageError}</p>
+                                    ) : messages.length > 0 ? (
+                                      messages.map((message) => (
+                                        <div key={message.id} className="space-y-1 border-b border-slate-100 pb-2 last:border-none">
+                                          <p className="text-[11px] font-semibold text-slate-500">
+                                            {message.role === 'user' ? 'Client' : 'Assistant'} ·{' '}
+                                            {message.createdAt ? new Date(message.createdAt).toLocaleString() : '—'}
+                                          </p>
+                                          <p className="text-sm text-slate-700 whitespace-pre-wrap">{message.content}</p>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <p className="text-[11px] text-slate-500">No messages in this session yet.</p>
+                                    )}
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500">No AI chat sessions are shared yet.</p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500">AI chat sessions are not shared by this client.</p>
+              )}
+
+              {sharedConnections[connection.id]?.journals ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-700">Journal entries</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !journalExpanded[connection.id];
+                        setJournalExpanded((prev) => ({ ...prev, [connection.id]: next }));
+                        if (next) {
+                          void loadJournals(connection.id);
+                        }
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                    >
+                      {journalExpanded[connection.id] ? 'Hide' : 'View'}
+                    </button>
+                  </div>
+                  {journalExpanded[connection.id] ? (
+                    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+                      {journalLoading[connection.id] ? (
+                        <p className="text-[11px] text-slate-500">Loading shared journals…</p>
+                      ) : journalError[connection.id] ? (
+                        <p className="text-[11px] text-rose-600 font-medium">{journalError[connection.id]}</p>
+                      ) : journalEntries[connection.id]?.length ? (
+                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                          {journalEntries[connection.id].map((entry) => (
+                            <div key={entry.id} className="space-y-1 border-b border-slate-100 pb-2 last:border-none">
+                              <p className="text-[11px] font-semibold text-slate-500">
+                                {new Date(entry.createdAt).toLocaleString()}
+                              </p>
+                              <p className="text-sm text-slate-700 whitespace-pre-wrap">{entry.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500">No journals are shared yet.</p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500">Journals are not shared by this client.</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
