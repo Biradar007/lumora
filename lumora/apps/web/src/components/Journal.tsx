@@ -372,7 +372,7 @@ export function Journal() {
             </select>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
+            {/* <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => applyFormatting('heading')}
@@ -380,7 +380,7 @@ export function Journal() {
             >
               <Type className="h-3 w-3" />
               Heading
-            </button>
+            </button> */}
             <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
@@ -399,7 +399,7 @@ export function Journal() {
               <Italic className="h-3 w-3" />
               Italic
             </button>
-            <button
+            {/* <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => applyFormatting('unorderedList')}
@@ -408,7 +408,7 @@ export function Journal() {
               <List className="h-3 w-3" />
               Bullets
             </button>
-            <button
+             <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => applyFormatting('orderedList')}
@@ -416,7 +416,7 @@ export function Journal() {
             >
               <ListOrdered className="h-3 w-3" />
               Numbers
-            </button>
+            </button> */}
             <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
