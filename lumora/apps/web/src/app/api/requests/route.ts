@@ -3,6 +3,8 @@ import { getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer'
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { ConnectionRequest } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 interface CreateRequestPayload {
   therapistId: string;
   message?: string;

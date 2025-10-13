@@ -3,6 +3,8 @@ import { getServerFirestore } from '@/lib/firestoreServer';
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { Consent, ConsentScopes, Connection } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 interface ConsentPayload {
   connectionId: string;
   scopes: ConsentScopes;

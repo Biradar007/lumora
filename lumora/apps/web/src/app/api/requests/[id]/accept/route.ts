@@ -3,6 +3,8 @@ import { getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer'
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { Connection, ConnectionRequest, Consent } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, context: RouteContext) {

@@ -3,6 +3,8 @@ import { getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer'
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { Appointment, Connection } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 interface CreateAppointmentPayload {
   connectionId: string;
   therapistId: string;

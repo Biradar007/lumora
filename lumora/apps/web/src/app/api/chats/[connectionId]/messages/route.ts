@@ -3,6 +3,8 @@ import { getServerFirestore } from '@/lib/firestoreServer';
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { ChatMessage, Connection } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 interface SendMessagePayload {
   content: string;
 }

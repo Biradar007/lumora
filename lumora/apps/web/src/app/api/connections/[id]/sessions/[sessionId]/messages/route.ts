@@ -3,6 +3,8 @@ import { getServerFirestore } from '@/lib/firestoreServer';
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { AiChatMessage, Connection, Consent } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 type RouteContext = { params: Promise<{ id: string; sessionId: string }> };
 
 function toMillis(value: unknown): number | undefined {

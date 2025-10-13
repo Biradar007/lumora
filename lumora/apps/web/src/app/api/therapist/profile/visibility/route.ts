@@ -3,6 +3,8 @@ import { getServerFirestore } from '@/lib/firestoreServer';
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { TherapistProfile } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 interface VisibilityPayload {
   visible: boolean;
 }
@@ -22,7 +24,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'profile_not_verified' }, { status: 400 });
     }
     await profileRef.set(
-      profileRef,
       {
         visible: body.visible,
         updatedAt: Date.now(),

@@ -3,6 +3,8 @@ import { getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer'
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { JournalEntry } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: Request) {
   try {
     const auth = requireAuth(request, { roles: ['user'] });

@@ -3,6 +3,8 @@ import { getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer'
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { ProfileStatus, TherapistProfile } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 type UpsertPayload = Partial<
   Pick<
     TherapistProfile,

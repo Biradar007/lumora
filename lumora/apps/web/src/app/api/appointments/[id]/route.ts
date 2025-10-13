@@ -3,6 +3,8 @@ import { getServerFirestore } from '@/lib/firestoreServer';
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { Appointment } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 type MutableFields = Partial<Pick<Appointment, 'status' | 'start' | 'end' | 'videoLink'>>;
 type RouteContext = { params: Promise<{ id: string }> };
 

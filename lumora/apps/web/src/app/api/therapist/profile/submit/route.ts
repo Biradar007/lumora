@@ -3,6 +3,8 @@ import { getServerFirestore } from '@/lib/firestoreServer';
 import { jsonError, requireAuth } from '@/lib/apiAuth';
 import type { TherapistProfile } from '@/types/domain';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     const auth = requireAuth(request, { roles: ['therapist'] });
