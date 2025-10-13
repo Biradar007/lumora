@@ -18,10 +18,16 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
-import type { TherapistProfile, ConnectionRequest, Connection } from '@/types/domain';
+import type { TherapistProfile, ConnectionRequest, Connection, Consent, ConsentScopes } from '@/types/domain';
 import { collection, doc, getDoc, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { RequestButton } from '@/components/RequestButton';
+
+const EMPTY_CONSENT_SCOPES: ConsentScopes = {
+  chatSummary: false,
+  moodTrends: false,
+  journals: false,
+};
 
 type Contact = {
   name: string;
@@ -51,6 +57,9 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   const [therapistDetails, setTherapistDetails] = useState<(TherapistProfile & { displayName?: string; email?: string })[]>([]);
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [consents, setConsents] = useState<Record<string, ConsentScopes>>({});
+  const [savingConsent, setSavingConsent] = useState<Record<string, boolean>>({});
+  const [consentError, setConsentError] = useState<string | null>(null);
   const activeConnectionsByTherapist = useMemo(() => {
     const map = new Map<string, Connection>();
     connections.forEach((connection) => {
@@ -166,9 +175,24 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
         query(collection(db, 'connectionRequests'), where('userId', '==', user.uid))
       );
       const connectionsResponse = await fetch('/api/connections', { headers }).catch(() => null);
+      const consentsResponse = await fetch('/api/consents', { headers }).catch(() => null);
       const connectionData = connectionsResponse?.ok
         ? ((await connectionsResponse.json()) as { connections: Connection[] }).connections ?? []
         : [];
+      if (consentsResponse?.ok) {
+        const data = (await consentsResponse.json()) as { consents: Consent[] };
+        const mapped: Record<string, ConsentScopes> = {};
+        (data.consents ?? []).forEach((consent) => {
+          mapped[consent.connectionId] = {
+            ...EMPTY_CONSENT_SCOPES,
+            ...(consent.scopes ?? {}),
+          };
+        });
+        setConsents(mapped);
+        setConsentError(null);
+      } else if (consentsResponse) {
+        setConsentError('We could not load data sharing preferences. Please try again later.');
+      }
       setConnections(connectionData);
       setRequests(requestsSnapshot.docs.map((docSnapshot) => docSnapshot.data() as ConnectionRequest));
     };
@@ -208,6 +232,53 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     if (response.ok) {
       const data = (await response.json()) as { request: ConnectionRequest };
       setRequests((prev) => [...prev, data.request]);
+    }
+  };
+
+  const updateConsent = async (
+    connectionId: string,
+    updates: Partial<Pick<ConsentScopes, 'chatSummary' | 'journals'>>
+  ) => {
+    const previous = consents[connectionId]
+      ? { ...consents[connectionId] }
+      : { ...EMPTY_CONSENT_SCOPES };
+    const next: ConsentScopes = {
+      ...previous,
+      ...updates,
+    };
+    setConsents((prev) => ({ ...prev, [connectionId]: next }));
+    setSavingConsent((prev) => ({ ...prev, [connectionId]: true }));
+    try {
+      const response = await fetch('/api/consents', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ connectionId, scopes: next }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save consent');
+      }
+      const data = (await response.json()) as { consent?: Consent };
+      const consent = data?.consent;
+      if (consent) {
+        setConsents((prev) => ({
+          ...prev,
+          [connectionId]: {
+            ...EMPTY_CONSENT_SCOPES,
+            ...(consent.scopes ?? next),
+          },
+        }));
+      }
+      setConsentError(null);
+    } catch (error) {
+      console.error('Failed to update consent', error);
+      setConsents((prev) => ({ ...prev, [connectionId]: previous }));
+      setConsentError('Updating sharing preferences failed. Please try again.');
+    } finally {
+      setSavingConsent((prev) => {
+        const copy = { ...prev };
+        delete copy[connectionId];
+        return copy;
+      });
     }
   };
 
@@ -288,6 +359,11 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
 
       {user ? (
         <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          {consentError ? (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+              {consentError}
+            </div>
+          ) : null}
           <header className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Verified Lumora therapists</h2>
@@ -324,6 +400,9 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
               {therapistDetails.map((therapist) => {
                 const status = determineStatus(therapist.id);
                 const activeConnection = activeConnectionsByTherapist.get(therapist.id);
+                const connectionId = activeConnection?.id;
+                const scopes = connectionId ? consents[connectionId] ?? EMPTY_CONSENT_SCOPES : EMPTY_CONSENT_SCOPES;
+                const pending = connectionId ? Boolean(savingConsent[connectionId]) : false;
                 return (
                   <article
                     key={therapist.id}
@@ -365,17 +444,67 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                       ) : null}
                     </div>
                     {status === 'CONNECTED' && activeConnection ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                          Connected
-                        </span>
-                        <Link
-                          href={`/chat/${activeConnection.id}`}
-                          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          Open chat
-                        </Link>
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                            Connected
+                          </span>
+                          <Link
+                            href={`/chat/${activeConnection.id}`}
+                            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            Open chat
+                          </Link>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-3">
+                            Sharing preferences
+                          </p>
+                          <div className="space-y-3">
+                            <label className="flex items-center justify-between gap-4">
+                              <span className="flex-1 text-xs">
+                                Allow therapist to review my AI chat sessions
+                                <span className="block text-[11px] text-slate-500">
+                                  Share conversations you&apos;ve had with Lumora to support continuity of care.
+                                </span>
+                              </span>
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                checked={scopes.chatSummary}
+                                disabled={pending}
+                                onChange={(event) =>
+                                  connectionId
+                                    ? updateConsent(connectionId, { chatSummary: event.target.checked })
+                                    : undefined
+                                }
+                              />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                              <span className="flex-1 text-xs">
+                                Allow therapist to view my journal entries
+                                <span className="block text-[11px] text-slate-500">
+                                  Grant access to your reflections to deepen session insights.
+                                </span>
+                              </span>
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                checked={scopes.journals}
+                                disabled={pending}
+                                onChange={(event) =>
+                                  connectionId
+                                    ? updateConsent(connectionId, { journals: event.target.checked })
+                                    : undefined
+                                }
+                              />
+                            </label>
+                            {pending ? (
+                              <p className="text-[11px] font-medium text-indigo-600">Saving preferences…</p>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <RequestButton status={status} onRequest={() => sendRequest(therapist.id)} />

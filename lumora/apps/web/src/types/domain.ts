@@ -84,6 +84,23 @@ export interface Consent {
   scopes: ConsentScopes;
   createdAt: number;
   revokedAt?: number;
+  updatedAt?: number;
+}
+
+export interface AiChatSession {
+  id: string;
+  title: string | null;
+  createdAt?: number;
+  updatedAt?: number;
+  lastMessagePreview?: string | null;
+  model?: string;
+}
+
+export interface AiChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt?: number;
 }
 
 export interface Chat {

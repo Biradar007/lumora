@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { AppointmentPicker } from '@/components/AppointmentPicker';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
@@ -8,7 +8,10 @@ import type { Connection, TherapistProfile } from '@/types/domain';
 import { getFirebaseApp } from '@/lib/firebase';
 import { getFirestore } from 'firebase/firestore';
 
-export default function SchedulePage({ params }: { params: { connectionId: string } }) {
+type RouteParams = Promise<{ connectionId: string }>;
+
+export default function SchedulePage({ params }: { params: RouteParams }) {
+  const { connectionId } = use(params);
   const headers = useApiHeaders();
   const [connection, setConnection] = useState<Connection | null>(null);
   const [therapistProfile, setTherapistProfile] = useState<TherapistProfile | null>(null);
@@ -24,7 +27,7 @@ export default function SchedulePage({ params }: { params: { connectionId: strin
         return;
       }
       const data = (await response.json()) as { connections: Connection[] };
-      const match = data.connections?.find((item) => item.id === params.connectionId) ?? null;
+      const match = data.connections?.find((item) => item.id === connectionId) ?? null;
       setConnection(match ?? null);
       if (match) {
         const db = getFirestore(getFirebaseApp());
@@ -33,7 +36,7 @@ export default function SchedulePage({ params }: { params: { connectionId: strin
       }
     };
     void load();
-  }, [headers, params.connectionId]);
+  }, [connectionId, headers]);
 
   const handleBook = async ({ start, end, location, videoLink }: { start: number; end: number; location: 'video' | 'in-person'; videoLink?: string }) => {
     if (!connection) {

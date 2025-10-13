@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Menu, LogIn, LogOut } from 'lucide-react';
-import { ViewType } from '../AppShell';
+import type { ViewType } from './user/viewTypes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
 

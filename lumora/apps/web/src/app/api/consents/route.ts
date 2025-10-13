@@ -8,9 +8,25 @@ interface ConsentPayload {
   scopes: ConsentScopes;
 }
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
     const auth = requireAuth(request, { roles: ['user', 'therapist'] });
+    const db = getServerFirestore();
+    const consentsRef = db.collection('consents');
+    const snapshot =
+      auth.role === 'user'
+        ? await consentsRef.where('userId', '==', auth.userId).get()
+        : await consentsRef.where('therapistId', '==', auth.userId).get();
+    const consents = snapshot.docs.map((docSnapshot) => docSnapshot.data() as Consent);
+    return NextResponse.json({ consents });
+  } catch (error) {
+    return jsonError(error);
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const auth = requireAuth(request, { roles: ['user'] });
     const body = (await request.json()) as ConsentPayload;
     if (!body?.connectionId || !body?.scopes) {
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
@@ -44,6 +60,7 @@ export async function POST(request: Request) {
         therapistId: connection.therapistId,
         scopes: body.scopes,
         createdAt: now,
+        updatedAt: now,
       };
       await consentRef.set(consent);
       return NextResponse.json({ consent });
@@ -54,10 +71,17 @@ export async function POST(request: Request) {
       {
         scopes: body.scopes,
         revokedAt: null,
+        updatedAt: now,
       },
       { merge: true }
     );
-    return NextResponse.json({ ok: true });
+    const updated = {
+      ...(consentDoc.data() as Consent),
+      scopes: body.scopes,
+      revokedAt: null,
+      updatedAt: now,
+    };
+    return NextResponse.json({ consent: updated });
   } catch (error) {
     return jsonError(error);
   }

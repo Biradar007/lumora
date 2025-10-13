@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Clock, Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';

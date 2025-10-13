@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Calendar, TrendingUp, Smile, Meh, Frown, RotateCcw } from 'lucide-react';
 

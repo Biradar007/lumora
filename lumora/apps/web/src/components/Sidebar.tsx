@@ -3,12 +3,12 @@
 import { MessageCircle, Heart, BookOpen, BarChart3, AlertCircle, PenSquare, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
-import { ViewType } from '../AppShell';
+import type { ViewType } from './user/viewTypes';
 import { UserProfileMenu } from './UserProfileMenu';
 
 interface SidebarProps {
-  currentView: ViewType;
-  setCurrentView: (view: ViewType) => void;
+  activeView: ViewType;
+  onNavigate: (view: ViewType) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -64,7 +64,7 @@ const menuItems = [
   },
 ];
 
-export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ activeView, onNavigate, isOpen, onClose }: SidebarProps) {
   const { user } = useAuth();
   const isAuthenticated = Boolean(user);
   const { requestLogin } = useAuthUI();
@@ -136,7 +136,7 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
           <nav className="flex-1 p-4 space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.id;
+              const isActive = activeView === item.id;
               const isDisabled = !isAuthenticated && item.requiresAuth;
               
               return (
@@ -148,7 +148,7 @@ export function Sidebar({ currentView, setCurrentView, isOpen, onClose }: Sideba
                       requestLogin();
                       return;
                     }
-                    setCurrentView(item.id);
+                    onNavigate(item.id);
                     onClose();
                   }}
                   className={`

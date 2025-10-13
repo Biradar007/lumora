@@ -45,14 +45,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     [requestLogin]
   );
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
-        <div className="text-indigo-700 font-medium">Loading your workspace…</div>
-      </div>
-    );
-  }
-
   return (
     <AuthUIProvider value={providerValue}>
       <div className="relative min-h-screen">

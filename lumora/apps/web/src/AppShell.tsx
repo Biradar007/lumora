@@ -1,129 +1,67 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Header } from './components/Header';
-import { ChatInterface } from './components/ChatInterface';
-import { Sidebar } from './components/Sidebar';
-import { MoodTracker } from './components/MoodTracker';
-import { Resources } from './components/Resources';
-import { Dashboard } from './components/Dashboard';
-import { CrisisSupport } from './components/CrisisSupport';
-import { Journal } from './components/Journal';
-import LandingPage from './components/LandingPage';
-import { AuthGate } from './components/AuthGate';
-import { useAuth } from '@/contexts/AuthContext';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import LandingPage from './components/LandingPage';
+import { useAuth } from '@/contexts/AuthContext';
 
-export type ViewType = 'chat' | 'mood' | 'journal' | 'resources' | 'dashboard' | 'crisis';
-
-function CoreAppShell() {
-  const [currentView, setCurrentView] = useState<ViewType>('chat');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'chat':
-        return <ChatInterface />;
-      case 'mood':
-        return <MoodTracker />;
-      case 'journal':
-        return <Journal />;
-      case 'resources':
-        return <Resources onNavigateToCrisis={() => setCurrentView('crisis')} />;
-      case 'dashboard':
-        return <Dashboard />;
-      case 'crisis':
-        return <CrisisSupport onReturnToChat={() => setCurrentView('chat')} />;
-      default:
-        return <ChatInterface />;
-    }
-  };
-
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <Sidebar
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onMenuClick={() => setSidebarOpen(true)} currentView={currentView} />
-
-        <main className={`flex-1 ${currentView === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-          {renderContent()}
-        </main>
-      </div>
-
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-    </div>
-  );
-}
+const DEFAULT_USER_ROUTE = '/user/chat';
 
 export default function AppShell() {
   const [showLanding, setShowLanding] = useState(true);
-  const { user, loading, profile } = useAuth();
-  const wasAuthenticatedRef = useRef(false);
+  const { loading, profile } = useAuth();
   const router = useRouter();
+  const wasAuthenticatedRef = useRef(false);
 
   useEffect(() => {
-    if (loading || showLanding) {
+    if (!loading && profile) {
+      wasAuthenticatedRef.current = true;
+    }
+  }, [loading, profile]);
+
+  useEffect(() => {
+    if (loading) {
       return;
     }
+    if (wasAuthenticatedRef.current && !profile) {
+      wasAuthenticatedRef.current = false;
+      setShowLanding(true);
+    }
+  }, [loading, profile]);
+
+  const navigateToWorkspace = useCallback(() => {
     if (profile?.role === 'therapist') {
       router.replace('/therapist/dashboard');
-    } else if (profile?.role === 'admin') {
-      router.replace('/admin');
-    }
-  }, [loading, profile?.role, router, showLanding]);
-
-  useEffect(() => {
-    if (user) {
-      wasAuthenticatedRef.current = true;
       return;
     }
-
-    if (!loading && wasAuthenticatedRef.current) {
-      setShowLanding(true);
-      wasAuthenticatedRef.current = false;
-    }
-  }, [loading, user]);
-
-  if (!loading && profile?.role === 'therapist') {
-    const handleEnterTherapistApp = () => {
-      router.replace('/therapist/dashboard');
-    };
-    if (showLanding) {
-      return <LandingPage onEnterApp={handleEnterTherapistApp} />;
-    }
-    return null;
-  }
-
-  if (!loading && profile?.role === 'admin') {
-    const handleEnterAdminApp = () => {
+    if (profile?.role === 'admin') {
       router.replace('/admin');
-    };
-    if (showLanding) {
-      return <LandingPage onEnterApp={handleEnterAdminApp} />;
+      return;
     }
-    return null;
-  }
+    router.replace(DEFAULT_USER_ROUTE);
+  }, [profile?.role, router]);
+
+  const dismissLanding = useCallback(() => {
+    setShowLanding(false);
+    if (!loading) {
+      navigateToWorkspace();
+    }
+  }, [loading, navigateToWorkspace]);
+
+  useEffect(() => {
+    if (showLanding || loading) {
+      return;
+    }
+    navigateToWorkspace();
+  }, [loading, navigateToWorkspace, showLanding]);
 
   if (showLanding) {
-    return <LandingPage onEnterApp={() => setShowLanding(false)} />;
+    return <LandingPage onEnterApp={dismissLanding} />;
   }
 
   return (
-    <AuthGate>
-      <CoreAppShell />
-    </AuthGate>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
+      <div className="text-indigo-700 font-medium">Loading your workspace…</div>
+    </div>
   );
 }
-
-export { CoreAppShell };
