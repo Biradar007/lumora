@@ -5,7 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { AppointmentPicker } from '@/components/AppointmentPicker';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { Connection, TherapistProfile } from '@/types/domain';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getFirebaseApp } from '@/lib/firebaseClient';
 import { getFirestore } from 'firebase/firestore';
 
 type RouteParams = Promise<{ connectionId: string }>;

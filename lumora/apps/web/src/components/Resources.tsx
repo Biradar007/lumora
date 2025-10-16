@@ -20,7 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { TherapistProfile, ConnectionRequest, Connection, Consent, ConsentScopes } from '@/types/domain';
 import { collection, doc, getDoc, getDocs, getFirestore, query, where } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getFirebaseApp } from '@/lib/firebaseClient';
 import { RequestButton } from '@/components/RequestButton';
 
 const EMPTY_CONSENT_SCOPES: ConsentScopes = {

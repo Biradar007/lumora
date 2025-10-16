@@ -120,7 +120,7 @@ export function MoodTracker() {
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="What made your day special? Any thoughts or feelings you'd like to remember..."
+            placeholder="What made your day special? Any thoughts or feelings you’d like to remember..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             rows={3}
           />
@@ -132,7 +132,7 @@ export function MoodTracker() {
           disabled={selectedMood === null}
           className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save Today's Mood
+          Save Today’s Mood
         </button>
       </div>
 

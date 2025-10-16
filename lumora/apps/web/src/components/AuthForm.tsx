@@ -5,7 +5,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getFirebaseApp } from '@/lib/firebaseClient';
 import { loginUser, registerUser } from '@/lib/auth';
 
 type Mode = 'login' | 'register';

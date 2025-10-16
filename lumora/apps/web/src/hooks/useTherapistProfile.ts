@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { doc, getFirestore, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import type { TherapistProfile } from '@/types/domain';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getFirebaseApp } from '@/lib/firebaseClient';
 
 interface TherapistProfileState {
   profile: TherapistProfile | null;
@@ -22,12 +22,11 @@ export function useTherapistProfile(userId?: string): TherapistProfileState {
       return;
     }
     const db = getFirestore(getFirebaseApp());
-    let unsubscribe: Unsubscribe | undefined;
-    unsubscribe = onSnapshot(doc(db, 'therapistProfiles', id), (snapshot) => {
+    const unsubscribe: Unsubscribe = onSnapshot(doc(db, 'therapistProfiles', id), (snapshot) => {
       setState({ profile: (snapshot.data() as TherapistProfile | undefined) ?? null, loading: false });
     });
     return () => {
-      unsubscribe?.();
+      unsubscribe();
     };
   }, [user?.uid, userId]);
 
