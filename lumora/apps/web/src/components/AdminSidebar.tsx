@@ -23,9 +23,9 @@ export function AdminSidebar({ adminName, onLogout, signingOut, activeSection, o
     .slice(0, 2) || 'AD';
 
   return (
-    <aside className="hidden md:flex md:w-64 lg:w-72 flex-col border-r border-slate-200 bg-white">
+    <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-64 lg:w-72 md:flex-col border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-6 py-6">
- <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
           <div>
             <div className="flex items-baseline gap-2">

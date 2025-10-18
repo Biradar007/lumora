@@ -29,6 +29,11 @@ const EMPTY_CONSENT_SCOPES: ConsentScopes = {
   journals: false,
 };
 
+interface ConsentState {
+  scopes: ConsentScopes;
+  revokedAt?: number | null;
+}
+
 type Contact = {
   name: string;
   phone?: string;
@@ -57,15 +62,14 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   const [therapistDetails, setTherapistDetails] = useState<(TherapistProfile & { displayName?: string; email?: string })[]>([]);
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
-  const [consents, setConsents] = useState<Record<string, ConsentScopes>>({});
+  const [consents, setConsents] = useState<Record<string, ConsentState>>({});
   const [savingConsent, setSavingConsent] = useState<Record<string, boolean>>({});
+  const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
   const [consentError, setConsentError] = useState<string | null>(null);
-  const activeConnectionsByTherapist = useMemo(() => {
+  const connectionsByTherapist = useMemo(() => {
     const map = new Map<string, Connection>();
     connections.forEach((connection) => {
-      if (connection.status === 'ACTIVE') {
-        map.set(connection.therapistId, connection);
-      }
+      map.set(connection.therapistId, connection);
     });
     return map;
   }, [connections]);
@@ -181,11 +185,14 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
         : [];
       if (consentsResponse?.ok) {
         const data = (await consentsResponse.json()) as { consents: Consent[] };
-        const mapped: Record<string, ConsentScopes> = {};
+        const mapped: Record<string, ConsentState> = {};
         (data.consents ?? []).forEach((consent) => {
           mapped[consent.connectionId] = {
-            ...EMPTY_CONSENT_SCOPES,
-            ...(consent.scopes ?? {}),
+            scopes: {
+              ...EMPTY_CONSENT_SCOPES,
+              ...(consent.scopes ?? {}),
+            },
+            revokedAt: consent.revokedAt ?? null,
           };
         });
         setConsents(mapped);
@@ -239,20 +246,32 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     connectionId: string,
     updates: Partial<Pick<ConsentScopes, 'chatSummary' | 'journals'>>
   ) => {
-    const previous = consents[connectionId]
-      ? { ...consents[connectionId] }
-      : { ...EMPTY_CONSENT_SCOPES };
-    const next: ConsentScopes = {
-      ...previous,
+    const previousState: ConsentState = consents[connectionId]
+      ? {
+          scopes: { ...consents[connectionId].scopes },
+          revokedAt: consents[connectionId].revokedAt ?? null,
+        }
+      : {
+          scopes: { ...EMPTY_CONSENT_SCOPES },
+          revokedAt: null,
+        };
+    const nextScopes: ConsentScopes = {
+      ...previousState.scopes,
       ...updates,
     };
-    setConsents((prev) => ({ ...prev, [connectionId]: next }));
+    setConsents((prev) => ({
+      ...prev,
+      [connectionId]: {
+        scopes: nextScopes,
+        revokedAt: previousState.revokedAt,
+      },
+    }));
     setSavingConsent((prev) => ({ ...prev, [connectionId]: true }));
     try {
       const response = await fetch('/api/consents', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ connectionId, scopes: next }),
+        body: JSON.stringify({ connectionId, scopes: nextScopes }),
       });
       if (!response.ok) {
         throw new Error('Failed to save consent');
@@ -263,20 +282,81 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
         setConsents((prev) => ({
           ...prev,
           [connectionId]: {
-            ...EMPTY_CONSENT_SCOPES,
-            ...(consent.scopes ?? next),
+            scopes: {
+              ...EMPTY_CONSENT_SCOPES,
+              ...(consent.scopes ?? nextScopes),
+            },
+            revokedAt: consent.revokedAt ?? null,
           },
         }));
       }
       setConsentError(null);
     } catch (error) {
       console.error('Failed to update consent', error);
-      setConsents((prev) => ({ ...prev, [connectionId]: previous }));
+      setConsents((prev) => ({
+        ...prev,
+        [connectionId]: previousState,
+      }));
       setConsentError('Updating sharing preferences failed. Please try again.');
     } finally {
       setSavingConsent((prev) => {
         const copy = { ...prev };
         delete copy[connectionId];
+        return copy;
+      });
+    }
+  };
+
+  const handleDisconnect = async (connection: Connection) => {
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        'Disconnecting will end access to shared journals and AI chats. You can still review your private chat history. Continue?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    setDisconnecting((prev) => ({ ...prev, [connection.id]: true }));
+    try {
+      const response = await fetch(`/api/connections/${connection.id}/disconnect`, {
+        method: 'POST',
+        headers,
+      });
+      if (!response.ok) {
+        throw new Error('disconnect_failed');
+      }
+      const now = Date.now();
+      setConnections((prev) =>
+        prev.map((item) =>
+          item.id === connection.id
+            ? {
+                ...item,
+                status: 'ENDED',
+                endedAt: now,
+              }
+            : item
+        )
+      );
+      setConsents((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        copy[connection.id] = {
+          scopes: { ...EMPTY_CONSENT_SCOPES },
+          revokedAt: now,
+        };
+        return copy;
+      });
+    } catch (error) {
+      console.error('Failed to disconnect connection', error);
+      if (typeof window !== 'undefined') {
+        window.alert('We could not disconnect this connection. Please try again.');
+      }
+    } finally {
+      setDisconnecting((prev) => {
+        const copy = { ...prev };
+        delete copy[connection.id];
         return copy;
       });
     }
@@ -399,10 +479,18 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {therapistDetails.map((therapist) => {
                 const status = determineStatus(therapist.id);
-                const activeConnection = activeConnectionsByTherapist.get(therapist.id);
-                const connectionId = activeConnection?.id;
-                const scopes = connectionId ? consents[connectionId] ?? EMPTY_CONSENT_SCOPES : EMPTY_CONSENT_SCOPES;
+                const connection = connectionsByTherapist.get(therapist.id);
+                const isActive = connection?.status === 'ACTIVE';
+                const connectionId = connection?.id;
+                const consentState = connectionId ? consents[connectionId] : undefined;
+                const scopes =
+                  consentState && !consentState.revokedAt ? consentState.scopes : EMPTY_CONSENT_SCOPES;
                 const pending = connectionId ? Boolean(savingConsent[connectionId]) : false;
+                const disconnectBusy = connectionId ? Boolean(disconnecting[connectionId]) : false;
+                const endedAtLabel =
+                  connection?.status === 'ENDED' && connection.endedAt
+                    ? new Date(connection.endedAt).toLocaleString()
+                    : null;
                 return (
                   <article
                     key={therapist.id}
@@ -443,68 +531,104 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                         </span>
                       ) : null}
                     </div>
-                    {status === 'CONNECTED' && activeConnection ? (
+                    {connection ? (
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                            Connected
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                              isActive
+                                ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : 'border border-slate-200 bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {isActive ? 'Connected' : 'Connection ended'}
                           </span>
                           <Link
-                            href={`/chat/${activeConnection.id}`}
-                            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                            href={`/chat/${connection.id}`}
+                            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                              isActive
+                                ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                                : 'bg-slate-200 text-slate-700 hover:bg-slate-200'
+                            }`}
                           >
                             <MessageCircle className="h-4 w-4" />
-                            Open chat
+                            {isActive ? 'Open chat' : 'View chat history'}
                           </Link>
+                          {isActive ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDisconnect(connection)}
+                              disabled={disconnectBusy}
+                              className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
+                            >
+                              {disconnectBusy ? 'Disconnecting…' : 'Disconnect'}
+                            </button>
+                          ) : null}
                         </div>
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-3">
-                            Sharing preferences
-                          </p>
-                          <div className="space-y-3">
-                            <label className="flex items-center justify-between gap-4">
-                              <span className="flex-1 text-xs">
-                                Allow therapist to review my AI chat sessions
-                                <span className="block text-[11px] text-slate-500">
-                                  Share conversations you&apos;ve had with Lumora to support continuity of care.
+                        {isActive ? (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-3">
+                              Sharing preferences
+                            </p>
+                            <div className="space-y-3">
+                              <label className="flex items-center justify-between gap-4">
+                                <span className="flex-1 text-xs">
+                                  Allow therapist to review my AI chat sessions
+                                  <span className="block text-[11px] text-slate-500">
+                                    Share conversations you&apos;ve had with Lumora to support continuity of care.
+                                  </span>
                                 </span>
-                              </span>
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                checked={scopes.chatSummary}
-                                disabled={pending}
-                                onChange={(event) =>
-                                  connectionId
-                                    ? updateConsent(connectionId, { chatSummary: event.target.checked })
-                                    : undefined
-                                }
-                              />
-                            </label>
-                            <label className="flex items-center justify-between gap-4">
-                              <span className="flex-1 text-xs">
-                                Allow therapist to view my journal entries
-                                <span className="block text-[11px] text-slate-500">
-                                  Grant access to your reflections to deepen session insights.
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                  checked={scopes.chatSummary}
+                                  disabled={pending || disconnectBusy}
+                                  onChange={(event) =>
+                                    connectionId
+                                      ? updateConsent(connectionId, { chatSummary: event.target.checked })
+                                      : undefined
+                                  }
+                                />
+                              </label>
+                              <label className="flex items-center justify-between gap-4">
+                                <span className="flex-1 text-xs">
+                                  Allow therapist to view my journal entries
+                                  <span className="block text-[11px] text-slate-500">
+                                    Grant access to your reflections to deepen session insights.
+                                  </span>
                                 </span>
-                              </span>
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                checked={scopes.journals}
-                                disabled={pending}
-                                onChange={(event) =>
-                                  connectionId
-                                    ? updateConsent(connectionId, { journals: event.target.checked })
-                                    : undefined
-                                }
-                              />
-                            </label>
-                            {pending ? (
-                              <p className="text-[11px] font-medium text-indigo-600">Saving preferences…</p>
-                            ) : null}
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                  checked={scopes.journals}
+                                  disabled={pending || disconnectBusy}
+                                  onChange={(event) =>
+                                    connectionId
+                                      ? updateConsent(connectionId, { journals: event.target.checked })
+                                      : undefined
+                                  }
+                                />
+                              </label>
+                              {pending ? (
+                                <p className="text-[11px] font-medium text-indigo-600">Saving preferences…</p>
+                              ) : null}
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              Sharing disabled
+                            </p>
+                            <p>
+                              Your therapist no longer has access to your AI chats or journal entries. You can still review
+                              your private chat history above.
+                            </p>
+                            {endedAtLabel ? (
+                              <p className="text-[11px] text-slate-500">Connection ended {endedAtLabel}.</p>
+                            ) : null}
+                            <RequestButton status={status} onRequest={() => sendRequest(therapist.id)} />
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <RequestButton status={status} onRequest={() => sendRequest(therapist.id)} />
