@@ -471,7 +471,7 @@ export function ChatInterface() {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-100"
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-100 lg:hidden"
               aria-label="Close conversations"
             >
               <X className="h-4 w-4" />
@@ -521,7 +521,7 @@ export function ChatInterface() {
                         Updated {formatTimestamp(session.updatedAt)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 opacity-0 transition-opacity duration-150 hover:opacity-100 group-hover:opacity-100">
+                    <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:hover:opacity-100 lg:group-hover:opacity-100">
                       <button
                         type="button"
                         onClick={(event) => {
