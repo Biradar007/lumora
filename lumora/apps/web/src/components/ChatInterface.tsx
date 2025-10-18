@@ -567,7 +567,7 @@ export function ChatInterface() {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[32px] border border-white/70 bg-gradient-to-br from-white via-indigo-50/40 to-purple-100/40 shadow-[0_30px_60px_-24px_rgba(79,70,229,0.4)]">
+    <div className="flex h-full flex-col overflow-hidden border border-white/70 bg-gradient-to-br from-white via-indigo-50/40 to-purple-100/40 shadow-[0_30px_60px_-24px_rgba(79,70,229,0.4)]">
       <div className="flex flex-1 min-h-0 flex-col backdrop-blur-sm lg:flex-row">
         <aside
           className={`w-full min-h-0 border-b border-gray-200 lg:w-72 lg:border-r ${mobileSessionsOpen ? 'block' : 'hidden lg:block'}`}
@@ -596,8 +596,7 @@ export function ChatInterface() {
                 onClick={() => setMobileSessionsOpen((prev) => !prev)}
                 className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-100 hover:bg-white"
               >
-                <MessageSquare className="h-3.5 w-3.5" />
-                History
+                Conversations
               </button>
             </div>
           </header>
@@ -690,9 +689,6 @@ export function ChatInterface() {
                   rows={2}
                 />
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100/60 pt-3">
-                  <div className="text-xs text-slate-400">
-                    Responses may take a few seconds while we prepare a thoughtful reply.
-                  </div>
                   <button
                     type="button"
                     onClick={handleSendMessage}
