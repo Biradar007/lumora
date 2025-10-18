@@ -105,7 +105,7 @@ export function Dashboard() {
 
       {/* Weekly Mood Chart */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-6">This Week's Mood</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-6">This Week&rsquo;s Mood</h2>
         <div className="space-y-4">
           {weeklyMoods.map((day, index) => (
             <div key={index} className="flex items-center gap-4">
@@ -173,7 +173,7 @@ export function Dashboard() {
                     {achievement.title}
                   </h3>
                   <p className={`text-sm ${achievement.earned ? 'text-orange-600' : 'text-gray-500'}`}>
-                    {achievement.description}
+                  {achievement.description}
                   </p>
                 </div>
               </div>
@@ -185,7 +185,7 @@ export function Dashboard() {
       {/* Motivational Quote */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200 p-6 text-center">
         <p className="text-lg italic text-gray-700 mb-2">
-          "The greatest revolution of our generation is the discovery that human beings, by changing the inner attitudes of their minds, can change the outer aspects of their lives."
+          &ldquo;The greatest revolution of our generation is the discovery that human beings, by changing the inner attitudes of their minds, can change the outer aspects of their lives.&rdquo;
         </p>
         <p className="text-sm text-gray-600">— William James</p>
       </div>

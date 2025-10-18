@@ -1,4 +1,6 @@
 import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
+import { getAuth as getFirebaseAuth } from 'firebase/auth';
+import { getFirestore as getFirebaseFirestore } from 'firebase/firestore';
 import type { Analytics } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -20,6 +22,14 @@ export function getFirebaseApp(): FirebaseApp {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
   }
   return firebaseApp;
+}
+
+export function getFirebaseAuthClient() {
+  return getFirebaseAuth(getFirebaseApp());
+}
+
+export function getFirebaseFirestoreClient() {
+  return getFirebaseFirestore(getFirebaseApp());
 }
 
 export async function getFirebaseAnalytics(): Promise<Analytics | undefined> {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getFirebaseApp } from '@/lib/firebaseClient';
 import { getFirestore } from 'firebase/firestore';
 import { TherapistCard } from '@/components/TherapistCard';
 import { RequestButton } from '@/components/RequestButton';

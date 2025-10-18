@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, Phone, MessageCircle, Globe, Clock, Shield } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface CrisisResource {
   name: string;
@@ -8,7 +9,7 @@ interface CrisisResource {
   text?: string;
   website?: string;
   hours: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
 }
 
 const crisisResources: CrisisResource[] = [
@@ -95,10 +96,10 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
         </div>
         <div className="bg-white rounded-lg p-4 border border-red-200">
           <p className="text-lg font-semibold text-red-800 mb-2">
-            🚨 If you're in immediate danger, call 988
+            🚨 If you&apos;re in immediate danger, call 988
           </p>
           <p className="text-red-700">
-            This page provides crisis resources, but if you're experiencing a medical emergency or are in immediate physical danger, please call emergency services right away.
+            This page provides crisis resources, but if you&apos;re experiencing a medical emergency or are in immediate physical danger, please call emergency services right away.
           </p>
         </div>
       </div>
@@ -188,7 +189,7 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-200 p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">International Crisis Support</h2>
         <p className="text-gray-700 mb-4">
-          If you're located outside the United States, please visit these resources for crisis support in your country:
+          If you&apos;re located outside the United States, please visit these resources for crisis support in your country:
         </p>
         <div className="flex flex-wrap gap-4">
           <a href="https://findahelpline.com" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-white border border-purple-300 rounded-lg hover:bg-purple-50 transition-colors text-purple-700 font-medium">

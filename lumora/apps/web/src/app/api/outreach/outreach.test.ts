@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 // Basic schema logic mirror to ensure consent required
-function validate(payload: any) {
+interface OutreachPayload {
+  sessionId: string;
+  consent: boolean;
+}
+
+function validate(payload: OutreachPayload) {
   if (!payload || typeof payload.sessionId !== 'string' || payload.sessionId.length < 6) throw new Error('invalid');
   if (payload.consent !== true) throw new Error('consent_required');
   return true;
@@ -15,5 +20,4 @@ describe('outreach consent', () => {
     expect(validate({ sessionId: 'abcdef', consent: true })).toBe(true);
   });
 });
-
 

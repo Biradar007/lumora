@@ -1,6 +1,6 @@
 'use client';
 
-import { getFirebaseApp } from '@/lib/firebase';
+import { getFirebaseApp } from '@/lib/firebaseClient';
 import {
   collection,
   deleteDoc,
@@ -219,7 +219,7 @@ export function subscribeMessages(
   const db = getFirestore(getFirebaseApp());
   const messagesCollection = collection(db, 'users', uid, 'sessions', sessionId, 'messages');
 
-  let messagesQuery = query(messagesCollection, orderBy('createdAt', 'asc'), limit(pageSize));
+  let messagesQuery = query(messagesCollection, orderBy('createdAt', 'desc'), limit(pageSize));
   if (startAfterDoc) {
     messagesQuery = query(messagesQuery, startAfter(startAfterDoc));
   }
@@ -228,10 +228,8 @@ export function subscribeMessages(
     messagesQuery,
     (snapshot) => {
       const docs = snapshot.docs as QueryDocumentSnapshot<DocumentData>[];
-      onNext(
-        docs.map((docSnapshot) => messageDataFromSnapshot(docSnapshot)),
-        docs
-      );
+      const records = docs.map((docSnapshot) => messageDataFromSnapshot(docSnapshot)).reverse();
+      onNext(records, docs);
     },
     (error) => {
       console.error('Failed to subscribe to messages:', error);

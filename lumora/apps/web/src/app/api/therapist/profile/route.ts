@@ -34,12 +34,12 @@ export async function POST(request: Request) {
 
     const nextStatus: ProfileStatus = existing?.status ?? 'INCOMPLETE';
 
-  const profile: TherapistProfile = {
-    id: auth.userId,
-    tenantId: payload.tenantId ?? auth.tenantId ?? existing?.tenantId,
-    status: nextStatus,
-    rejectionReason: existing?.rejectionReason,
-    visible: payload.visible ?? existing?.visible ?? false,
+    const profile: TherapistProfile = {
+      id: auth.userId,
+      tenantId: payload.tenantId ?? auth.tenantId ?? existing?.tenantId,
+      status: nextStatus,
+      rejectionReason: existing?.rejectionReason,
+      visible: payload.visible ?? existing?.visible ?? false,
       bio: payload.bio ?? existing?.bio,
       languages: payload.languages ?? existing?.languages ?? [],
       specialties: payload.specialties ?? existing?.specialties ?? [],
@@ -66,6 +66,21 @@ export async function POST(request: Request) {
     await profileRef.set(sanitizedProfile, { merge: true });
 
     return NextResponse.json({ profile: sanitizedProfile });
+  } catch (error) {
+    return jsonError(error);
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const auth = requireAuth(request, { roles: ['therapist'] });
+    const db = getServerFirestore();
+    const snapshot = await db.collection('therapistProfiles').doc(auth.userId).get();
+    if (!snapshot.exists) {
+      return NextResponse.json({ profile: null });
+    }
+    const profile = snapshot.data() as TherapistProfile;
+    return NextResponse.json({ profile });
   } catch (error) {
     return jsonError(error);
   }
