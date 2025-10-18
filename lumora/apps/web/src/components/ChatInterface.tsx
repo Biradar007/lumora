@@ -693,7 +693,7 @@ export function ChatInterface() {
                     type="button"
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim()}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="ml-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Send className="h-4 w-4" />
                     Send
