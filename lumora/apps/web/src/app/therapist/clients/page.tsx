@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
+import { sanitizeJournalHtml } from '@/lib/journalHtml';
 import type {
   Connection,
   Consent,
@@ -360,7 +361,10 @@ export default function TherapistClientsPage() {
                               <p className="text-[11px] font-semibold text-slate-500">
                                 {new Date(entry.createdAt).toLocaleString()}
                               </p>
-                              <p className="text-sm text-slate-700 whitespace-pre-wrap">{entry.content}</p>
+                              <div
+                                className="text-sm text-slate-700"
+                                dangerouslySetInnerHTML={{ __html: sanitizeJournalHtml(entry.content) }}
+                              />
                             </div>
                           ))}
                         </div>

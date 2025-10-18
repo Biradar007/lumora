@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, PenLine, Bold, Italic, List, ListOrdered, Type, MinusCircle } from 'lucide-react';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { JournalEntry } from '@/types/domain';
+import { extractPlainText, sanitizeJournalHtml } from '@/lib/journalHtml';
 
 const FONT_FAMILY_OPTIONS = [
   { label: 'Inter', value: 'Inter, sans-serif' },
@@ -26,27 +27,6 @@ const FONT_SIZE_COMMAND_MAP: Record<string, string> = {
   '18px': '4',
   '22px': '5',
 };
-
-const FONT_SIZE_LOOKUP: Record<string, string> = {
-  '1': '12px',
-  '2': '14px',
-  '3': '16px',
-  '4': '18px',
-  '5': '22px',
-  '6': '26px',
-  '7': '32px',
-};
-
-const ALLOWED_INLINE_STYLES = new Set([
-  'font-family',
-  'font-size',
-  'font-weight',
-  'font-style',
-  'text-decoration',
-  'color',
-  'line-height',
-  'letter-spacing',
-]);
 
 interface JournalErrorState {
   fetch?: string;
@@ -180,7 +160,7 @@ export function Journal() {
     event.preventDefault();
     const editor = editorRef.current;
     const rawHtml = editor?.innerHTML ?? '';
-    const sanitizedHtml = sanitizeHtml(rawHtml);
+    const sanitizedHtml = sanitizeJournalHtml(rawHtml);
     const plainText = extractPlainText(sanitizedHtml);
 
     if (!plainText.trim()) {
@@ -507,7 +487,7 @@ export function Journal() {
               </p>
               <div
                 className="mt-3 prose prose-sm max-w-none text-slate-700"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.content) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeJournalHtml(entry.content) }}
               />
             </article>
           ))}
@@ -515,114 +495,6 @@ export function Journal() {
       </div>
     </div>
   );
-}
-
-function sanitizeHtml(input: string): string {
-  if (!input) {
-    return '';
-  }
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(input, 'text/html');
-  convertFontTags(doc.body);
-  const allowedTags = new Set([
-    'p',
-    'br',
-    'strong',
-    'b',
-    'em',
-    'i',
-    'u',
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'ul',
-    'ol',
-    'li',
-    'blockquote',
-    'span',
-    'div',
-  ]);
-  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
-  const nodesToRemove: Element[] = [];
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Element;
-    if (!allowedTags.has(node.tagName.toLowerCase())) {
-      nodesToRemove.push(node);
-      continue;
-    }
-    [...node.attributes].forEach((attr) => {
-      if (attr.name === 'style') {
-        const sanitizedStyle = attr.value
-          .split(';')
-          .map((rule) => rule.trim())
-          .filter(Boolean)
-          .map((rule) => {
-            const [property, value] = rule.split(':').map((segment) => segment.trim());
-            if (!property || !value) {
-              return null;
-            }
-            if (!ALLOWED_INLINE_STYLES.has(property.toLowerCase())) {
-              return null;
-            }
-            return `${property}: ${value}`;
-          })
-          .filter(Boolean)
-          .join('; ');
-        if (sanitizedStyle) {
-          node.setAttribute('style', sanitizedStyle);
-        } else {
-          node.removeAttribute('style');
-        }
-        return;
-      }
-      node.removeAttribute(attr.name);
-    });
-  }
-  nodesToRemove.forEach((node) => {
-    const parent = node.parentNode;
-    if (!parent) {
-      return;
-    }
-    while (node.firstChild) {
-      parent.insertBefore(node.firstChild, node);
-    }
-    parent.removeChild(node);
-  });
-  return doc.body.innerHTML.trim();
-}
-
-function extractPlainText(input: string): string {
-  if (!input) {
-    return '';
-  }
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(input, 'text/html');
-  return doc.body.textContent ?? '';
-}
-
-function convertFontTags(root: HTMLElement, fallbackSize?: string) {
-  const fontNodes = root.querySelectorAll('font');
-  fontNodes.forEach((fontNode) => {
-    const span = document.createElement('span');
-    const face = fontNode.getAttribute('face');
-    const sizeAttr = fontNode.getAttribute('size');
-    const color = fontNode.getAttribute('color');
-    if (face) {
-      span.style.fontFamily = face;
-    }
-    const resolvedSize = sizeAttr ? FONT_SIZE_LOOKUP[sizeAttr] ?? fallbackSize : fallbackSize;
-    if (resolvedSize) {
-      span.style.fontSize = resolvedSize;
-    }
-    if (color) {
-      span.style.color = color;
-    }
-    while (fontNode.firstChild) {
-      span.appendChild(fontNode.firstChild);
-    }
-    fontNode.replaceWith(span);
-  });
 }
 
 function wrapSelectionWithHeading(selection: Selection, editor: HTMLElement) {
