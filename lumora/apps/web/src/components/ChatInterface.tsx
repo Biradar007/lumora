@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Clock, Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -230,6 +231,9 @@ export function ChatInterface() {
     }
     return [welcomeMessage, ...mapped];
   }, [uid, activeSessionId, messages, guestMessages]);
+
+  const lastDisplayedMessage = displayMessages.length ? displayMessages[displayMessages.length - 1] : null;
+  const showTypingIndicator = isTyping && lastDisplayedMessage?.sender === 'user';
 
   const handleCreateSession = async () => {
     if (!uid) {
@@ -563,8 +567,8 @@ export function ChatInterface() {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-lg">
-      <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
+    <div className="flex h-full flex-col overflow-hidden rounded-[32px] border border-white/70 bg-gradient-to-br from-white via-indigo-50/40 to-purple-100/40 shadow-[0_30px_60px_-24px_rgba(79,70,229,0.4)]">
+      <div className="flex flex-1 min-h-0 flex-col backdrop-blur-sm lg:flex-row">
         <aside
           className={`w-full min-h-0 border-b border-gray-200 lg:w-72 lg:border-r ${mobileSessionsOpen ? 'block' : 'hidden lg:block'}`}
         >
@@ -572,21 +576,25 @@ export function ChatInterface() {
         </aside>
 
         <section className="flex flex-1 min-h-0 flex-col">
-          <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-indigo-500" />
-              <div>
-                <p className="text-sm font-semibold text-gray-700">
-                  {uid ? sessions.find((session) => session.id === activeSessionId)?.title ?? 'Conversation' : 'Guest conversation'}
-                </p>
-                <p className="text-xs text-gray-400">Messages are stored securely for 30 days.</p>
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/60 bg-white/70 px-6 py-5 backdrop-blur-md">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+               <div>
+              <h3 className="font-semibold text-gray-800">Chat</h3>
+              <p className="text-sm text-green-600">Online • Always here for you</p>
+            </div>
               </div>
+              <p className="text-xs text-slate-400">
+                {uid
+                  ? ''
+                  : 'Sign in to keep your conversations safe and revisit them anytime.'}
+              </p>
             </div>
             <div className="flex items-center gap-2 lg:hidden">
               <button
                 type="button"
                 onClick={() => setMobileSessionsOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100"
+                className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-100 hover:bg-white"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
                 History
@@ -594,96 +602,102 @@ export function ChatInterface() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white/40 via-indigo-50/40 to-indigo-100/40 px-6 py-8">
             {messagesLoading && uid ? (
               <div className="flex flex-col items-center justify-center py-16 text-sm text-gray-500">
                 <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
                 <span className="mt-2">Loading conversation…</span>
               </div>
             ) : (
-              <div className="space-y-6">
-                {displayMessages.map((message, index) => {
+              <div className="space-y-8">
+                {displayMessages.map((message) => {
                   const isAssistant = message.sender === 'assistant';
-                  const isLastUserMessage = message.sender === 'user' && index === displayMessages.length - 1;
+                  const bubbleClasses = isAssistant
+                    ? 'bg-white/90 text-slate-700 border border-white/80 shadow-[0_30px_60px_-30px_rgba(79,70,229,0.35)]'
+                    : 'bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 text-white shadow-[0_35px_65px_-30px_rgba(37,99,235,0.65)]';
+                  const metaClasses = isAssistant ? 'text-slate-400' : 'text-indigo-100/90';
 
                   return (
                     <div key={message.id} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
-                      <div
-                        className={`max-w-lg rounded-2xl px-4 py-3 text-sm shadow-sm transition ${
-                          isAssistant
-                            ? 'bg-indigo-50 text-indigo-900'
-                            : 'bg-indigo-600 text-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            {isAssistant ? (
-                              <MessageSquare className="h-4 w-4" />
-                            ) : (
-                              <User className="h-4 w-4" />
-                            )}
-                            <span className="font-semibold">
-                              {isAssistant ? 'Lumora' : 'You'}
-                            </span>
+                      <div className={`flex w-full max-w-2xl flex-col ${isAssistant ? 'items-start' : 'items-end'}`}>
+                        <div className={`flex w-full items-end gap-3 ${isAssistant ? '' : 'flex-row-reverse'}`}>
+                          {isAssistant ? (
+                            <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.30)] ring-1 ring-white/20" />
+                          ) : (
+                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 text-white shadow-[0_18px_34px_-18px_rgba(37,99,235,0.55)]">
+                              <User className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className={`w-fit max-w-xl rounded-[26px] px-5 py-4 text-sm leading-relaxed backdrop-blur-sm ${bubbleClasses}`}>
+                            <div className="prose prose-sm mt-0 max-w-none text-current prose-p:my-0 prose-ul:my-0 prose-ol:my-0">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
+                            {message.pending ? (
+                              <div className="mt-4 flex items-center gap-2 text-xs text-indigo-400">
+                                {typingDotDelays.map((delay) => (
+                                  <span
+                                    key={delay}
+                                    className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current"
+                                    style={{ animationDelay: `${delay}s` }}
+                                  />
+                                ))}
+                                <span>Thinking…</span>
+                              </div>
+                            ) : null}
                           </div>
-                          <span className="flex items-center gap-1 text-xs">
-                            <Clock className="h-3 w-3" />
-                            {formatTimestamp(message.timestamp)}
-                          </span>
                         </div>
-                        <div className="prose prose-sm mt-3 max-w-none text-current">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
-                        {message.pending ? (
-                          <div className="mt-3 flex items-center gap-1 text-xs text-indigo-200">
-                            {typingDotDelays.map((delay) => (
-                              <span
-                                key={delay}
-                                className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current"
-                                style={{ animationDelay: `${delay}s` }}
-                              />
-                            ))}
-                            <span className="ml-2">Thinking…</span>
-                          </div>
-                        ) : null}
-                        {isLastUserMessage && isTyping ? (
-                          <div className="mt-3 flex items-center gap-2 text-xs text-indigo-200">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Lumora is responding…</span>
-                          </div>
-                        ) : null}
+                        
                       </div>
                     </div>
                   );
                 })}
+                {showTypingIndicator ? (
+                  <div className="flex justify-start">
+                    <div className="flex w-full max-w-2xl items-end gap-3">
+                      <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.30)] ring-1 ring-white/20" />
+                      <div className="w-fit max-w-xl rounded-[26px] border border-white/70 bg-white/90 px-5 py-3 text-sm text-slate-500 shadow-[0_30px_60px_-30px_rgba(79,70,229,0.35)] backdrop-blur-sm">
+                        <div className="flex items-center gap-2 text-xs text-indigo-400">
+                          {typingDotDelays.map((delay) => (
+                            <span
+                              key={delay}
+                              className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current"
+                              style={{ animationDelay: `${delay}s` }}
+                            />
+                          ))}
+                          <span>Typing…</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 <div ref={messagesEndRef} />
               </div>
             )}
           </div>
 
           {uid ? (
-            <div className="border-t border-gray-200 bg-white/80 px-4 py-3 backdrop-blur">
-              <div className="rounded-2xl border border-gray-200 bg-white shadow-inner">
+            <div className="border-t border-white/60 bg-white/80 px-6 py-5 backdrop-blur-lg">
+              <div className="rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_24px_48px_-28px_rgba(79,70,229,0.45)]">
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
                   onChange={(event) => setInputValue(event.target.value)}
                   onKeyDown={handleKeyPress}
                   placeholder="How are you feeling today?"
-                  className="w-full resize-none rounded-2xl border-0 bg-transparent px-4 py-3 text-sm text-gray-700 focus:outline-none"
+                  className="w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
                   rows={2}
                 />
-                <div className="flex items-center justify-between border-t border-gray-100 px-4 py-2">
-                  <div className="text-xs text-gray-400">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100/60 pt-3">
+                  <div className="text-xs text-slate-400">
                     Responses may take a few seconds while we prepare a thoughtful reply.
                   </div>
                   <button
                     type="button"
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim()}
-                    className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Send className="h-4 w-4" />
                     Send
@@ -692,7 +706,7 @@ export function ChatInterface() {
               </div>
             </div>
           ) : (
-            <div className="border-t border-gray-200 bg-white/80 px-4 py-3 text-center text-sm text-gray-500">
+            <div className="border-t border-white/60 bg-white/80 px-6 py-5 text-center text-sm text-slate-500 backdrop-blur-lg">
               <p>
                 Responses are generated in real time. Create an account to save your conversations securely.
               </p>
