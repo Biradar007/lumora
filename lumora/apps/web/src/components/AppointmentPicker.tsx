@@ -5,9 +5,16 @@ import { useState } from 'react';
 interface AppointmentPickerProps {
   onBook: (payload: { start: number; end: number; location: 'video' | 'in-person'; videoLink?: string }) => Promise<void>;
   sessionLengthMinutes?: 25 | 50;
+  availableSlots?: { start: number; end: number }[];
+  timezone?: string;
 }
 
-export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: AppointmentPickerProps) {
+export function AppointmentPicker({
+  onBook,
+  sessionLengthMinutes = 50,
+  availableSlots = [],
+  timezone = 'UTC',
+}: AppointmentPickerProps) {
   const [date, setDate] = useState('');
   const [start, setStart] = useState('');
   const [location, setLocation] = useState<'video' | 'in-person'>('video');
@@ -15,6 +22,7 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{ start: number; end: number } | null>(null);
 
   const derivedEnd = () => {
     if (!start) {
@@ -30,17 +38,24 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
   };
 
   const handleSubmit = async () => {
-    if (!date || !start) {
-      setError('Select a date and start time.');
-      return;
+    let startDate: Date;
+    let endDate: Date;
+    if (selectedSlot) {
+      startDate = new Date(selectedSlot.start);
+      endDate = new Date(selectedSlot.end);
+    } else {
+      if (!date || !start) {
+        setError('Select a date and start time.');
+        return;
+      }
+      const end = derivedEnd();
+      if (!end) {
+        setError('Unable to determine end time.');
+        return;
+      }
+      startDate = new Date(`${date}T${start}:00Z`);
+      endDate = new Date(`${date}T${end}:00Z`);
     }
-    const end = derivedEnd();
-    if (!end) {
-      setError('Unable to determine end time.');
-      return;
-    }
-    const startDate = new Date(`${date}T${start}:00Z`);
-    const endDate = new Date(`${date}T${end}:00Z`);
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       setError('Invalid date or time.');
       return;
@@ -60,6 +75,7 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
       setDate('');
       setStart('');
       setVideoLink('');
+      setSelectedSlot(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create appointment');
     } finally {
@@ -67,10 +83,57 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
     }
   };
 
+  const formatSlot = (slot: { start: number; end: number }) => {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return `${formatter.format(new Date(slot.start))} – ${formatter.format(new Date(slot.end))}`;
+  };
+
+  const handleSlotSelect = (slot: { start: number; end: number }) => {
+    setSelectedSlot(slot);
+    setDate('');
+    setStart('');
+    setSuccess(false);
+  };
+
   return (
     <div className="space-y-4">
       {error && <p className="text-sm text-rose-600">{error}</p>}
       {success && <p className="text-sm text-emerald-600">Appointment requested.</p>}
+      {availableSlots.length ? (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-slate-700">Available slots ({timezone})</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {availableSlots.map((slot) => {
+              const key = `${slot.start}-${slot.end}`;
+              const isSelected = selectedSlot?.start === slot.start && selectedSlot.end === slot.end;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleSlotSelect(slot)}
+                  className={`rounded-lg border px-3 py-2 text-sm text-left transition ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold'
+                      : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700'
+                  }`}
+                  disabled={pending}
+                >
+                  {formatSlot(slot)}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-500">
+            Can’t find a fit? Pick a custom time below and we’ll send it as a request.
+          </p>
+        </div>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-medium text-slate-700">
           Date
@@ -79,6 +142,7 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
             value={date}
             onChange={(event) => setDate(event.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+            disabled={pending}
           />
         </label>
         <label className="text-sm font-medium text-slate-700">
@@ -88,6 +152,7 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
             value={start}
             onChange={(event) => setStart(event.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+            disabled={pending}
           />
         </label>
         <label className="text-sm font-medium text-slate-700">
@@ -96,6 +161,7 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
             value={location}
             onChange={(event) => setLocation(event.target.value as 'video' | 'in-person')}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+            disabled={pending}
           >
             <option value="video">Video</option>
             <option value="in-person">In-person</option>
@@ -109,6 +175,7 @@ export function AppointmentPicker({ onBook, sessionLengthMinutes = 50 }: Appoint
               value={videoLink}
               onChange={(event) => setVideoLink(event.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+              disabled={pending}
             />
           </label>
         )}

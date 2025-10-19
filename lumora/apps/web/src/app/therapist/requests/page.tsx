@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { ConnectionRequest } from '@/types/domain';
 
 export default function TherapistRequestsPage() {
   const headers = useApiHeaders();
+  const router = useRouter();
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +46,15 @@ export default function TherapistRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="space-y-3">
+        <button
+          type="button"
+          onClick={() => router.push('/therapist/dashboard')}
+          className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </button>
         <h1 className="text-2xl font-semibold text-slate-900">Requests inbox</h1>
         <p className="text-sm text-slate-600">Review and respond to user connection requests.</p>
       </header>

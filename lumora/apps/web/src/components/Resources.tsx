@@ -69,7 +69,24 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   const connectionsByTherapist = useMemo(() => {
     const map = new Map<string, Connection>();
     connections.forEach((connection) => {
-      map.set(connection.therapistId, connection);
+      const existing = map.get(connection.therapistId);
+      if (!existing) {
+        map.set(connection.therapistId, connection);
+        return;
+      }
+      const currentIsActive = existing.status === 'ACTIVE';
+      const nextIsActive = connection.status === 'ACTIVE';
+      if (nextIsActive && !currentIsActive) {
+        map.set(connection.therapistId, connection);
+        return;
+      }
+      if (nextIsActive === currentIsActive) {
+        const currentStart = existing.startedAt ?? 0;
+        const nextStart = connection.startedAt ?? 0;
+        if (nextStart > currentStart) {
+          map.set(connection.therapistId, connection);
+        }
+      }
     });
     return map;
   }, [connections]);
@@ -544,7 +561,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                             {isActive ? 'Connected' : 'Connection ended'}
                           </span>
                           <Link
-                            href={`/chat/${connection.id}`}
+                            href={`/user/resources/chat/${connection.id}`}
                             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
                               isActive
                                 ? 'bg-indigo-600 text-white hover:bg-indigo-500'
@@ -554,6 +571,14 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                             <MessageCircle className="h-4 w-4" />
                             {isActive ? 'Open chat' : 'View chat history'}
                           </Link>
+                          {isActive ? (
+                            <Link
+                              href={`/user/resources/schedule/${connection.id}`}
+                              className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-50"
+                            >
+                              Schedule session
+                            </Link>
+                          ) : null}
                           {isActive ? (
                             <button
                               type="button"

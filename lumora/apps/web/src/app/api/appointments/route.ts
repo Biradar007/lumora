@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     }
     const appointmentsCollection = db.collection('appointments');
     const appointmentRef = appointmentsCollection.doc();
+    const now = Date.now();
     const appointment: Appointment = {
       id: appointmentRef.id,
       connectionId: body.connectionId,
@@ -46,6 +47,10 @@ export async function POST(request: Request) {
       status: 'PENDING',
       location: body.location,
       videoLink: body.videoLink,
+      googleCalendarEventId: null,
+      zoomMeetingId: null,
+      createdAt: now,
+      updatedAt: now,
     };
     await appointmentRef.set(sanitizeForFirestore(appointment));
     return NextResponse.json({ appointment });

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { sanitizeJournalHtml } from '@/lib/journalHtml';
 import type {
@@ -21,6 +23,7 @@ const EMPTY_SCOPES: ConsentScopes = {
 
 export default function TherapistClientsPage() {
   const headers = useApiHeaders();
+  const router = useRouter();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [consents, setConsents] = useState<Record<string, Consent>>({});
   const [loading, setLoading] = useState(true);
@@ -333,7 +336,15 @@ export default function TherapistClientsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <header>
+        <header className="space-y-3">
+          <button
+            type="button"
+            onClick={() => router.push('/therapist/dashboard')}
+            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to dashboard
+          </button>
           <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
           <p className="text-sm text-slate-600">View and manage all client connections.</p>
         </header>
@@ -344,7 +355,15 @@ export default function TherapistClientsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="space-y-3">
+        <button
+          type="button"
+          onClick={() => router.push('/therapist/dashboard')}
+          className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </button>
         <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
         <p className="text-sm text-slate-600">View and manage all client connections.</p>
       </header>
@@ -370,7 +389,7 @@ export default function TherapistClientsPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
-                  href={`/chat/${connection.id}`}
+                  href={`/therapist/clients/chat/${connection.id}`}
                   className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                     isActive
                       ? 'border border-indigo-200 text-indigo-600 hover:border-indigo-300'
@@ -381,7 +400,7 @@ export default function TherapistClientsPage() {
                 </Link>
                 {isActive ? (
                   <Link
-                    href={`/schedule/${connection.id}`}
+                    href={`/therapist/clients/schedule/${connection.id}`}
                     className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-300"
                   >
                     View schedule
