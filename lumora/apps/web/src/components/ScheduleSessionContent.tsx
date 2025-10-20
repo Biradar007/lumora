@@ -7,6 +7,7 @@ import { AppointmentPicker } from '@/components/AppointmentPicker';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { Connection, TherapistProfile } from '@/types/domain';
 import { getFirebaseApp } from '@/lib/firebaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ScheduleSessionContentProps {
   connectionId: string;
@@ -17,6 +18,7 @@ interface ScheduleSessionContentProps {
 
 export function ScheduleSessionContent({ connectionId, className, onBack, backLabel }: ScheduleSessionContentProps) {
   const headers = useApiHeaders();
+  const { user } = useAuth();
   const [connection, setConnection] = useState<Connection | null>(null);
   const [therapistProfile, setTherapistProfile] = useState<TherapistProfile | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -26,7 +28,8 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!headers['x-user-id']) {
+    if (!user || !headers['x-user-id']) {
+      setConnection(null);
       return;
     }
     const load = async () => {
@@ -72,7 +75,7 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
       }
     };
     void load();
-  }, [connectionId, headers]);
+  }, [connectionId, headers, user]);
 
   const handleBook = async ({
     start,
@@ -107,6 +110,10 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
     }
     setMessage('Appointment requested. Your therapist will confirm soon.');
   };
+
+  if (!user) {
+    return <p className="text-sm text-slate-500">Sign in to schedule sessions.</p>;
+  }
 
   if (!connection) {
     return <p className="text-sm text-slate-500">Connection not found.</p>;

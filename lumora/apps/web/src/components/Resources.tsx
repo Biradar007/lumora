@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { TherapistProfile, ConnectionRequest, Connection, Consent, ConsentScopes } from '@/types/domain';
+import { FirebaseError } from 'firebase/app';
 import { collection, doc, getDoc, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebaseClient';
 import { RequestButton } from '@/components/RequestButton';
@@ -144,6 +145,10 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                 email: userData.email ?? undefined,
               };
             } catch (innerError) {
+              if (innerError instanceof FirebaseError && innerError.code === 'permission-denied') {
+                console.debug('Skipped therapist user profile due to permission rules', profile.id);
+                return { ...profile };
+              }
               console.warn('Failed to fetch therapist user profile', innerError);
               return { ...profile };
             }
