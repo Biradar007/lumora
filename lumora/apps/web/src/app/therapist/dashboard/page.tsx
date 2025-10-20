@@ -72,15 +72,16 @@ export default function TherapistDashboard() {
     void loadCalendarStatus();
   }, [headers]);
 
-  const todaysAppointments = useMemo(
-    () =>
-      appointments.filter((appointment) => {
-        const start = new Date(appointment.start);
-        const now = new Date();
-        return start.toDateString() === now.toDateString();
-      }),
-    [appointments]
-  );
+  const todaysAppointments = useMemo(() => {
+    const now = new Date();
+    return appointments.filter((appointment) => {
+      if (appointment.status !== 'CONFIRMED') {
+        return false;
+      }
+      const start = new Date(appointment.start);
+      return start.toDateString() === now.toDateString();
+    });
+  }, [appointments]);
 
   const activeConnections = useMemo(
     () => connections.filter((connection) => connection.status === 'ACTIVE'),

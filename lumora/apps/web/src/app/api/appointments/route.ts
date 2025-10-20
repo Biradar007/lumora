@@ -35,6 +35,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'invalid_therapist' }, { status: 400 });
     }
     const appointmentsCollection = db.collection('appointments');
+    const existingSnapshot = await appointmentsCollection.where('connectionId', '==', body.connectionId).get();
+    const hasActiveAppointment = existingSnapshot.docs.some((docSnapshot) => {
+      const existing = docSnapshot.data() as Appointment;
+      return existing.status === 'PENDING' || existing.status === 'CONFIRMED';
+    });
+    if (hasActiveAppointment) {
+      return NextResponse.json({ error: 'appointment_exists' }, { status: 409 });
+    }
     const appointmentRef = appointmentsCollection.doc();
     const now = Date.now();
     const appointment: Appointment = {

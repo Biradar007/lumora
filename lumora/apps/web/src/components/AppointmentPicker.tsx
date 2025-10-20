@@ -109,8 +109,8 @@ export function AppointmentPicker({
         <div className="space-y-2">
           <p className="text-sm font-semibold text-slate-700">Available slots ({timezone})</p>
           <div className="grid gap-2 sm:grid-cols-2">
-            {availableSlots.map((slot) => {
-              const key = `${slot.start}-${slot.end}`;
+            {availableSlots.map((slot, index) => {
+              const key = `${slot.start}-${slot.end}-${index}`;
               const isSelected = selectedSlot?.start === slot.start && selectedSlot.end === slot.end;
               return (
                 <button

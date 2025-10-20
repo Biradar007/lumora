@@ -18,7 +18,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
-import type { TherapistProfile, ConnectionRequest, Connection, Consent, ConsentScopes } from '@/types/domain';
+import type { TherapistProfile, ConnectionRequest, Connection, Consent, ConsentScopes, Appointment } from '@/types/domain';
 import { FirebaseError } from 'firebase/app';
 import { collection, doc, getDoc, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebaseClient';
@@ -67,6 +67,10 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   const [savingConsent, setSavingConsent] = useState<Record<string, boolean>>({});
   const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
   const [consentError, setConsentError] = useState<string | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const connectionsByTherapist = useMemo(() => {
     const map = new Map<string, Connection>();
     connections.forEach((connection) => {
@@ -108,6 +112,15 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     [therapistData?.therapists]
   );
 
+  const activeAppointmentsByConnection = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    appointments.forEach((appointment) => {
+      if (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') {
+        map.set(appointment.connectionId, appointment);
+      }
+    });
+    return map;
+  }, [appointments]);
   useEffect(() => {
     if (!user || !headers['x-user-id']) {
       return;
@@ -227,6 +240,39 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     };
     void load();
   }, [headers, user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || !headers['x-user-id']) {
+      setAppointments([]);
+      return;
+    }
+    const loadAppointments = async () => {
+      try {
+        setAppointmentsLoading(true);
+        setAppointmentsError(null);
+        const response = await fetch('/api/appointments', { headers });
+        if (!response.ok) {
+          throw new Error('failed_to_load');
+        }
+        const data = (await response.json()) as { appointments: Appointment[] };
+        setAppointments(data.appointments ?? []);
+      } catch (error) {
+        console.error('Failed to load appointments', error);
+        setAppointmentsError('We could not load your appointments. Please try again later.');
+      } finally {
+        setAppointmentsLoading(false);
+      }
+    };
+    void loadAppointments();
+  }, [headers, user?.uid]);
+
+  const formatAppointmentRange = (appointment: Appointment) => {
+    const formatter = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+    return `${formatter.format(new Date(appointment.start))} – ${formatter.format(new Date(appointment.end))}`;
+  };
 
   const determineStatus = (therapistId: string) => {
     const activeConnection = connections.find(
@@ -486,6 +532,14 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
               We couldn&apos;t load therapist profiles right now. Please try again soon.
             </div>
           ) : null}
+          {appointmentsError ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+              {appointmentsError}
+            </div>
+          ) : null}
+          {appointmentsLoading ? (
+            <p className="text-sm text-slate-500">Loading appointments…</p>
+          ) : null}
 
           {therapistsLoading && therapistDetails.length === 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -509,6 +563,9 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                   consentState && !consentState.revokedAt ? consentState.scopes : EMPTY_CONSENT_SCOPES;
                 const pending = connectionId ? Boolean(savingConsent[connectionId]) : false;
                 const disconnectBusy = connectionId ? Boolean(disconnecting[connectionId]) : false;
+                const activeAppointment = connectionId
+                  ? activeAppointmentsByConnection.get(connectionId)
+                  : undefined;
                 const endedAtLabel =
                   connection?.status === 'ENDED' && connection.endedAt
                     ? new Date(connection.endedAt).toLocaleString()
@@ -577,12 +634,22 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                             {isActive ? 'Open chat' : 'View chat history'}
                           </Link>
                           {isActive ? (
-                            <Link
-                              href={`/user/resources/schedule/${connection.id}`}
-                              className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-50"
-                            >
-                              Schedule session
-                            </Link>
+                            activeAppointment ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAppointment(activeAppointment)}
+                                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-50"
+                              >
+                                View appointment
+                              </button>
+                            ) : (
+                              <Link
+                                href={`/user/resources/schedule/${connection.id}`}
+                                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-50"
+                              >
+                                Schedule appointment
+                              </Link>
+                            )
                           ) : null}
                           {isActive ? (
                             <button
@@ -691,6 +758,61 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
           <ArrowRight className="h-4 w-4" />
         </button>
       </section>
+      {selectedAppointment ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-8">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Appointment details</h2>
+            </div>
+            <dl className="space-y-3 text-sm text-slate-700">
+              <div>
+                <dt className="font-semibold text-slate-900">Time</dt>
+                <dd>{formatAppointmentRange(selectedAppointment)}</dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-900">Location</dt>
+                <dd>
+                  {selectedAppointment.location === 'video'
+                    ? 'Online (video session)'
+                    : 'In-person session'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-900">Status</dt>
+                <dd className={selectedAppointment.status === 'CONFIRMED' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>
+                  {selectedAppointment.status === 'CONFIRMED'
+                    ? 'Confirmed'
+                    : selectedAppointment.status === 'PENDING'
+                      ? 'Pending therapist confirmation'
+                      : selectedAppointment.status}
+                </dd>
+              </div>
+              {selectedAppointment.videoLink ? (
+                <div>
+                  <dt className="font-semibold text-slate-900">Join link</dt>
+                  <dd>
+                    <a
+                      href={selectedAppointment.videoLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-indigo-600 hover:text-indigo-500 break-all"
+                    >
+                      {selectedAppointment.videoLink}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+            <button
+              type="button"
+              onClick={() => setSelectedAppointment(null)}
+              className="mt-6 w-full inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
