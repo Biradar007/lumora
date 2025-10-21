@@ -71,11 +71,14 @@ export function Sidebar({ activeView, onNavigate, isOpen, onClose }: SidebarProp
 
   return (
     <>
-      <aside className={`
-        fixed md:relative inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
+      <aside
+        className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+        md:w-64 lg:w-72
+      `}
+      >
         <div className="flex flex-col h-full">
           {/* Mobile close button */}
            {/* Header */}

@@ -109,19 +109,29 @@ export function ChatInterface() {
         return existing;
       }
 
-      const response = await fetch('/api/chat/token', {
-        method: 'POST',
-        headers: apiHeaders,
-        body: JSON.stringify({ sessionId }),
-      });
+      try {
+        const response = await fetch('/api/chat/token', {
+          method: 'POST',
+          headers: apiHeaders,
+          body: JSON.stringify({ sessionId }),
+        });
 
-      if (!response.ok) {
-        throw new Error('token_request_failed');
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            console.warn('Session token request unauthorized. Skipping token refresh.');
+            return null;
+          }
+          const detail = await response.text().catch(() => 'token_request_failed');
+          throw new Error(detail || 'token_request_failed');
+        }
+
+        const data: { token: string } = await response.json();
+        updateSessionTokens((prev) => ({ ...prev, [sessionId]: data.token }));
+        return data.token;
+      } catch (error) {
+        console.error('Failed to ensure session token', error);
+        return null;
       }
-
-      const data: { token: string } = await response.json();
-      updateSessionTokens((prev) => ({ ...prev, [sessionId]: data.token }));
-      return data.token;
     },
     [apiHeaders, uid, updateSessionTokens]
   );

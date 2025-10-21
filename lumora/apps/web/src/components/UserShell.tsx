@@ -35,15 +35,18 @@ export function UserShell({ activeView, children }: UserShellProps) {
 
   return (
     <AuthGate>
-      <div className="flex h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <Sidebar activeView={activeView} onNavigate={navigateAndClose} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <Sidebar
+          activeView={activeView}
+          onNavigate={navigateAndClose}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex h-screen flex-col transition-[margin] duration-300 ease-in-out md:ml-64 lg:ml-72">
           <Header onMenuClick={() => setSidebarOpen(true)} currentView={activeView} />
 
-          <main className={`flex-1 ${activeView === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-            {children}
-          </main>
+          <main className={`flex-1 ${activeView === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>{children}</main>
         </div>
 
         {sidebarOpen && (
