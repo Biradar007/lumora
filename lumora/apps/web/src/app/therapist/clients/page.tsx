@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
+import { sanitizeJournalHtml } from '@/lib/journalHtml';
 import type {
   Connection,
   Consent,
@@ -20,8 +23,9 @@ const EMPTY_SCOPES: ConsentScopes = {
 
 export default function TherapistClientsPage() {
   const headers = useApiHeaders();
+  const router = useRouter();
   const [connections, setConnections] = useState<Connection[]>([]);
-  const [consents, setConsents] = useState<Record<string, ConsentScopes>>({});
+  const [consents, setConsents] = useState<Record<string, Consent>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [journalEntries, setJournalEntries] = useState<Record<string, JournalEntry[]>>({});
@@ -36,6 +40,7 @@ export default function TherapistClientsPage() {
   const [sessionMessagesError, setSessionMessagesError] = useState<Record<string, string>>({});
   const [sessionMessagesExpanded, setSessionMessagesExpanded] = useState<Record<string, boolean>>({});
   const [journalExpanded, setJournalExpanded] = useState<Record<string, boolean>>({});
+  const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!headers['x-user-id']) {
@@ -56,12 +61,9 @@ export default function TherapistClientsPage() {
 
         if (consentsResponse.ok) {
           const consentData = (await consentsResponse.json()) as { consents: Consent[] };
-          const map: Record<string, ConsentScopes> = {};
+          const map: Record<string, Consent> = {};
           (consentData.consents ?? []).forEach((consent) => {
-            map[consent.connectionId] = {
-              ...EMPTY_SCOPES,
-              ...(consent.scopes ?? {}),
-            };
+            map[consent.connectionId] = consent;
           });
           setConsents(map);
         } else {
@@ -82,7 +84,14 @@ export default function TherapistClientsPage() {
   const sharedConnections = useMemo(() => {
     const map: Record<string, ConsentScopes> = {};
     connections.forEach((connection) => {
-      map[connection.id] = consents[connection.id] ?? EMPTY_SCOPES;
+      const consent = consents[connection.id];
+      const canShare = connection.status === 'ACTIVE' && consent && !consent.revokedAt;
+      map[connection.id] = canShare
+        ? {
+            ...EMPTY_SCOPES,
+            ...(consent.scopes ?? {}),
+          }
+        : { ...EMPTY_SCOPES };
     });
     return map;
   }, [connections, consents]);
@@ -184,10 +193,158 @@ export default function TherapistClientsPage() {
     }
   };
 
+  const handleDisconnect = async (connection: Connection) => {
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        'Disconnecting will end access to the client’s shared journals and AI chat sessions. Continue?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    setDisconnecting((prev) => ({ ...prev, [connection.id]: true }));
+    try {
+      const response = await fetch(`/api/connections/${connection.id}/disconnect`, {
+        method: 'POST',
+        headers,
+      });
+      if (!response.ok) {
+        throw new Error('disconnect_failed');
+      }
+      const now = Date.now();
+      setConnections((prev) =>
+        prev.map((item) =>
+          item.id === connection.id
+            ? {
+                ...item,
+                status: 'ENDED',
+                endedAt: now,
+              }
+            : item
+        )
+      );
+      setConsents((prev) => {
+        const existing = prev[connection.id];
+        if (!existing) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [connection.id]: {
+            ...existing,
+            scopes: { ...EMPTY_SCOPES },
+            revokedAt: now,
+            updatedAt: now,
+          },
+        };
+      });
+      setSessionsByConnection((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      setSessionsError((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      setSessionsExpanded((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      setSessionsLoading((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      setJournalEntries((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      setJournalLoading((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      setJournalError((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      setJournalExpanded((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+      const prefix = `${connection.id}:`;
+      const stripPrefixedKeys = <T,>(state: Record<string, T>) => {
+        let mutated = false;
+        const next: Record<string, T> = {};
+        Object.entries(state).forEach(([key, value]) => {
+          if (key.startsWith(prefix)) {
+            mutated = true;
+            return;
+          }
+          next[key] = value;
+        });
+        return mutated ? next : state;
+      };
+      setSessionMessages((prev) => stripPrefixedKeys(prev));
+      setSessionMessagesError((prev) => stripPrefixedKeys(prev));
+      setSessionMessagesLoading((prev) => stripPrefixedKeys(prev));
+      setSessionMessagesExpanded((prev) => stripPrefixedKeys(prev));
+    } catch (err) {
+      console.error('Failed to disconnect client connection', err);
+      if (typeof window !== 'undefined') {
+        window.alert('Unable to disconnect this client right now. Please try again.');
+      }
+    } finally {
+      setDisconnecting((prev) => {
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <header>
+        <header className="space-y-3">
+          <button
+            type="button"
+            onClick={() => router.push('/therapist/dashboard')}
+            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to dashboard
+          </button>
           <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
           <p className="text-sm text-slate-600">View and manage all client connections.</p>
         </header>
@@ -198,7 +355,15 @@ export default function TherapistClientsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="space-y-3">
+        <button
+          type="button"
+          onClick={() => router.push('/therapist/dashboard')}
+          className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </button>
         <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
         <p className="text-sm text-slate-600">View and manage all client connections.</p>
       </header>
@@ -207,175 +372,203 @@ export default function TherapistClientsPage() {
       ) : null}
       <div className="grid gap-4">
         {!hasConnections && <p className="text-sm text-slate-500">No connections yet.</p>}
-        {connections.map((connection) => (
-          <div
-            key={connection.id}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
-          >
-            <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium text-slate-700">User {connection.userId}</p>
-              <p className="text-xs text-slate-500">
-                Connected since {new Date(connection.startedAt).toLocaleDateString()}
-                {connection.status !== 'ACTIVE' ? ` • Status: ${connection.status.toLowerCase()}` : ''}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/chat/${connection.id}`}
-                className="inline-flex items-center rounded-lg border border-indigo-200 px-3 py-1.5 text-sm font-medium text-indigo-600"
-              >
-                Open chat
-              </Link>
-              <Link
-                href={`/schedule/${connection.id}`}
-                className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600"
-              >
-                View schedule
-              </Link>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-xs text-slate-600">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Shared data
-              </p>
-              {sharedConnections[connection.id]?.chatSummary ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-700">AI chat sessions</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = !sessionsExpanded[connection.id];
-                        setSessionsExpanded((prev) => ({ ...prev, [connection.id]: next }));
-                        if (next) {
-                          void ensureSessions(connection.id);
-                        }
-                      }}
-                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      {sessionsExpanded[connection.id] ? 'Hide' : 'View'}
-                    </button>
-                  </div>
-                  {sessionsExpanded[connection.id] ? (
-                    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
-                      {sessionsLoading[connection.id] ? (
-                        <p className="text-[11px] text-slate-500">Loading shared sessions…</p>
-                      ) : sessionsError[connection.id] ? (
-                        <p className="text-[11px] text-rose-600 font-medium">{sessionsError[connection.id]}</p>
-                      ) : sessionsByConnection[connection.id]?.length ? (
-                        <div className="space-y-2">
-                          {sessionsByConnection[connection.id].map((session) => {
-                            const sessionKey = `${connection.id}:${session.id}`;
-                            const sessionOpen = sessionMessagesExpanded[sessionKey] ?? false;
-                            const messages = sessionMessages[sessionKey] ?? [];
-                            const messageLoading = sessionMessagesLoading[sessionKey];
-                            const messageError = sessionMessagesError[sessionKey];
-                            return (
-                              <div key={session.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-semibold text-slate-700">
-                                      {session.title ?? 'Conversation'}
-                                    </span>
-                                    <span className="text-[11px] text-slate-500">
-                                      Updated {session.updatedAt ? new Date(session.updatedAt).toLocaleString() : '—'}
-                                    </span>
+        {connections.map((connection) => {
+          const isActive = connection.status === 'ACTIVE';
+          const disconnectBusy = Boolean(disconnecting[connection.id]);
+          return (
+            <div
+              key={connection.id}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
+            >
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-slate-700">User {connection.userId}</p>
+                <p className="text-xs text-slate-500">
+                  Connected since {new Date(connection.startedAt).toLocaleDateString()}
+                  {connection.status !== 'ACTIVE' ? ` • Status: ${connection.status.toLowerCase()}` : ''}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/therapist/clients/chat/${connection.id}`}
+                  className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    isActive
+                      ? 'border border-indigo-200 text-indigo-600 hover:border-indigo-300'
+                      : 'border border-slate-200 text-slate-600 bg-slate-50 cursor-pointer'
+                  }`}
+                >
+                  {isActive ? 'Open chat' : 'View chat history'}
+                </Link>
+                {isActive ? (
+                  <Link
+                    href={`/therapist/clients/schedule/${connection.id}`}
+                    className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-300"
+                  >
+                    View schedule
+                  </Link>
+                ) : null}
+                {isActive ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDisconnect(connection)}
+                    disabled={disconnectBusy}
+                    className="inline-flex items-center rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {disconnectBusy ? 'Disconnecting…' : 'Disconnect'}
+                  </button>
+                ) : null}
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-xs text-slate-600">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  Shared data
+                </p>
+                {!isActive ? (
+                  <p className="text-[11px] text-slate-500">
+                    This connection has ended. AI chats and journals remain hidden from your view.
+                  </p>
+                ) : null}
+                {sharedConnections[connection.id]?.chatSummary ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-slate-700">AI chat sessions</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = !sessionsExpanded[connection.id];
+                          setSessionsExpanded((prev) => ({ ...prev, [connection.id]: next }));
+                          if (next) {
+                            void ensureSessions(connection.id);
+                          }
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      >
+                        {sessionsExpanded[connection.id] ? 'Hide' : 'View'}
+                      </button>
+                    </div>
+                    {sessionsExpanded[connection.id] ? (
+                      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                        {sessionsLoading[connection.id] ? (
+                          <p className="text-[11px] text-slate-500">Loading shared sessions…</p>
+                        ) : sessionsError[connection.id] ? (
+                          <p className="text-[11px] text-rose-600 font-medium">{sessionsError[connection.id]}</p>
+                        ) : sessionsByConnection[connection.id]?.length ? (
+                          <div className="space-y-2">
+                            {sessionsByConnection[connection.id].map((session) => {
+                              const sessionKey = `${connection.id}:${session.id}`;
+                              const sessionOpen = sessionMessagesExpanded[sessionKey] ?? false;
+                              const messages = sessionMessages[sessionKey] ?? [];
+                              const messageLoading = sessionMessagesLoading[sessionKey];
+                              const messageError = sessionMessagesError[sessionKey];
+                              return (
+                                <div key={session.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-semibold text-slate-700">
+                                        {session.title ?? 'Conversation'}
+                                      </span>
+                                      <span className="text-[11px] text-slate-500">
+                                        Updated {session.updatedAt ? new Date(session.updatedAt).toLocaleString() : '—'}
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const next = !sessionOpen;
+                                        setSessionMessagesExpanded((prev) => ({ ...prev, [sessionKey]: next }));
+                                        if (next) {
+                                          void ensureSessionMessages(connection.id, session.id);
+                                        }
+                                      }}
+                                      className="text-indigo-600 hover:text-indigo-700 font-semibold text-xs"
+                                    >
+                                      {sessionOpen ? 'Hide messages' : 'View messages'}
+                                    </button>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const next = !sessionOpen;
-                                      setSessionMessagesExpanded((prev) => ({ ...prev, [sessionKey]: next }));
-                                      if (next) {
-                                        void ensureSessionMessages(connection.id, session.id);
-                                      }
-                                    }}
-                                    className="text-indigo-600 hover:text-indigo-700 font-semibold text-xs"
-                                  >
-                                    {sessionOpen ? 'Hide messages' : 'View messages'}
-                                  </button>
+                                  {sessionOpen ? (
+                                    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3 max-h-64 overflow-y-auto">
+                                      {messageLoading ? (
+                                        <p className="text-[11px] text-slate-500">Loading messages…</p>
+                                      ) : messageError ? (
+                                        <p className="text-[11px] text-rose-600 font-medium">{messageError}</p>
+                                      ) : messages.length > 0 ? (
+                                        messages.map((message) => (
+                                          <div key={message.id} className="space-y-1 border-b border-slate-100 pb-2 last:border-none">
+                                            <p className="text-[11px] font-semibold text-slate-500">
+                                              {message.role === 'user' ? 'Client' : 'Assistant'} ·{' '}
+                                              {message.createdAt ? new Date(message.createdAt).toLocaleString() : '—'}
+                                            </p>
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap">{message.content}</p>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-[11px] text-slate-500">No messages in this session yet.</p>
+                                      )}
+                                    </div>
+                                  ) : null}
                                 </div>
-                                {sessionOpen ? (
-                                  <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3 max-h-64 overflow-y-auto">
-                                    {messageLoading ? (
-                                      <p className="text-[11px] text-slate-500">Loading messages…</p>
-                                    ) : messageError ? (
-                                      <p className="text-[11px] text-rose-600 font-medium">{messageError}</p>
-                                    ) : messages.length > 0 ? (
-                                      messages.map((message) => (
-                                        <div key={message.id} className="space-y-1 border-b border-slate-100 pb-2 last:border-none">
-                                          <p className="text-[11px] font-semibold text-slate-500">
-                                            {message.role === 'user' ? 'Client' : 'Assistant'} ·{' '}
-                                            {message.createdAt ? new Date(message.createdAt).toLocaleString() : '—'}
-                                          </p>
-                                          <p className="text-sm text-slate-700 whitespace-pre-wrap">{message.content}</p>
-                                        </div>
-                                      ))
-                                    ) : (
-                                      <p className="text-[11px] text-slate-500">No messages in this session yet.</p>
-                                    )}
-                                  </div>
-                                ) : null}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-[11px] text-slate-500">No AI chat sessions are shared yet.</p>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <p className="text-[11px] text-slate-500">AI chat sessions are not shared by this client.</p>
-              )}
-
-              {sharedConnections[connection.id]?.journals ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-700">Journal entries</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = !journalExpanded[connection.id];
-                        setJournalExpanded((prev) => ({ ...prev, [connection.id]: next }));
-                        if (next) {
-                          void loadJournals(connection.id);
-                        }
-                      }}
-                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      {journalExpanded[connection.id] ? 'Hide' : 'View'}
-                    </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-500">No AI chat sessions are shared yet.</p>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
-                  {journalExpanded[connection.id] ? (
-                    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-                      {journalLoading[connection.id] ? (
-                        <p className="text-[11px] text-slate-500">Loading shared journals…</p>
-                      ) : journalError[connection.id] ? (
-                        <p className="text-[11px] text-rose-600 font-medium">{journalError[connection.id]}</p>
-                      ) : journalEntries[connection.id]?.length ? (
-                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                          {journalEntries[connection.id].map((entry) => (
-                            <div key={entry.id} className="space-y-1 border-b border-slate-100 pb-2 last:border-none">
-                              <p className="text-[11px] font-semibold text-slate-500">
-                                {new Date(entry.createdAt).toLocaleString()}
-                              </p>
-                              <p className="text-sm text-slate-700 whitespace-pre-wrap">{entry.content}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-[11px] text-slate-500">No journals are shared yet.</p>
-                      )}
+                ) : (
+                  <p className="text-[11px] text-slate-500">AI chat sessions are not shared by this client.</p>
+                )}
+
+                {sharedConnections[connection.id]?.journals ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-slate-700">Journal entries</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = !journalExpanded[connection.id];
+                          setJournalExpanded((prev) => ({ ...prev, [connection.id]: next }));
+                          if (next) {
+                            void loadJournals(connection.id);
+                          }
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      >
+                        {journalExpanded[connection.id] ? 'Hide' : 'View'}
+                      </button>
                     </div>
-                  ) : null}
-                </div>
-              ) : (
-                <p className="text-[11px] text-slate-500">Journals are not shared by this client.</p>
-              )}
+                    {journalExpanded[connection.id] ? (
+                      <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+                        {journalLoading[connection.id] ? (
+                          <p className="text-[11px] text-slate-500">Loading shared journals…</p>
+                        ) : journalError[connection.id] ? (
+                          <p className="text-[11px] text-rose-600 font-medium">{journalError[connection.id]}</p>
+                        ) : journalEntries[connection.id]?.length ? (
+                          <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                            {journalEntries[connection.id].map((entry) => (
+                              <div key={entry.id} className="space-y-1 border-b border-slate-100 pb-2 last:border-none">
+                                <p className="text-[11px] font-semibold text-slate-500">
+                                  {new Date(entry.createdAt).toLocaleString()}
+                                </p>
+                                <div
+                                  className="text-sm text-slate-700"
+                                  dangerouslySetInnerHTML={{ __html: sanitizeJournalHtml(entry.content) }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-500">No journals are shared yet.</p>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-500">Journals are not shared by this client.</p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

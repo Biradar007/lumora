@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Menu, LogIn, LogOut } from 'lucide-react';
 import type { ViewType } from './user/viewTypes';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +25,7 @@ export function Header({ onMenuClick, currentView }: HeaderProps) {
   const { profile, user, logout, guestMode } = useAuth();
   const { requestLogin } = useAuthUI();
   const [signingOut, setSigningOut] = useState(false);
+  const router = useRouter();
 
   const displayName =
     profile?.displayName ||
@@ -36,6 +38,7 @@ export function Header({ onMenuClick, currentView }: HeaderProps) {
     try {
       setSigningOut(true);
       await logout();
+      router.replace('/');
     } finally {
       setSigningOut(false);
     }

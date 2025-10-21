@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Clock, Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApiHeaders } from '@/hooks/useApiHeaders';
 import {
   addMessage,
   createSession,
@@ -58,6 +60,7 @@ function mapRecordToDisplay(messages: MessageRecord[]): DisplayMessage[] {
 export function ChatInterface() {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
+  const apiHeaders = useApiHeaders();
 
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -70,6 +73,18 @@ export function ChatInterface() {
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [, setSessionTokens] = useState<Record<string, string>>({});
+  const sessionTokensRef = useRef<Record<string, string>>({});
+  const updateSessionTokens = useCallback(
+    (updater: (current: Record<string, string>) => Record<string, string>) => {
+      setSessionTokens((prev) => {
+        const next = updater(prev);
+        sessionTokensRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
 
   const [guestMessages, setGuestMessages] = useState<DisplayMessage[]>(() => {
     if (guestMessageCache && guestMessageCache.length) {
@@ -83,10 +98,49 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const ensureSessionToken = useCallback(
+    async (sessionId: string | null): Promise<string | null> => {
+      if (!uid || !sessionId) {
+        return null;
+      }
+
+      const existing = sessionTokensRef.current[sessionId];
+      if (existing) {
+        return existing;
+      }
+
+      try {
+        const response = await fetch('/api/chat/token', {
+          method: 'POST',
+          headers: apiHeaders,
+          body: JSON.stringify({ sessionId }),
+        });
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            console.warn('Session token request unauthorized. Skipping token refresh.');
+            return null;
+          }
+          const detail = await response.text().catch(() => 'token_request_failed');
+          throw new Error(detail || 'token_request_failed');
+        }
+
+        const data: { token: string } = await response.json();
+        updateSessionTokens((prev) => ({ ...prev, [sessionId]: data.token }));
+        return data.token;
+      } catch (error) {
+        console.error('Failed to ensure session token', error);
+        return null;
+      }
+    },
+    [apiHeaders, uid, updateSessionTokens]
+  );
+
   useEffect(() => {
     if (!uid) {
       setSessions([]);
       setActiveSessionId(null);
+      updateSessionTokens(() => ({}));
       return;
     }
 
@@ -107,14 +161,16 @@ export function ChatInterface() {
     return () => {
       unsubscribe();
       setSessions([]);
+      updateSessionTokens(() => ({}));
     };
-  }, [uid, sessionsLimit]);
+  }, [uid, sessionsLimit, updateSessionTokens]);
 
   useEffect(() => {
     if (!uid || !activeSessionId) {
       setMessages([]);
       return;
     }
+    void ensureSessionToken(activeSessionId);
     setMessagesLoading(true);
 
     const unsubscribe = subscribeMessages(
@@ -134,7 +190,7 @@ export function ChatInterface() {
       unsubscribe();
       setMessages([]);
     };
-  }, [uid, activeSessionId, messagesLimit]);
+  }, [uid, activeSessionId, messagesLimit, ensureSessionToken]);
 
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -186,6 +242,9 @@ export function ChatInterface() {
     return [welcomeMessage, ...mapped];
   }, [uid, activeSessionId, messages, guestMessages]);
 
+  const lastDisplayedMessage = displayMessages.length ? displayMessages[displayMessages.length - 1] : null;
+  const showTypingIndicator = isTyping && lastDisplayedMessage?.sender === 'user';
+
   const handleCreateSession = async () => {
     if (!uid) {
       return;
@@ -195,6 +254,7 @@ export function ChatInterface() {
       setActiveSessionId(sessionId);
       setMessagesLimit(50);
       setMessages([]);
+      await ensureSessionToken(sessionId);
     } catch (error) {
       console.error('Failed to create session', error);
     }
@@ -220,6 +280,14 @@ export function ChatInterface() {
     if (!confirmed) return;
     try {
       await deleteSession(uid, session.id);
+      updateSessionTokens((prev) => {
+        if (!prev[session.id]) {
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[session.id];
+        return next;
+      });
       if (activeSessionId === session.id) {
         setActiveSessionId(null);
         setMessages([]);
@@ -248,7 +316,7 @@ export function ChatInterface() {
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: apiHeaders,
           body: JSON.stringify({
             sessionId: 'guest',
             messages: nextMessages.map((message) => ({
@@ -300,32 +368,28 @@ export function ChatInterface() {
         setActiveSessionId(sessionId);
         setMessages([]);
         setMessagesLimit(50);
+        await ensureSessionToken(sessionId);
       }
 
       if (!sessionId) {
         throw new Error('Unable to resolve session.');
       }
 
+      const token = await ensureSessionToken(sessionId);
+      if (!token) {
+        throw new Error('Unable to obtain secure session token.');
+      }
+
+      const currentSessionId = sessionId;
+
       await addMessage(uid, sessionId, 'user', trimmed);
-
-      const optimisticMessage: DisplayMessage = {
-        id: `pending-${Date.now()}`,
-        content: trimmed,
-        sender: 'user',
-        timestamp: new Date(),
-      };
-
-      const outgoingHistory = [...mapRecordToDisplay(messages), optimisticMessage];
 
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders,
         body: JSON.stringify({
-          sessionId,
-          messages: outgoingHistory.map((message) => ({
-            role: message.sender,
-            content: message.content,
-          })),
+          token,
+          message: trimmed,
         }),
       });
 
@@ -333,6 +397,37 @@ export function ChatInterface() {
       if (response.ok) {
         const data: { reply?: string } = await response.json();
         reply = data.reply?.trim();
+      } else {
+        if (response.status === 401 && currentSessionId) {
+          updateSessionTokens((prev) => {
+            if (!prev[currentSessionId]) {
+              return prev;
+            }
+            const next = { ...prev };
+            delete next[currentSessionId];
+            return next;
+          });
+
+          const refreshedToken = await ensureSessionToken(currentSessionId);
+          if (!refreshedToken) {
+            throw new Error('chat_request_failed');
+          }
+
+          const retryResponse = await fetch('/api/chat', {
+            method: 'POST',
+            headers: apiHeaders,
+            body: JSON.stringify({ token: refreshedToken, message: trimmed }),
+          });
+
+          if (!retryResponse.ok) {
+            throw new Error('chat_request_failed');
+          }
+
+          const retryData: { reply?: string } = await retryResponse.json();
+          reply = retryData.reply?.trim();
+        } else {
+          throw new Error('chat_request_failed');
+        }
       }
 
       await addMessage(
@@ -363,12 +458,8 @@ export function ChatInterface() {
     setSessionsLimit((prev) => prev + 20);
   };
 
-  const loadMoreMessages = () => {
-    setMessagesLimit((prev) => prev + 50);
-  };
-
   const SessionsPane = ({ onClose }: { onClose?: () => void }) => (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-indigo-500" />
@@ -390,7 +481,7 @@ export function ChatInterface() {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-100"
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-100 lg:hidden"
               aria-label="Close conversations"
             >
               <X className="h-4 w-4" />
@@ -398,252 +489,237 @@ export function ChatInterface() {
           ) : null}
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
-        {sessionsLoading && sessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-gray-500">
+      <div className="flex-1 overflow-y-auto">
+        {sessionsLoading ? (
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-gray-500">
             <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-            Loading conversations…
+            <span className="mt-2">Loading conversations…</span>
           </div>
         ) : sessions.length === 0 ? (
-          <div className="rounded-lg bg-indigo-50 p-4 text-xs text-indigo-700">
-            Start a new conversation to save your progress.
+          <div className="p-4 text-sm text-gray-500">
+            No conversations yet. Start one to see it here.
           </div>
         ) : (
-          sessions.map((session) => {
-            const isActive = session.id === activeSessionId;
-            return (
-              <div
-                key={session.id}
-                className={`group rounded-xl px-3 py-2 transition ${
-                  isActive ? 'bg-indigo-100/80 border border-indigo-200' : 'hover:bg-gray-100/60'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveSessionId(session.id);
-                    setMessagesLimit(50);
-                    onClose?.();
-                  }}
-                  className="flex w-full items-start justify-between gap-2 text-left"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {session.title || session.lastMessagePreview || 'Untitled conversation'}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                      {session.lastMessagePreview || 'No messages yet'}
-                    </p>
+          <ul className="divide-y divide-gray-100">
+            {sessions.map((session) => {
+              const isActive = session.id === activeSessionId;
+              return (
+                <li key={session.id}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setActiveSessionId(session.id);
+                      onClose?.();
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setActiveSessionId(session.id);
+                        onClose?.();
+                      }
+                    }}
+                    className={`group flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 ${
+                      isActive ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-semibold">
+                        {session.title ?? 'New conversation'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        Updated {formatTimestamp(session.updatedAt)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:hover:opacity-100 lg:group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRenameSession(session);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-transparent px-2 py-1 text-xs text-indigo-500 hover:border-indigo-200"
+                      >
+                        <PenLine className="h-3 w-3" />
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleDeleteSession(session);
+                        }}
+                        className="inline-flex items-center justify-center rounded-full border border-transparent p-1 text-red-400 hover:border-red-200"
+                        aria-label="Delete conversation"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <span className="mt-1 text-[10px] uppercase tracking-wide text-gray-400">
-                    {formatTimestamp(session.updatedAt ?? session.createdAt)}
-                  </span>
-                </button>
-                <div className="mt-1 hidden items-center justify-end gap-2 group-hover:flex">
-                  <button
-                    type="button"
-                    onClick={() => handleRenameSession(session)}
-                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-100"
-                  >
-                    <PenLine className="h-3 w-3" />
-                    Rename
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteSession(session)}
-                    className="inline-flex items-center gap-1 rounded-md border border-red-200 px-1.5 py-1 text-[11px] text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            );
-          })
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
-
-      {sessions.length >= sessionsLimit && (
-        <div className="border-t border-gray-200 p-3">
+      {sessions.length >= sessionsLimit ? (
+        <div className="border-t border-gray-100 p-3">
           <button
             type="button"
             onClick={loadMoreSessions}
-            className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50"
+            className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-50"
           >
             Load more
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 
   return (
-    <div className="flex h-full bg-gradient-to-br from-white to-blue-50/40">
-      {uid ? (
-        <aside className="hidden w-72 border-r border-gray-200 bg-white/70 backdrop-blur-sm lg:flex lg:flex-col">
-          <SessionsPane />
+    <div className="flex h-full flex-col overflow-hidden border border-white/70 bg-gradient-to-br from-white via-indigo-50/40 to-purple-100/40 shadow-[0_30px_60px_-24px_rgba(79,70,229,0.4)]">
+      <div className="flex flex-1 min-h-0 flex-col backdrop-blur-sm lg:flex-row">
+        <aside
+          className={`w-full min-h-0 border-b border-gray-200 lg:w-72 lg:border-r ${mobileSessionsOpen ? 'block' : 'hidden lg:block'}`}
+        >
+          <SessionsPane onClose={() => setMobileSessionsOpen(false)} />
         </aside>
-      ) : null}
 
-      <div className="flex flex-1 flex-col">
-        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+        <section className="flex flex-1 min-h-0 flex-col">
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/60 bg-white/70 px-6 py-5 backdrop-blur-md">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+               <div>
               <h3 className="font-semibold text-gray-800">Chat</h3>
               <p className="text-sm text-green-600">Online • Always here for you</p>
             </div>
-            {uid ? (
+              </div>
+              <p className="text-xs text-slate-400">
+                {uid
+                  ? ''
+                  : 'Sign in to keep your conversations safe and revisit them anytime.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 lg:hidden">
               <button
                 type="button"
-                onClick={() => setMobileSessionsOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 lg:hidden"
+                onClick={() => setMobileSessionsOpen((prev) => !prev)}
+                className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-100 hover:bg-white"
               >
-                <MessageSquare className="h-4 w-4" />
                 Conversations
               </button>
-            ) : null}
-          </div>
-        </div>
+            </div>
+          </header>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {displayMessages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`flex items-start gap-3 max-w-3xl ${
-                  message.sender === 'user' ? 'flex-row-reverse' : ''
-                }`}
-              >
-                {message.sender === 'user' ? (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 text-white" />
+          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white/40 via-indigo-50/40 to-indigo-100/40 px-6 py-8">
+            {messagesLoading && uid ? (
+              <div className="flex flex-col items-center justify-center py-16 text-sm text-gray-500">
+                <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+                <span className="mt-2">Loading conversation…</span>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {displayMessages.map((message) => {
+                  const isAssistant = message.sender === 'assistant';
+                  const bubbleClasses = isAssistant
+                    ? 'bg-white/90 text-slate-700 border border-white/80 shadow-[0_30px_60px_-30px_rgba(79,70,229,0.35)]'
+                    : 'bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 text-white shadow-[0_35px_65px_-30px_rgba(37,99,235,0.65)]';
+                  const metaClasses = isAssistant ? 'text-slate-400' : 'text-indigo-100/90';
+
+                  return (
+                    <div key={message.id} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
+                      <div className={`flex w-full max-w-2xl flex-col ${isAssistant ? 'items-start' : 'items-end'}`}>
+                        <div className={`flex w-full items-end gap-3 ${isAssistant ? '' : 'flex-row-reverse'}`}>
+                          {isAssistant ? (
+                            <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.30)] ring-1 ring-white/20" />
+                          ) : (
+                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 text-white shadow-[0_18px_34px_-18px_rgba(37,99,235,0.55)]">
+                              <User className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className={`w-fit max-w-xl rounded-[26px] px-5 py-4 text-sm leading-relaxed backdrop-blur-sm ${bubbleClasses}`}>
+                            <div className="prose prose-sm mt-0 max-w-none text-current prose-p:my-0 prose-ul:my-0 prose-ol:my-0">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
+                            {message.pending ? (
+                              <div className="mt-4 flex items-center gap-2 text-xs text-indigo-400">
+                                {typingDotDelays.map((delay) => (
+                                  <span
+                                    key={delay}
+                                    className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current"
+                                    style={{ animationDelay: `${delay}s` }}
+                                  />
+                                ))}
+                                <span>Thinking…</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        
+                      </div>
+                    </div>
+                  );
+                })}
+                {showTypingIndicator ? (
+                  <div className="flex justify-start">
+                    <div className="flex w-full max-w-2xl items-end gap-3">
+                      <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.30)] ring-1 ring-white/20" />
+                      <div className="w-fit max-w-xl rounded-[26px] border border-white/70 bg-white/90 px-5 py-3 text-sm text-slate-500 shadow-[0_30px_60px_-30px_rgba(79,70,229,0.35)] backdrop-blur-sm">
+                        <div className="flex items-center gap-2 text-xs text-indigo-400">
+                          {typingDotDelays.map((delay) => (
+                            <span
+                              key={delay}
+                              className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current"
+                              style={{ animationDelay: `${delay}s` }}
+                            />
+                          ))}
+                          <span>Typing…</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.30)] ring-1 ring-white/20" />
-                )}
+                ) : null}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
 
-                <div
-                  className={`px-4 py-3 rounded-2xl shadow-sm ${
-                    message.sender === 'user'
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md'
-                      : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
-                  }`}
-                >
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeSanitize]}
-                    components={{
-                      a: ({ children, ...props }) => (
-                        <a {...props} target="_blank" rel="noopener noreferrer" className="underline">
-                          {children}
-                        </a>
-                      ),
-                    }}
-                    className={`prose prose-sm max-w-none break-words ${
-                      message.sender === 'user'
-                        ? 'prose-invert prose-headings:text-white prose-strong:text-white prose-em:text-white'
-                        : 'prose-headings:text-gray-800 prose-p:text-gray-800'
-                    } prose-p:my-2 first:prose-p:mt-0 last:prose-p:mb-0 prose-ul:my-2 prose-ol:my-2 prose-li:my-1`}
+          {uid ? (
+            <div className="border-t border-white/60 bg-white/80 px-6 py-5 backdrop-blur-lg">
+              <div className="rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_24px_48px_-28px_rgba(79,70,229,0.45)]">
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(event) => setInputValue(event.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="How are you feeling today?"
+                  className="w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
+                  rows={2}
+                />
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100/60 pt-3">
+                  <button
+                    type="button"
+                    onClick={handleSendMessage}
+                    disabled={!inputValue.trim()}
+                    className="ml-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {message.content}
-                  </ReactMarkdown>
-                  <p
-                    className={`text-xs mt-2 ${
-                      message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                    }`}
-                  >
-                    {formatTimestamp(message.timestamp)}
-                  </p>
+                    <Send className="h-4 w-4" />
+                    Send
+                  </button>
                 </div>
               </div>
             </div>
-          ))}
-
-          {messagesLoading && uid ? (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
-              Loading messages…
+          ) : (
+            <div className="border-t border-white/60 bg-white/80 px-6 py-5 text-center text-sm text-slate-500 backdrop-blur-lg">
+              <p>
+                Responses are generated in real time. Create an account to save your conversations securely.
+              </p>
             </div>
-          ) : null}
-
-          {uid && messages.length >= messagesLimit ? (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={loadMoreMessages}
-                className="inline-flex items-center gap-2 rounded-full border border-indigo-200 px-4 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50"
-              >
-                <Clock className="h-3.5 w-3.5" />
-                Load previous messages
-              </button>
-            </div>
-          ) : null}
-
-          {isTyping ? (
-            <div className="flex justify-start">
-              <div className="flex items-start gap-3 max-w-3xl">
-                <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.30)] ring-1 ring-white/20" />
-                <div className="rounded-2xl rounded-bl-md border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-sm font-medium text-gray-600">Lumora is typing…</p>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    {typingDotDelays.map((delay) => (
-                      <span
-                        key={delay}
-                        className="h-2 w-2 rounded-full bg-indigo-300/80 animate-pulse"
-                        style={{ animationDelay: `${delay}s` }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        <div className="border-t border-gray-200 bg-white/90 backdrop-blur-sm px-6 py-4">
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <textarea
-              ref={textareaRef}
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Share how you're feeling, ask a question, or tell Lumora what's on your mind…"
-              className="w-full resize-none rounded-2xl bg-transparent px-4 py-3 text-sm focus:outline-none"
-            />
-            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-2">
-              <p className="text-xs text-gray-400">Shift + Enter for a new line</p>
-              <button
-                type="button"
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isTyping}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:from-indigo-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isTyping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
+          )}
+        </section>
       </div>
-
-      {uid && mobileSessionsOpen ? (
-        <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-black/40 backdrop-blur-sm lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0"
-            aria-label="Close conversations overlay"
-            onClick={() => setMobileSessionsOpen(false)}
-          />
-          <div className="relative z-10 h-full w-full max-w-xs bg-white shadow-2xl">
-            <SessionsPane onClose={() => setMobileSessionsOpen(false)} />
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -22,6 +22,9 @@ export async function GET(request: Request, context: RouteContext) {
     if (connection.therapistId !== auth.userId) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
+    if (connection.status !== 'ACTIVE') {
+      return NextResponse.json({ error: 'connection_inactive' }, { status: 403 });
+    }
 
     const consentSnapshot = await db
       .collection('consents')
@@ -29,10 +32,11 @@ export async function GET(request: Request, context: RouteContext) {
       .where('therapistId', '==', auth.userId)
       .limit(1)
       .get();
-    if (
-      consentSnapshot.empty ||
-      !(consentSnapshot.docs[0].data() as Consent).scopes?.journals
-    ) {
+    if (consentSnapshot.empty) {
+      return NextResponse.json({ error: 'consent_required' }, { status: 403 });
+    }
+    const consent = consentSnapshot.docs[0].data() as Consent;
+    if (!consent.scopes?.journals || consent.revokedAt) {
       return NextResponse.json({ error: 'consent_required' }, { status: 403 });
     }
 

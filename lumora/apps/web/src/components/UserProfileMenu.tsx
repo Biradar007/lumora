@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { LogOut, LogIn, ShieldAlert, UserCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
@@ -19,6 +20,7 @@ export function UserProfileMenu() {
   const { user, profile, logout, guestMode } = useAuth();
   const { requestLogin } = useAuthUI();
   const [signingOut, setSigningOut] = useState(false);
+  const router = useRouter();
 
   if (!user) {
     return (
@@ -60,6 +62,7 @@ export function UserProfileMenu() {
     try {
       setSigningOut(true);
       await logout();
+      router.replace('/');
     } finally {
       setSigningOut(false);
     }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ConnectionRequest, Appointment, Connection } from '@/types/domain';
+import { Loader2 } from 'lucide-react';
 
 export default function TherapistDashboard() {
   const headers = useApiHeaders();
@@ -12,6 +13,9 @@ export default function TherapistDashboard() {
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [calendarStatus, setCalendarStatus] = useState<{ connected: boolean; calendarId?: string; updatedAt?: number | null } | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!headers['x-user-id']) {
@@ -41,15 +45,43 @@ export default function TherapistDashboard() {
     void load();
   }, [headers]);
 
-  const todaysAppointments = useMemo(
-    () =>
-      appointments.filter((appointment) => {
-        const start = new Date(appointment.start);
-        const now = new Date();
-        return start.toDateString() === now.toDateString();
-      }),
-    [appointments]
-  );
+  useEffect(() => {
+    if (!headers['x-user-id']) {
+      return;
+    }
+    const loadCalendarStatus = async () => {
+      setCalendarLoading(true);
+      setCalendarError(null);
+      try {
+        const response = await fetch('/api/integrations/google-calendar/status', { headers });
+        if (!response.ok) {
+          setCalendarStatus(null);
+          setCalendarError('Unavailable');
+          return;
+        }
+        const data = (await response.json()) as { connected: boolean; calendarId?: string; updatedAt?: number | null };
+        setCalendarStatus(data);
+      } catch (error) {
+        console.error('Failed to load calendar status', error);
+        setCalendarStatus(null);
+        setCalendarError('Unavailable');
+      } finally {
+        setCalendarLoading(false);
+      }
+    };
+    void loadCalendarStatus();
+  }, [headers]);
+
+  const todaysAppointments = useMemo(() => {
+    const now = new Date();
+    return appointments.filter((appointment) => {
+      if (appointment.status !== 'CONFIRMED') {
+        return false;
+      }
+      const start = new Date(appointment.start);
+      return start.toDateString() === now.toDateString();
+    });
+  }, [appointments]);
 
   const activeConnections = useMemo(
     () => connections.filter((connection) => connection.status === 'ACTIVE'),
@@ -58,7 +90,7 @@ export default function TherapistDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-medium text-slate-700">Requests inbox</h2>
           <p className="mt-3 text-3xl font-semibold text-indigo-600">{requests.length}</p>
@@ -85,6 +117,32 @@ export default function TherapistDashboard() {
           </p>
           <Link href="/therapist/clients" className="mt-4 inline-flex text-sm font-medium text-indigo-600">
             Manage clients
+          </Link>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-medium text-slate-700">Calendar sync</h2>
+          {calendarLoading ? (
+            <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Checking status…
+            </div>
+          ) : calendarStatus?.connected ? (
+            <>
+              <p className="mt-3 text-sm font-semibold text-emerald-600">Connected</p>
+              <p className="text-xs text-slate-500">
+                Syncing with <span className="font-medium">{calendarStatus.calendarId ?? 'primary'}</span>
+                {calendarStatus.updatedAt ? ` • updated ${new Date(calendarStatus.updatedAt).toLocaleString()}` : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-sm font-semibold text-slate-600">Not connected</p>
+              <p className="text-xs text-slate-500">Connect Google Calendar to prevent double bookings.</p>
+              {calendarError ? <p className="text-[11px] text-rose-500">{calendarError}</p> : null}
+            </>
+          )}
+          <Link href="/therapist/profile" className="mt-4 inline-flex text-sm font-medium text-indigo-600">
+            Manage calendar
           </Link>
         </div>
       </div>

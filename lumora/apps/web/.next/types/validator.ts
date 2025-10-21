@@ -137,10 +137,28 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/therapist/clients/chat/[connectionId]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/therapist/clients/chat/[connectionId]">> = Specific
+  const handler = {} as typeof import("../../src/app/therapist/clients/chat/[connectionId]/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/therapist/clients/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/therapist/clients">> = Specific
   const handler = {} as typeof import("../../src/app/therapist/clients/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/therapist/clients/schedule/[connectionId]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/therapist/clients/schedule/[connectionId]">> = Specific
+  const handler = {} as typeof import("../../src/app/therapist/clients/schedule/[connectionId]/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -299,10 +317,28 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/user/resources/chat/[connectionId]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/user/resources/chat/[connectionId]">> = Specific
+  const handler = {} as typeof import("../../src/app/user/resources/chat/[connectionId]/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/user/resources/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/user/resources">> = Specific
   const handler = {} as typeof import("../../src/app/user/resources/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/user/resources/schedule/[connectionId]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/user/resources/schedule/[connectionId]">> = Specific
+  const handler = {} as typeof import("../../src/app/user/resources/schedule/[connectionId]/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -357,6 +393,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/chat">> = Specific
   const handler = {} as typeof import("../../src/app/api/chat/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/chat/token/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/chat/token">> = Specific
+  const handler = {} as typeof import("../../src/app/api/chat/token/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -438,6 +483,42 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/directory/therapists">> = Specific
   const handler = {} as typeof import("../../src/app/api/directory/therapists/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/integrations/google-calendar/auth-url/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/integrations/google-calendar/auth-url">> = Specific
+  const handler = {} as typeof import("../../src/app/api/integrations/google-calendar/auth-url/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/integrations/google-calendar/callback/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/integrations/google-calendar/callback">> = Specific
+  const handler = {} as typeof import("../../src/app/api/integrations/google-calendar/callback/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/integrations/google-calendar/disconnect/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/integrations/google-calendar/disconnect">> = Specific
+  const handler = {} as typeof import("../../src/app/api/integrations/google-calendar/disconnect/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/integrations/google-calendar/status/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/integrations/google-calendar/status">> = Specific
+  const handler = {} as typeof import("../../src/app/api/integrations/google-calendar/status/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -546,6 +627,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/therapist/profile/visibility">> = Specific
   const handler = {} as typeof import("../../src/app/api/therapist/profile/visibility/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/therapists/[id]/availability/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/therapists/[id]/availability">> = Specific
+  const handler = {} as typeof import("../../src/app/api/therapists/[id]/availability/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

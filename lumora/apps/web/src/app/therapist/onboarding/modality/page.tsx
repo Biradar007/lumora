@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { OnboardingStep } from '@/components/OnboardingStep';
 import { AvailabilityGrid } from '@/components/AvailabilityGrid';
 import { useTherapistProfile } from '@/hooks/useTherapistProfile';
@@ -20,6 +20,60 @@ export default function ModalityStep() {
   const [sessionLength, setSessionLength] = useState<25 | 50 | ''>('');
   const [availability, setAvailability] = useState<TherapistProfile['availability']>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const timezoneOptions = useMemo(() => {
+    const fallback = [
+      'UTC',
+      'America/New_York',
+      'America/Los_Angeles',
+      'America/Chicago',
+      'America/Denver',
+      'America/Phoenix',
+      'America/Vancouver',
+      'America/Toronto',
+      'America/Sao_Paulo',
+      'Europe/London',
+      'Europe/Dublin',
+      'Europe/Amsterdam',
+      'Europe/Paris',
+      'Europe/Berlin',
+      'Europe/Zurich',
+      'Europe/Madrid',
+      'Europe/Rome',
+      'Europe/Stockholm',
+      'Europe/Helsinki',
+      'Europe/Warsaw',
+      'Africa/Cairo',
+      'Africa/Johannesburg',
+      'Asia/Dubai',
+      'Asia/Kolkata',
+      'Asia/Singapore',
+      'Asia/Hong_Kong',
+      'Asia/Tokyo',
+      'Asia/Seoul',
+      'Australia/Sydney',
+      'Australia/Melbourne',
+      'Pacific/Auckland',
+    ];
+    const supported = typeof Intl !== 'undefined' && typeof (Intl as any).supportedValuesOf === 'function'
+      ? (() => {
+          try {
+            return ((Intl as any).supportedValuesOf('timeZone') as string[]) ?? fallback;
+          } catch (error) {
+            console.warn('Unable to load supported timezones, falling back to defaults.', error);
+            return fallback;
+          }
+        })()
+      : fallback;
+    return supported.length ? supported : fallback;
+  }, []);
+
+  const selectableTimezones = useMemo(() => {
+    if (!timezone) {
+      return timezoneOptions;
+    }
+    return timezoneOptions.includes(timezone) ? timezoneOptions : [timezone, ...timezoneOptions];
+  }, [timezone, timezoneOptions]);
 
   useEffect(() => {
     if (profile) {
@@ -89,13 +143,18 @@ export default function ModalityStep() {
         </div>
         <label className="block text-sm font-medium text-slate-700">
           Timezone
-          <input
-            type="text"
+          <select
             value={timezone}
             onChange={(event) => setTimezone(event.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
-            placeholder="e.g. America/Chicago"
-          />
+          >
+            <option value="">Select timezone</option>
+            {selectableTimezones.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block text-sm font-medium text-slate-700">
           Session length

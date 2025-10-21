@@ -1,6 +1,6 @@
 'use client';
 
-import { getFirebaseApp } from '@/lib/firebase';
+import { getFirebaseApp } from '@/lib/firebaseClient';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
