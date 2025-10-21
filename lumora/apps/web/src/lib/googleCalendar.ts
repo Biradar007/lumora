@@ -98,9 +98,9 @@ export async function exchangeCodeForTokens(
     access_token: tokens.access_token ?? undefined,
     refresh_token: tokens.refresh_token ?? undefined,
     expiry_date: tokens.expiry_date ?? null,
-    scope: tokens.scope,
-    token_type: tokens.token_type,
-    id_token: tokens.id_token,
+    scope: tokens.scope ?? undefined,
+    token_type: tokens.token_type ?? undefined,
+    id_token: tokens.id_token ?? undefined,
   };
   await storeOAuthTokens(state.therapistId, normalizedTokens);
   return { therapistId: state.therapistId, tokens: normalizedTokens };
