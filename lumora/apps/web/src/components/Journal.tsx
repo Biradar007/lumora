@@ -5,6 +5,8 @@ import { Loader2, PenLine, Bold, Italic, List, ListOrdered, Type, MinusCircle } 
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { JournalEntry } from '@/types/domain';
 
+declare function convertFontTags(root: HTMLElement, fallbackSize?: string): void;
+
 const FONT_FAMILY_OPTIONS = [
   { label: 'Inter', value: 'Inter, sans-serif' },
   { label: 'Georgia', value: 'Georgia, serif' },
