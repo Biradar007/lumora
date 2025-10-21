@@ -1,13 +1,16 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, HeartHandshake } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFirebaseApp } from '@/lib/firebaseClient';
 import { getFirestore } from 'firebase/firestore';
-import { TherapistCard } from '@/components/TherapistCard';
-import { RequestButton } from '@/components/RequestButton';
 import { ConnectionStatusBadge } from '@/components/ConnectionStatusBadge';
+import { RequestButton } from '@/components/RequestButton';
+import { TherapistCard } from '@/components/TherapistCard';
+import { UserShell } from '@/components/UserShell';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { TherapistProfile, ConnectionRequest, Connection } from '@/types/domain';
 
@@ -17,7 +20,7 @@ interface DirectoryEntry extends TherapistProfile {
 }
 
 export default function TherapistDirectoryPage() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const headers = useApiHeaders();
   const [therapists, setTherapists] = useState<DirectoryEntry[]>([]);
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
@@ -128,83 +131,146 @@ export default function TherapistDirectoryPage() {
 
   const specialties = Array.from(new Set(therapists.flatMap((therapist) => therapist.specialties ?? []))).sort();
   const languages = Array.from(new Set(therapists.flatMap((therapist) => therapist.languages ?? []))).sort();
+  const filtersActive = Boolean(specialtyFilter || languageFilter || modalityFilter !== 'all');
+
+  const handleResetFilters = () => {
+    setSpecialtyFilter('');
+    setLanguageFilter('');
+    setModalityFilter('all');
+  };
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold text-slate-900">Find a therapist</h1>
-        <p className="text-slate-600">Browse verified Lumora therapists and request a connection.</p>
-      </header>
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-700">Filters</h2>
-        <div className="grid gap-4 md:grid-cols-4">
-          <label className="text-xs font-medium text-slate-600">
-            Specialty
-            <select
-              value={specialtyFilter}
-              onChange={(event) => setSpecialtyFilter(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            >
-              <option value="">All</option>
-              {specialties.map((specialty) => (
-                <option key={specialty} value={specialty}>
-                  {specialty}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-medium text-slate-600">
-            Language
-            <select
-              value={languageFilter}
-              onChange={(event) => setLanguageFilter(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            >
-              <option value="">All</option>
-              {languages.map((language) => (
-                <option key={language} value={language}>
-                  {language}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-medium text-slate-600">
-            Modality
-            <select
-              value={modalityFilter}
-              onChange={(event) => setModalityFilter(event.target.value as typeof modalityFilter)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            >
-              <option value="all">All</option>
-              <option value="telehealth">Telehealth</option>
-              <option value="inPerson">In-person</option>
-            </select>
-          </label>
-        </div>
-      </section>
-      <div className="grid gap-4">
-        {filteredTherapists.length === 0 && <p className="text-sm text-slate-500">No therapists match your filters.</p>}
-        {filteredTherapists.map((therapist) => {
-          const status = determineStatus(therapist.id);
-          const pendingRequest = requests.find((request) => request.therapistId === therapist.id);
-          return (
-            <TherapistCard
-              key={therapist.id}
-              profile={therapist}
-              name={therapist.displayName}
-              photoUrl={therapist.photoUrl}
-              actions={<RequestButton status={status} onRequest={() => sendRequest(therapist.id)} />}
-              connectionStatus={
-                <ConnectionStatusBadge
-                  status={therapist.status}
-                  visible={therapist.visible}
-                  requestStatus={pendingRequest?.status}
-                />
-              }
-            />
-          );
-        })}
+    <UserShell activeView="resources">
+      <div className="mx-auto w-full max-w-5xl space-y-6 p-6">
+        <header className="space-y-4">
+          <Link
+            href="/user/resources"
+            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 transition hover:text-indigo-500"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to resources
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-teal-500 text-white shadow-[0_18px_35px_-18px_rgba(16,185,129,0.55)]">
+              <HeartHandshake className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold text-slate-900">Find a therapist</h1>
+              <p className="text-sm text-slate-600">
+                Browse verified Lumora therapists to request a private connection.
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-[0_45px_90px_-48px_rgba(79,70,229,0.45)] backdrop-blur">
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-100 bg-white/70 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Filter directory</h2>
+                  <p className="text-xs text-slate-500">Narrow results by specialty, language, or modality.</p>
+                </div>
+                {filtersActive ? (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100"
+                  >
+                    Reset filters
+                  </button>
+                ) : null}
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <label className="text-xs font-medium text-slate-600">
+                  Specialty
+                  <select
+                    value={specialtyFilter}
+                    onChange={(event) => setSpecialtyFilter(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">All</option>
+                    {specialties.map((specialty) => (
+                      <option key={specialty} value={specialty}>
+                        {specialty}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs font-medium text-slate-600">
+                  Language
+                  <select
+                    value={languageFilter}
+                    onChange={(event) => setLanguageFilter(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">All</option>
+                    {languages.map((language) => (
+                      <option key={language} value={language}>
+                        {language}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs font-medium text-slate-600">
+                  Modality
+                  <select
+                    value={modalityFilter}
+                    onChange={(event) => setModalityFilter(event.target.value as typeof modalityFilter)}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="all">All</option>
+                    <option value="telehealth">Telehealth</option>
+                    <option value="inPerson">In-person</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Therapist matches</h2>
+                  <p className="text-xs text-slate-500">Choose a clinician to see details and send a request.</p>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
+                  {filteredTherapists.length}{' '}
+                  {filteredTherapists.length === 1 ? 'match' : 'matches'}
+                </span>
+              </div>
+
+              {filteredTherapists.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-500">
+                  No therapists match your filters. Try adjusting your selections to explore more options.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredTherapists.map((therapist) => {
+                    const status = determineStatus(therapist.id);
+                    const pendingRequest = requests.find((request) => request.therapistId === therapist.id);
+                    return (
+                      <TherapistCard
+                        key={therapist.id}
+                        profile={therapist}
+                        name={therapist.displayName}
+                        photoUrl={therapist.photoUrl}
+                        actions={<RequestButton status={status} onRequest={() => sendRequest(therapist.id)} />}
+                        connectionStatus={
+                          <ConnectionStatusBadge
+                            status={therapist.status}
+                            visible={therapist.visible}
+                            requestStatus={pendingRequest?.status}
+                          />
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
+    </UserShell>
   );
 }
