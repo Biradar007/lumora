@@ -94,8 +94,16 @@ export async function exchangeCodeForTokens(
   }
   const client = createOAuthClient();
   const { tokens } = await client.getToken(code);
-  await storeOAuthTokens(state.therapistId, tokens);
-  return { therapistId: state.therapistId, tokens };
+  const normalizedTokens: GoogleCalendarTokens = {
+    access_token: tokens.access_token ?? undefined,
+    refresh_token: tokens.refresh_token ?? undefined,
+    expiry_date: tokens.expiry_date ?? null,
+    scope: tokens.scope,
+    token_type: tokens.token_type,
+    id_token: tokens.id_token,
+  };
+  await storeOAuthTokens(state.therapistId, normalizedTokens);
+  return { therapistId: state.therapistId, tokens: normalizedTokens };
 }
 
 async function upsertIntegration(therapistId: string, tokens: GoogleCalendarTokens, calendarId: string): Promise<void> {
