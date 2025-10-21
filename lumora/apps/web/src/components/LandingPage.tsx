@@ -192,23 +192,10 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
               <p className="text-sm font-bold text-gray-500 hidden sm:block">Light for the mind</p>
             </div>
           </div>
-          {/* <a
-            href="#waitlist"
-            className="hidden sm:inline-flex items-center gap-2.5 rounded-full border border-calm-200/60 bg-white/80 backdrop-blur-sm px-6 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all hover:bg-white hover:shadow-md hover:scale-105 active:scale-95"
-          >
-            <span className="h-2 w-2 rounded-full bg-serene-400 animate-pulse" />
-            Join the signal
-          </a> */}
         </nav>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32 md:pt-28 md:pb-40 text-center">
           <div className="mx-auto flex max-w-4xl flex-col items-center gap-7">
-            {/* <span
-              className="inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-white/80 backdrop-blur-sm px-5 py-2 text-[0.7rem] font-bold tracking-[0.35em] text-muted-foreground shadow-sm"
-              data-aos="fade-up"
-            >
-              A QUIET SIGNAL
-            </span> */}
             <h1
               className="text-5xl font-bold leading-tight text-foreground md:text-7xl text-balance"
               data-aos="fade-up"
@@ -239,7 +226,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 onClick={onEnterApp}
                 className="w-full sm:w-auto rounded-full border-2 border-calm-200/60 bg-white/80 backdrop-blur-sm px-9 py-4 text-[15px] font-semibold text-foreground transition-all hover:bg-white hover:shadow-md hover:scale-105 active:scale-95"
               >
-                Enter the App
+                Start Exploring
               </button>
             </div>
             <div
@@ -353,143 +340,9 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           </div>
         </section>
 
-        {/* <section className="relative z-10 py-24">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="grid gap-16 lg:grid-cols-[1fr,1.2fr] lg:items-center">
-              <div data-aos="fade-up" className="space-y-7">
-                <span className="inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-white/80 backdrop-blur-sm px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground shadow-sm">
-                  Sneak peek
-                </span>
-                <h3 className="text-4xl font-bold leading-tight text-foreground text-balance">
-                  A companion that feels more human than hectic.
-                </h3>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  The Lumora signal is stitched together from conversations with founders, teachers, therapists, and
-                  friends. We&apos;re translating that care into an experience that stays by your side without getting
-                  in the way.
-                </p>
-                <ul className="space-y-5 text-muted-foreground">
-                  <li className="flex items-start gap-4">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20">
-                      <i data-feather="sunrise" className="h-4 w-4 text-accent" />
-                    </div>
-                    <span className="text-[15px] leading-relaxed">
-                      Morning grounding to help you set intention and reclaim calm before the day accelerates.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-4">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-xl bg-primary/20">
-                      <i data-feather="layers" className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-[15px] leading-relaxed">
-                      Micro rituals that adapt to your context and keep track of the threads you care about.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-4">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-xl bg-success/20">
-                      <i data-feather="lock" className="h-4 w-4 text-success" />
-                    </div>
-                    <span className="text-[15px] leading-relaxed">
-                      Private-by-design infrastructure so your conversations stay yours, now and always.
-                    </span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="relative" data-aos="fade-up" data-aos-delay="120">
-                <div className="absolute -inset-8 rounded-[2rem] bg-gradient-to-br from-serene-400/30 via-transparent to-accent/20 blur-3xl" />
-                <div className="relative rounded-[2rem] border border-calm-200/60 bg-white/90 backdrop-blur-md p-9 shadow-2xl">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-serene-400/15 to-accent/15 shadow-sm">
-                      <i data-feather="radio" className="h-6 w-6 text-serene-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Transmission #37</p>
-                      <h4 className="text-xl font-bold text-foreground">Evening unwind</h4>
-                    </div>
-                  </div>
-                  <p className="text-[15px] text-muted-foreground leading-relaxed mb-7">
-                    "Notice the moment your shoulders unclench. Breathe into that pocket of ease, then name one thing
-                    you want to feel tomorrow."
-                  </p>
-                  <div className="flex items-center justify-between rounded-2xl border border-calm-200/60 bg-calm-50/70 px-5 py-4 text-sm font-medium text-muted-foreground mb-8">
-                    <span className="flex items-center gap-2.5">
-                      <i data-feather="clock" className="h-4 w-4" />2 min ritual
-                    </span>
-                    <span className="flex items-center gap-2.5">
-                      <i data-feather="star" className="h-4 w-4" />
-                      Helps with release
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={onEnterApp}
-                    className="w-full rounded-2xl bg-gradient-to-r from-serene-400 to-accent px-6 py-4 text-[15px] font-semibold text-white shadow-lg shadow-serene-400/30 transition-all hover:shadow-xl hover:shadow-serene-400/40 hover:scale-[1.02] active:scale-95"
-                  >
-                    Preview the experience
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section> */}
-
-        {/* <section id="waitlist" className="relative z-10 py-28">
-          <div className="max-w-6xl mx-auto px-6">
-            <div
-              className="relative rounded-[2rem] border border-calm-200/60 bg-white/90 backdrop-blur-md p-10 md:p-12 shadow-2xl"
-              data-aos="fade-up"
-            >
-              <div className="md:flex md:items-center md:justify-between md:gap-16">
-                <div className="max-w-xl space-y-5 mb-10 md:mb-0">
-                  <span className="inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-white/80 backdrop-blur-sm px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground shadow-sm">
-                    Early access
-                  </span>
-                  <h3 className="text-4xl font-bold text-foreground text-balance">Be one of the first to tune in.</h3>
-                  <p className="text-[15px] text-muted-foreground leading-relaxed">
-                    We&apos;re opening the doors slowly. Drop your email to receive a quiet ping when the companion is
-                    ready for you.
-                  </p>
-                </div>
-                <div className="w-full max-w-md">
-                  <form id="early-form" className="space-y-5" data-aos="fade-up" data-aos-delay="100">
-                    <input type="text" name="_gotcha" className="hidden" aria-hidden="true" tabIndex={-1} />
-                    <div className="flex flex-col gap-4">
-                      <div className="flex-1">
-                        <label htmlFor="email" className="sr-only">
-                          Email
-                        </label>
-                        <input
-                          id="email"
-                          name="email"
-                          type="email"
-                          required
-                          placeholder="you@brightmorning.com"
-                          className="w-full rounded-2xl border-2 border-calm-200/60 bg-white px-6 py-4 text-[15px] text-foreground shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
-                        />
-                      </div>
-                      <button
-                        id="submit-btn"
-                        type="submit"
-                        className="w-full rounded-2xl bg-gradient-to-r from-serene-400 to-accent px-6 py-4 text-[15px] font-semibold text-white shadow-lg shadow-serene-400/30 transition-all hover:shadow-xl hover:shadow-serene-400/40 hover:scale-[1.02] active:scale-95"
-                      >
-                        Request invite
-                      </button>
-                    </div>
-                    <p id="form-status" className="text-sm text-muted-foreground" role="status" />
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section> */}
-
         <footer className="relative z-10 border-t border-calm-200/60 bg-white/80 backdrop-blur-sm py-16">
           <div className="max-w-7xl mx-auto flex flex-col gap-10 px-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              {/* <div className="relative w-16 h-16">
-                <Image src="/logo.png" alt="Lumora" width={64} height={64} className="object-contain" />
-              </div> */}
               <div className="flex flex-col items-center gap-2 text-center">
             <div className="relative w-9 h-9 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
             <div className="flex flex-col items-center leading-tight">

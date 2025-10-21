@@ -49,11 +49,12 @@ export function UserProfileMenu() {
     );
   }
 
-  const displayName = profile?.name || user?.displayName || user?.email || 'Welcome';
+  const displayName =
+    profile?.displayName || profile?.name || user?.displayName || user?.email || 'Welcome';
   const email = user?.email ?? profile?.email ?? '';
-  const accountType = profile?.accountType ?? 'user';
+  const accountType = profile?.role ?? 'user';
 
-  const initials = getInitials(profile?.name, user?.email ?? undefined);
+  const initials = getInitials(profile?.displayName ?? profile?.name, user?.email ?? undefined);
 
   const handleLogout = async () => {
     try {
