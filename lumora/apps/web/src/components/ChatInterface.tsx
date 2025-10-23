@@ -466,17 +466,19 @@ export function ChatInterface() {
           <span className="font-semibold text-gray-700">Conversations</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              handleCreateSession();
-              onClose?.();
-            }}
-            className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New
-          </button>
+          {uid ? (
+            <button
+              type="button"
+              onClick={() => {
+                handleCreateSession();
+                onClose?.();
+              }}
+              className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New
+            </button>
+          ) : null}
           {onClose ? (
             <button
               type="button"
@@ -497,7 +499,7 @@ export function ChatInterface() {
           </div>
         ) : sessions.length === 0 ? (
           <div className="p-4 text-sm text-gray-500">
-            No conversations yet. Start one to see it here.
+            {uid ? 'No conversations yet. Start one to see it here.' : 'Create an account to save your conversations.'}
           </div>
         ) : (
           <ul className="divide-y divide-gray-100">
@@ -686,38 +688,37 @@ export function ChatInterface() {
             )}
           </div>
 
-          {uid ? (
-            <div className="border-t border-white/60 bg-white/80 px-6 py-5 backdrop-blur-lg">
-              <div className="rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_24px_48px_-28px_rgba(79,70,229,0.45)]">
-                <textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(event) => setInputValue(event.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="How are you feeling today?"
-                  className="w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
-                  rows={2}
-                />
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100/60 pt-3">
-                  <button
-                    type="button"
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim()}
-                    className="ml-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Send className="h-4 w-4" />
-                    Send
-                  </button>
-                </div>
+          <div className="border-t border-white/60 bg-white/80 px-6 py-5 backdrop-blur-lg">
+            <div className="rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_24px_48px_-28px_rgba(79,70,229,0.45)]">
+              <textarea
+                ref={textareaRef}
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder={
+                  uid ? 'How are you feeling today?' : "Share how you're feeling - no account needed."
+                }
+                className="w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
+                rows={2}
+              />
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100/60 pt-3">
+                <p className="text-xs text-slate-400">
+                  {uid
+                    ? 'Your conversation autosaves to your account.'
+                    : 'Guest chats are not stored. Sign in anytime to keep a history.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={!inputValue.trim() || isTyping}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Send className="h-4 w-4" />
+                  {isTyping ? 'Sending...' : 'Send'}
+                </button>
               </div>
             </div>
-          ) : (
-            <div className="border-t border-white/60 bg-white/80 px-6 py-5 text-center text-sm text-slate-500 backdrop-blur-lg">
-              <p>
-                Responses are generated in real time. Create an account to save your conversations securely.
-              </p>
-            </div>
-          )}
+          </div>
         </section>
       </div>
     </div>
