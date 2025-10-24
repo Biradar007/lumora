@@ -68,7 +68,7 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
         try {
           const availabilityResponse = await fetch(
             `/api/therapists/${match.therapistId}/availability?from=${Date.now()}&to=${
-              Date.now() + 14 * 24 * 60 * 60 * 1000
+              Date.now() + 28 * 24 * 60 * 60 * 1000
             }`,
             { headers }
           );
@@ -130,7 +130,7 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
       }
       throw new Error(data.error ?? 'Failed to book appointment');
     }
-    setMessage('Appointment requested. Your therapist will confirm soon.');
+    setMessage('notify');
   };
 
   if (!user) {
@@ -257,7 +257,14 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
         availableSlots={availableSlots}
         timezone={availabilityTimezone}
       />
-      {message && <p className="text-sm text-emerald-600">{message}</p>}
-    </div>
+      {message === 'notify' ? (
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <span className="relative flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-600" />
+          </span>
+          <span>Appointment requested.</span>
+        </div>
+      ) : null}    </div>
   );
 }
