@@ -94,7 +94,7 @@ export default function TherapistDashboard() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-medium text-slate-700">Requests inbox</h2>
           <p className="mt-3 text-3xl font-semibold text-indigo-600">{requests.length}</p>
-          <p className="text-xs text-slate-500">Pending user connection requests.</p>
+          <p className="text-xs text-slate-500">Pending user requests.</p>
           <Link href="/therapist/requests" className="mt-4 inline-flex text-sm font-medium text-indigo-600">
             View requests
           </Link>

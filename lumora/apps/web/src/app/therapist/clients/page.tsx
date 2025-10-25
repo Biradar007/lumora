@@ -13,6 +13,7 @@ import type {
   JournalEntry,
   AiChatSession,
   AiChatMessage,
+  Appointment,
 } from '@/types/domain';
 
 const EMPTY_SCOPES: ConsentScopes = {
@@ -41,6 +42,7 @@ export default function TherapistClientsPage() {
   const [sessionMessagesExpanded, setSessionMessagesExpanded] = useState<Record<string, boolean>>({});
   const [journalExpanded, setJournalExpanded] = useState<Record<string, boolean>>({});
   const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
+  const [activeAppointments, setActiveAppointments] = useState<Record<string, Appointment | null>>({});
 
   useEffect(() => {
     if (!headers['x-user-id']) {
@@ -49,6 +51,7 @@ export default function TherapistClientsPage() {
     const load = async () => {
       try {
         setLoading(true);
+        setActiveAppointments({});
         const [connectionsResponse, consentsResponse] = await Promise.all([
           fetch('/api/connections', { headers }),
           fetch('/api/consents', { headers }),
@@ -69,9 +72,30 @@ export default function TherapistClientsPage() {
         } else {
           setError('Unable to load shared data preferences right now.');
         }
+        const appointmentMap: Record<string, Appointment | null> = {};
+        try {
+          const appointmentsResponse = await fetch('/api/appointments', { headers });
+          if (appointmentsResponse.ok) {
+            const appointmentData = (await appointmentsResponse.json()) as { appointments: Appointment[] };
+            (appointmentData.appointments ?? []).forEach((appointment) => {
+              if (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') {
+                const existing = appointmentMap[appointment.connectionId];
+                if (!existing || appointment.start < existing.start) {
+                  appointmentMap[appointment.connectionId] = appointment;
+                }
+              }
+            });
+          } else {
+            console.error('Failed to load appointments', appointmentsResponse.status);
+          }
+        } catch (appointmentsError) {
+          console.error('Failed to load appointments', appointmentsError);
+        }
+        setActiveAppointments(appointmentMap);
       } catch (err) {
         console.error(err);
         setError('Unable to load client data. Please try again later.');
+        setActiveAppointments({});
       } finally {
         setLoading(false);
       }
@@ -319,6 +343,14 @@ export default function TherapistClientsPage() {
       setSessionMessagesError((prev) => stripPrefixedKeys(prev));
       setSessionMessagesLoading((prev) => stripPrefixedKeys(prev));
       setSessionMessagesExpanded((prev) => stripPrefixedKeys(prev));
+      setActiveAppointments((prev) => {
+        if (!prev[connection.id]) {
+          return prev;
+        }
+        const copy = { ...prev };
+        delete copy[connection.id];
+        return copy;
+      });
     } catch (err) {
       console.error('Failed to disconnect client connection', err);
       if (typeof window !== 'undefined') {
@@ -403,7 +435,7 @@ export default function TherapistClientsPage() {
                     href={`/therapist/clients/schedule/${connection.id}`}
                     className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-300"
                   >
-                    View schedule
+                    {activeAppointments[connection.id] ? 'View appointment' : 'Schedule appointment'}
                   </Link>
                 ) : null}
                 {isActive ? (
