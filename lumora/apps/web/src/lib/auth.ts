@@ -3,7 +3,9 @@
 import { getFirebaseApp } from '@/lib/firebaseClient';
 import {
   GoogleAuthProvider,
+  getAdditionalUserInfo,
   linkWithPopup,
+  unlink,
   signInWithEmailAndPassword,
   signInWithPopup,
   type Auth,
@@ -65,6 +67,8 @@ export interface VerifySignupCodeParams {
   password: string;
   name: string;
   role?: 'user' | 'therapist';
+  age?: number;
+  gender?: string;
 }
 
 export interface VerifySignupCodeResult {
@@ -80,6 +84,8 @@ export async function verifySignupCode(payload: VerifySignupCodeParams): Promise
     password: payload.password,
     name: payload.name.trim(),
     role: payload.role ?? 'user',
+    age: typeof payload.age === 'number' ? payload.age : undefined,
+    gender: payload.gender ?? undefined,
   };
 
   const data = await postJson<{ ok: boolean; user: { uid: string; email: string; role: Role } }>(
@@ -93,19 +99,30 @@ export async function verifySignupCode(payload: VerifySignupCodeParams): Promise
 }
 
 export interface GoogleSignInResult {
-  role: Role;
+  role: Role | null;
   created: boolean;
+  idToken: string;
 }
 
 export async function signInWithGooglePopup(): Promise<GoogleSignInResult> {
   const auth = getFirebaseAuth();
   const credential = await signInWithPopup(auth, googleProvider);
   const idToken = await credential.user.getIdToken(true);
+  const additionalInfo = getAdditionalUserInfo(credential);
+  const isNewUser = Boolean(additionalInfo?.isNewUser);
+
+  if (isNewUser) {
+    return {
+      role: null,
+      created: true,
+      idToken,
+    };
+  }
 
   const data = await postJson<{
     profile: { role: string };
     created: boolean;
-  }>('/api/auth/upsert', null, {
+  }>('/api/auth/upsert', {}, {
     headers: {
       authorization: `Bearer ${idToken}`,
     },
@@ -114,16 +131,32 @@ export async function signInWithGooglePopup(): Promise<GoogleSignInResult> {
   return {
     role: resolveRole(data.profile.role),
     created: Boolean(data.created),
+    idToken,
   };
 }
 
-export async function linkGoogleAccount(): Promise<void> {
+export async function linkGoogleAccount(expectedEmail?: string): Promise<void> {
   const auth = getFirebaseAuth();
   const user = auth.currentUser;
   if (!user) {
     throw new Error('not_authenticated');
   }
   const credential = await linkWithPopup(user, googleProvider);
+  const additionalInfo = getAdditionalUserInfo(credential);
+  const additionalEmail =
+    (typeof additionalInfo?.profile === 'object' && additionalInfo?.profile && 'email' in additionalInfo.profile
+      ? ((additionalInfo.profile as { email?: string }).email ?? undefined)
+      : undefined) ?? undefined;
+  const providerEmail =
+    credential.user.providerData.find((provider) => provider.providerId === 'google.com')?.email ?? additionalEmail;
+  const googleEmail = providerEmail?.toLowerCase().trim() ?? null;
+  const primaryEmail = expectedEmail?.toLowerCase()?.trim() ?? user.email?.toLowerCase()?.trim() ?? null;
+
+  if (primaryEmail && googleEmail && primaryEmail !== googleEmail) {
+    await unlink(user, 'google.com').catch(() => undefined);
+    throw new Error(`Link the Google account that uses ${primaryEmail}. This account (${googleEmail}) does not match.`);
+  }
+
   const idToken = await credential.user.getIdToken(true);
   await postJson('/api/auth/upsert', null, {
     headers: {
@@ -133,3 +166,17 @@ export async function linkGoogleAccount(): Promise<void> {
 }
 
 export { getFirebaseAuth };
+
+export async function completeGoogleSignup(
+  idToken: string,
+  payload: { role: 'user' | 'therapist'; age: number; gender: string }
+): Promise<Role> {
+  const data = await postJson<{
+    profile: { role: string };
+  }>('/api/auth/upsert', payload, {
+    headers: {
+      authorization: `Bearer ${idToken}`,
+    },
+  });
+  return resolveRole(data.profile.role);
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerAuth, getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer';
+import type { Role } from '@/types/domain';
 
 interface UpsertResponse {
   profile: {
@@ -15,6 +16,16 @@ interface UpsertResponse {
 
 export async function POST(request: Request) {
   try {
+    const rawBody = await request.text();
+    let payload: { role?: Role; age?: number; gender?: string } = {};
+    if (rawBody) {
+      try {
+        payload = JSON.parse(rawBody) as typeof payload;
+      } catch (error) {
+        console.warn('Failed to parse auth upsert payload', error);
+      }
+    }
+
     const authHeader = request.headers.get('authorization') ?? '';
     const match = authHeader.match(/^Bearer\s+(.+)$/i);
     if (!match) {
@@ -35,6 +46,13 @@ export async function POST(request: Request) {
     const displayName = decoded.name ?? null;
     const photoUrl = decoded.picture ?? null;
 
+    const requestedRole: Role =
+      payload.role === 'therapist' ? 'therapist' : payload.role === 'admin' ? 'admin' : 'user';
+    const requestedAge =
+      typeof payload.age === 'number' && Number.isFinite(payload.age) ? Math.round(payload.age) : undefined;
+    const requestedGender =
+      typeof payload.gender === 'string' && payload.gender.trim().length > 0 ? payload.gender.trim() : undefined;
+
     const db = getServerFirestore();
     const docRef = db.collection('users').doc(uid);
     const snapshot = await docRef.get();
@@ -43,7 +61,7 @@ export async function POST(request: Request) {
     if (snapshot.exists) {
       const data = snapshot.data() ?? {};
       const role = typeof data.role === 'string' ? data.role : 'user';
-      const update = sanitizeForFirestore({
+      const updatePayload: Record<string, unknown> = {
         email,
         emailLower: email,
         displayName,
@@ -52,7 +70,15 @@ export async function POST(request: Request) {
         provider: 'google',
         updatedAt: now,
         updatedAtIso: new Date(now).toISOString(),
-      });
+      };
+      if (requestedAge !== undefined) {
+        updatePayload.age = requestedAge;
+      }
+      if (requestedGender) {
+        updatePayload.gender = requestedGender;
+      }
+
+      const update = sanitizeForFirestore(updatePayload);
 
       await docRef.set(update, { merge: true });
 
@@ -71,8 +97,8 @@ export async function POST(request: Request) {
       return NextResponse.json(response);
     }
 
-    const role = 'user';
-    const profile = sanitizeForFirestore({
+    const role: Role = requestedRole;
+    const profilePayload: Record<string, unknown> = {
       uid,
       id: uid,
       email,
@@ -87,7 +113,15 @@ export async function POST(request: Request) {
       createdAtIso: new Date(now).toISOString(),
       updatedAt: now,
       updatedAtIso: new Date(now).toISOString(),
-    });
+    };
+    if (requestedAge !== undefined) {
+      profilePayload.age = requestedAge;
+    }
+    if (requestedGender) {
+      profilePayload.gender = requestedGender;
+    }
+
+    const profile = sanitizeForFirestore(profilePayload);
 
     await docRef.set(profile);
 

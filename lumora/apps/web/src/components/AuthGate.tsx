@@ -6,12 +6,18 @@ import { AuthForm } from '@/components/AuthForm';
 import { AuthUIProvider } from '@/contexts/AuthUIContext';
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { user, loading, guestMode, enableGuestMode } = useAuth();
+  const { user, loading, guestMode, enableGuestMode, profileCompletionPending } = useAuth();
   const [promptVisible, setPromptVisible] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(true);
 
   useEffect(() => {
     if (loading) {
+      return;
+    }
+
+    if (profileCompletionPending) {
+      setPromptVisible(true);
+      setShowLoginForm(true);
       return;
     }
 
@@ -25,7 +31,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       setPromptVisible(true);
       setShowLoginForm(true);
     }
-  }, [guestMode, loading, promptVisible, user]);
+  }, [guestMode, loading, profileCompletionPending, promptVisible, user]);
 
   const handleContinueAsGuest = useCallback(() => {
     enableGuestMode();

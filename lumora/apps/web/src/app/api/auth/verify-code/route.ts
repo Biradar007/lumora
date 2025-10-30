@@ -71,6 +71,8 @@ export async function POST(request: Request) {
       password?: string;
       name?: string;
       role?: string;
+      age?: number | string;
+      gender?: string;
     };
 
     const emailRaw = body.email;
@@ -78,6 +80,8 @@ export async function POST(request: Request) {
     const password = body.password;
     const name = body.name?.trim() ?? '';
     const requestedRole = body.role === 'therapist' ? 'therapist' : 'user';
+    const ageRaw = body.age;
+    const genderRaw = body.gender;
 
     if (!emailRaw || !codeRaw || !password || password.length < 8) {
       return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
@@ -87,6 +91,24 @@ export async function POST(request: Request) {
     const code = codeRaw.trim();
     if (!/^\d{6}$/.test(code)) {
       return NextResponse.json({ error: 'invalid_code' }, { status: 400 });
+    }
+
+    let parsedAge: number | undefined;
+    if (typeof ageRaw === 'number' && Number.isFinite(ageRaw)) {
+      parsedAge = ageRaw;
+    } else if (typeof ageRaw === 'string' && ageRaw.trim()) {
+      const maybeNumber = Number.parseInt(ageRaw, 10);
+      if (Number.isFinite(maybeNumber)) {
+        parsedAge = maybeNumber;
+      }
+    }
+    if (!parsedAge || parsedAge <= 0 || parsedAge > 120) {
+      return NextResponse.json({ error: 'invalid_age' }, { status: 400 });
+    }
+
+    const gender = typeof genderRaw === 'string' && genderRaw.trim().length > 0 ? genderRaw.trim() : null;
+    if (!gender) {
+      return NextResponse.json({ error: 'invalid_gender' }, { status: 400 });
     }
 
     const db = getServerFirestore();
@@ -175,6 +197,8 @@ export async function POST(request: Request) {
       displayName: userRecord.displayName ?? name || null,
       name: userRecord.displayName ?? name || null,
       provider: 'password',
+      age: parsedAge,
+      gender,
       createdAt: now,
       createdAtIso: new Date(now).toISOString(),
       updatedAt: now,

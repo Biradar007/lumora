@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, LogOut, UserCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, ShieldCheck, UserCircle } from 'lucide-react';
 import type { TherapistOnboardingProgress } from '@/lib/therapistOnboarding';
+import { useAuth } from '@/contexts/AuthContext';
+import { EmailVerificationModal } from './EmailVerificationModal';
 
 interface TherapistSidebarProps {
   therapistName: string;
@@ -35,7 +38,9 @@ export function TherapistSidebar({
   onLogout,
   signingOut,
 }: TherapistSidebarProps) {
+  const { user, profile } = useAuth();
   const pathname = usePathname();
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
   const statusBadge =
     status === 'VERIFIED'
       ? {
@@ -43,9 +48,20 @@ export function TherapistSidebar({
           classes: 'border-emerald-200 bg-emerald-50 text-emerald-700',
         }
       : null;
+  const emailVerified = Boolean(user?.emailVerified);
+  const therapistEmail = user?.email ?? profile?.email ?? undefined;
+
+  const handleOpenVerification = () => {
+    setVerifyModalOpen(true);
+  };
+
+  const handleCloseVerification = () => {
+    setVerifyModalOpen(false);
+  };
 
   return (
-    <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-64 lg:w-72 md:flex-col border-r border-slate-200 bg-white">
+    <>
+      <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-64 lg:w-72 md:flex-col border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-6 py-6">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
@@ -93,6 +109,25 @@ export function TherapistSidebar({
           ) : null}
           {typeof status === 'string' && !statusBadge && (
             <p className="mt-0.5 text-xs text-slate-500">Status: {status}</p>
+          )}
+          {!emailVerified && (
+            <div className="mt-3 rounded-xl border border-indigo-100 bg-white p-3 shadow-sm">
+              <p className="flex items-center gap-2 text-xs font-semibold text-indigo-900">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Verify your account
+              </p>
+              <p className="mt-1 text-[11px] text-indigo-700/80">
+                Verify {therapistEmail ?? 'your email'} to unlock secure messaging and scheduling tools.
+              </p>
+              <button
+                type="button"
+                onClick={handleOpenVerification}
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Verify now
+              </button>
+            </div>
           )}
         </div>
 
@@ -144,5 +179,9 @@ export function TherapistSidebar({
         </button>
       </div>
     </aside>
+      {verifyModalOpen ? (
+        <EmailVerificationModal isOpen={verifyModalOpen} onClose={handleCloseVerification} />
+      ) : null}
+    </>
   );
 }
