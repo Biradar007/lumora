@@ -8,6 +8,15 @@ import type { TherapistOnboardingProgress } from '@/lib/therapistOnboarding';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmailVerificationModal } from './EmailVerificationModal';
 
+function getInitials(name?: string, fallback?: string) {
+  if (name) {
+    const parts = name.trim().split(/\s+/).slice(0, 2);
+    if (parts.length > 0) {
+      return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || fallback?.[0]?.toUpperCase() || 'U';
+    }
+  }
+  return fallback?.[0]?.toUpperCase() ?? 'U';
+}
 interface TherapistSidebarProps {
   therapistName: string;
   progress: TherapistOnboardingProgress;
@@ -50,6 +59,7 @@ export function TherapistSidebar({
       : null;
   const emailVerified = Boolean(user?.emailVerified);
   const therapistEmail = user?.email ?? profile?.email ?? undefined;
+  const initials = getInitials(profile?.displayName ?? therapistName, therapistEmail);
 
   const handleOpenVerification = () => {
     setVerifyModalOpen(true);
@@ -98,37 +108,62 @@ export function TherapistSidebar({
 
       <div className="space-y-4 border-t border-slate-200 px-6 py-6">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Therapist</p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">{therapistName}</p>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg font-semibold shadow-md">
+              {user?.photoURL ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.photoURL}
+                  alt={therapistName}
+                  className="h-full w-full rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                initials
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="mt-1 text-sm font-semibold text-slate-900 truncate">{therapistName}</p>
+              {therapistEmail && (
+                <p className="text-xs text-indigo-700/70 truncate" title={therapistEmail}>
+                  {therapistEmail}
+                </p>
+              )}
+            </div>
+          </div>
           {statusBadge ? (
             <span
-              className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
+              className={`mt-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
             >
               {statusBadge.text}
             </span>
           ) : null}
           {typeof status === 'string' && !statusBadge && (
-            <p className="mt-0.5 text-xs text-slate-500">Status: {status}</p>
+            <p className="mt-2 text-xs text-slate-500">Status: {status}</p>
           )}
+        <div className="mt-4 space-y-3">
           {!emailVerified && (
-            <div className="mt-3 rounded-xl border border-indigo-100 bg-white p-3 shadow-sm">
-              <p className="flex items-center gap-2 text-xs font-semibold text-indigo-900">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Verify your account
-              </p>
-              <p className="mt-1 text-[11px] text-indigo-700/80">
-                Verify {therapistEmail ?? 'your email'} to unlock secure messaging and scheduling tools.
-              </p>
-              <button
-                type="button"
-                onClick={handleOpenVerification}
-                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
-              >
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Verify now
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleOpenVerification}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Verify your account
+            </button>
           )}
+           <button
+          type="button"
+          onClick={() => {
+            void onLogout();
+          }}
+          disabled={signingOut}
+            className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-lg transition disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          <LogOut className="h-4 w-4" />
+          {signingOut ? 'Signing out…' : 'Log out'}
+        </button>
+        </div>
         </div>
 
         {onboardingPending ? (
@@ -153,10 +188,7 @@ export function TherapistSidebar({
             </Link>
           </div>
         ) : (
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-            <p className="text-sm font-semibold text-emerald-900">Onboarding complete</p>
-            <p className="text-xs text-emerald-700">Keep your profile fresh to stay visible to Lumora members.</p>
-          </div>
+         null
         )}
 
         <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
@@ -165,18 +197,6 @@ export function TherapistSidebar({
             If you or a client is in crisis, call 988 (Suicide &amp; Crisis Lifeline) or contact emergency services.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            void onLogout();
-          }}
-          disabled={signingOut}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-75"
-        >
-          <LogOut className="h-4 w-4" />
-          {signingOut ? 'Signing out…' : 'Log out'}
-        </button>
       </div>
     </aside>
       {verifyModalOpen ? (

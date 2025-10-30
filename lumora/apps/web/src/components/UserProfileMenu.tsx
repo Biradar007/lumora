@@ -104,10 +104,6 @@ export function UserProfileMenu() {
                 {email}
               </p>
             )}
-            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-white/70 border border-indigo-100 px-2 py-0.5">
-              <UserCircle2 className="h-3.5 w-3.5 text-indigo-500" />
-              <span className="text-xs font-medium capitalize text-indigo-700">{accountType}</span>
-            </div>
           </div>
         </div>
 
