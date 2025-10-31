@@ -429,18 +429,15 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
 
   return (
     <>
-      <div className="max-w-md w-full bg-white/80 backdrop-blur border border-indigo-100 rounded-2xl shadow-xl p-8">
+      <div className="max-w-md w-full bg-white/80 backdrop-blur border border-indigo-100 rounded-2xl shadow-xl p-8 max-h-[90vh] overflow-y-auto">
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-            <LogIn className="h-6 w-6" />
-          </div>
           <h2 className="text-2xl font-semibold text-indigo-900">
             {mode === 'login' ? 'Welcome back to Lumora' : 'Create your Lumora account'}
           </h2>
           <p className="mt-2 text-sm text-indigo-700/80">
             {mode === 'login'
               ? 'Sign in to continue your journey with personalized support.'
-              : 'Verify your email to start using Lumora. It only takes a minute.'}
+              : null}
           </p>
         </div>
 
@@ -517,7 +514,7 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
             </button>
           </form>
         ) : (
-          <form onSubmit={handleRegisterSubmit} className="space-y-4">
+          <form onSubmit={handleRegisterSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
             <div>
               <label className="block text-sm font-medium text-indigo-900 mb-1">Full name</label>
               <input
