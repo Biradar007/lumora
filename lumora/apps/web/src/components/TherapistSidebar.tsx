@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, LogOut, ShieldCheck, UserCircle } from 'lucide-react';
+import { CheckCircle2, LayoutDashboard, LogOut, ShieldCheck, UserCircle } from 'lucide-react';
 import type { TherapistOnboardingProgress } from '@/lib/therapistOnboarding';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmailVerificationModal } from './EmailVerificationModal';
@@ -127,7 +127,10 @@ export function TherapistSidebar({
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-indigo-900 truncate">{therapistName}</p>
+                <p className="flex items-center gap-2 text-sm font-medium text-indigo-900">
+                  <span className="truncate">{therapistName}</span>
+                    {statusBadge ? <CheckCircle2 className="h-4 w-4 text-blue-500" /> : null}
+                </p>
                 {therapistEmail && (
                   <p className="text-xs text-indigo-700/70 truncate" title={therapistEmail}>
                     {therapistEmail}
@@ -135,16 +138,6 @@ export function TherapistSidebar({
                 )}
               </div>
             </div>
-            {/* {statusBadge ? (
-              <span
-                className={`mt-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
-              >
-                {statusBadge.text}
-              </span>
-            ) : null}
-            {typeof status === 'string' && !statusBadge && (
-              <p className="mt-2 text-xs text-slate-500">Status: {status}</p>
-            )} */}
 
             <div className="mt-4 space-y-3">
               {!emailVerified && (
