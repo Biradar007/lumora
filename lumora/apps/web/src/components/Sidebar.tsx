@@ -27,7 +27,7 @@ const menuItems = [
     label: 'Mood Tracker',
     icon: Heart,
     color: 'text-pink-600',
-    preview: true,
+    preview: false,
     requiresAuth: true,
   },
   {

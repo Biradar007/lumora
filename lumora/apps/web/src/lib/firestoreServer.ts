@@ -1,5 +1,6 @@
-import { cert, getApp, getApps, initializeApp, applicationDefault } from 'firebase-admin/app';
+import { cert, getApp, getApps, initializeApp, applicationDefault, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { getAuth, type Auth } from 'firebase-admin/auth';
 
 function resolveCredential() {
   const serviceAccount =
@@ -18,20 +19,36 @@ function resolveCredential() {
   return applicationDefault();
 }
 
+let firebaseAdminApp: App | null = null;
 let firestoreInstance: Firestore | null = null;
+let authInstance: Auth | null = null;
+
+export function getServerFirebaseApp(): App {
+  if (firebaseAdminApp) {
+    return firebaseAdminApp;
+  }
+  firebaseAdminApp =
+    getApps().length > 0
+      ? getApp()
+      : initializeApp({
+          credential: resolveCredential(),
+          projectId: process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        });
+  return firebaseAdminApp;
+}
 
 export function getServerFirestore(): Firestore {
   if (!firestoreInstance) {
-    const app =
-      getApps().length > 0
-        ? getApp()
-        : initializeApp({
-            credential: resolveCredential(),
-            projectId: process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          });
-    firestoreInstance = getFirestore(app);
+    firestoreInstance = getFirestore(getServerFirebaseApp());
   }
   return firestoreInstance;
+}
+
+export function getServerAuth(): Auth {
+  if (!authInstance) {
+    authInstance = getAuth(getServerFirebaseApp());
+  }
+  return authInstance;
 }
 
 export function sanitizeForFirestore<T>(value: T): T {

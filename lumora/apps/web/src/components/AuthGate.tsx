@@ -6,12 +6,18 @@ import { AuthForm } from '@/components/AuthForm';
 import { AuthUIProvider } from '@/contexts/AuthUIContext';
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { user, loading, guestMode, enableGuestMode } = useAuth();
+  const { user, loading, guestMode, enableGuestMode, profileCompletionPending } = useAuth();
   const [promptVisible, setPromptVisible] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(true);
 
   useEffect(() => {
     if (loading) {
+      return;
+    }
+
+    if (profileCompletionPending) {
+      setPromptVisible(true);
+      setShowLoginForm(true);
       return;
     }
 
@@ -25,7 +31,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       setPromptVisible(true);
       setShowLoginForm(true);
     }
-  }, [guestMode, loading, promptVisible, user]);
+  }, [guestMode, loading, profileCompletionPending, promptVisible, user]);
 
   const handleContinueAsGuest = useCallback(() => {
     enableGuestMode();
@@ -55,14 +61,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
             <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-indigo-100">
               {showLoginForm ? (
                 <div className="p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-indigo-900 text-center">Sign in to save your progress</h2>
-                      <p className="text-sm text-indigo-700/80 text-center">
-                        Your conversations and tools stay synced when you create an account.
-                      </p>
-                    </div>
-                  </div>
                   <AuthForm />
                   <div className="mt-6 flex flex-col items-center gap-3">
                     <button

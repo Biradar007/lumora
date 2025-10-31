@@ -149,3 +149,15 @@ export interface JournalEntry {
   createdAt: number;
   updatedAt?: number;
 }
+
+export interface MoodEntry {
+  id: string;
+  userId: string;
+  tenantId?: string;
+  mood: number;
+  note?: string;
+  activities: string[];
+  entryDate: string;
+  createdAt: number;
+  updatedAt?: number;
+}

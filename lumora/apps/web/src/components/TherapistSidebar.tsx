@@ -1,9 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, LogOut, UserCircle } from 'lucide-react';
+import { CheckCircle2, LayoutDashboard, LogOut, ShieldCheck, UserCircle } from 'lucide-react';
 import type { TherapistOnboardingProgress } from '@/lib/therapistOnboarding';
+import { useAuth } from '@/contexts/AuthContext';
+import { EmailVerificationModal } from './EmailVerificationModal';
+
+function getInitials(name?: string, fallback?: string) {
+  if (name) {
+    const parts = name.trim().split(/\s+/).slice(0, 2);
+    if (parts.length > 0) {
+      return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || fallback?.[0]?.toUpperCase() || 'U';
+    }
+  }
+  return fallback?.[0]?.toUpperCase() ?? 'U';
+}
 
 interface TherapistSidebarProps {
   therapistName: string;
@@ -35,7 +48,10 @@ export function TherapistSidebar({
   onLogout,
   signingOut,
 }: TherapistSidebarProps) {
+  const { user, profile } = useAuth();
   const pathname = usePathname();
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+
   const statusBadge =
     status === 'VERIFIED'
       ? {
@@ -44,105 +60,144 @@ export function TherapistSidebar({
         }
       : null;
 
+  const emailVerified = Boolean(user?.emailVerified);
+  const therapistEmail = user?.email ?? profile?.email ?? undefined;
+  const initials = getInitials(profile?.displayName ?? therapistName, therapistEmail);
+
+  const handleOpenVerification = () => setVerifyModalOpen(true);
+  const handleCloseVerification = () => setVerifyModalOpen(false);
+
   return (
-    <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-64 lg:w-72 md:flex-col border-r border-slate-200 bg-white">
-      <div className="border-b border-slate-200 px-6 py-6">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
-          <div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Lumora
-              </span>
-              <span className="text-xs font-semibold text-slate-500">(Beta)</span>
+    <>
+      <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-64 lg:w-72 md:flex-col border-r border-gray-200 bg-white">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Lumora
+                  </span>
+                  <span className="text-sm text-gray-500">(Beta)</span>
+                </div>
+                <p className="text-sm font-bold text-gray-500 hidden sm:block">Light for the mind</p>
+              </div>
             </div>
-            <p className="text-sm font-bold text-gray-500 hidden sm:block">Light for the mind</p>
           </div>
         </div>
-      </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {NAV_ITEMS.map(({ href, label, Icon }) => {
-          const isActive = pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`
-                flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition
-                ${isActive ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'text-slate-600 hover:bg-slate-50'}
-              `}
-            >
-              <Icon className={`h-5 w-5 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+        <nav className="flex-1 p-4 space-y-2">
+          {NAV_ITEMS.map(({ href, label, Icon }) => {
+            const isActive = pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`
+                  flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 border-l-4
+                  ${isActive
+                    ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-500 text-blue-700'
+                    : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
+                `}
+              >
+                <span className="flex items-center gap-3">
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-indigo-500'}`} />
+                  <span className="font-medium">{label}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
 
-      <div className="space-y-4 border-t border-slate-200 px-6 py-6">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Therapist</p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">{therapistName}</p>
-          {statusBadge ? (
-            <span
-              className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
-            >
-              {statusBadge.text}
-            </span>
-          ) : null}
-          {typeof status === 'string' && !statusBadge && (
-            <p className="mt-0.5 text-xs text-slate-500">Status: {status}</p>
-          )}
-        </div>
-
-        {onboardingPending ? (
-          <div className="space-y-3 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-indigo-900">Onboarding in progress</p>
-            <div className="space-y-1.5">
-              <div className="h-2 overflow-hidden rounded-full bg-indigo-100">
-                <div
-                  className="h-full rounded-full bg-indigo-500 transition-all"
-                  style={{ width: `${progress.percent}%` }}
-                />
+        <div className="space-y-4 border-t border-gray-200 p-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg font-semibold shadow-md">
+                {user?.photoURL ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.photoURL}
+                    alt={therapistName}
+                    className="h-full w-full rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  initials
+                )}
               </div>
-              <p className="text-xs text-indigo-700">
-                {progress.completed} of {progress.total} steps • {progress.percent}% complete
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-sm font-medium text-indigo-900">
+                  <span className="truncate">{therapistName}</span>
+                    {statusBadge ? <CheckCircle2 className="h-4 w-4 text-blue-500" /> : null}
+                </p>
+                {therapistEmail && (
+                  <p className="text-xs text-indigo-700/70 truncate" title={therapistEmail}>
+                    {therapistEmail}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {!emailVerified && (
+                <button
+                  type="button"
+                  onClick={handleOpenVerification}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Verify your account
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  void onLogout();
+                }}
+                disabled={signingOut}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <LogOut className="h-4 w-4" />
+                {signingOut ? 'Signing out…' : 'Log out'}
+              </button>
+            </div>
+          </div>
+
+          {onboardingPending ? (
+            <div className="space-y-3 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-indigo-900">Onboarding in progress</p>
+              <div className="space-y-1.5">
+                <div className="h-2 overflow-hidden rounded-full bg-indigo-100">
+                  <div
+                    className="h-full rounded-full bg-indigo-500 transition-all"
+                    style={{ width: `${progress.percent}%` }}
+                  />
+                </div>
+                <p className="text-xs text-indigo-700">
+                  {progress.completed} of {progress.total} steps • {progress.percent}% complete
+                </p>
+              </div>
+              <Link
+                href="/therapist/onboarding"
+                className="inline-flex items-center justify-center rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:text-indigo-900"
+              >
+                Continue onboarding
+              </Link>
+            </div>
+          ) : null}
+
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-800 font-medium mb-1">Emergency?</p>
+              <p className="text-xs text-red-600">
+                If you&apos;re in crisis, call 988 (Suicide & Crisis Lifeline) or go to your nearest emergency room.
               </p>
             </div>
-            <Link
-              href="/therapist/onboarding"
-              className="inline-flex items-center justify-center rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:text-indigo-900"
-            >
-              Continue onboarding
-            </Link>
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-            <p className="text-sm font-semibold text-emerald-900">Onboarding complete</p>
-            <p className="text-xs text-emerald-700">Keep your profile fresh to stay visible to Lumora members.</p>
-          </div>
-        )}
-
-        <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
-          <p className="text-sm font-semibold text-rose-900">Emergency?</p>
-          <p className="text-xs text-rose-700">
-            If you or a client is in crisis, call 988 (Suicide &amp; Crisis Lifeline) or contact emergency services.
-          </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            void onLogout();
-          }}
-          disabled={signingOut}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-75"
-        >
-          <LogOut className="h-4 w-4" />
-          {signingOut ? 'Signing out…' : 'Log out'}
-        </button>
-      </div>
-    </aside>
+      </aside>
+      {verifyModalOpen ? (
+        <EmailVerificationModal isOpen={verifyModalOpen} onClose={handleCloseVerification} />
+      ) : null}
+    </>
   );
 }
