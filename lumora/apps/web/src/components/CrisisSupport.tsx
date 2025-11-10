@@ -82,15 +82,15 @@ interface CrisisSupportProps {
 
 export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-4xl mx-auto space-y-6">
       {/* Emergency Alert */}
-      <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
             <AlertCircle className="h-6 w-6 text-white" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-red-800">Crisis Support</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-red-800">Crisis Support</h1>
             <p className="text-red-700">Immediate help when you need it most</p>
           </div>
         </div>
@@ -105,7 +105,7 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
       </div>
 
       {/* Emergency Steps */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-6">What to Do Right Now</h2>
         <div className="space-y-4">
           {emergencySteps.map((step, index) => (
@@ -118,14 +118,14 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
       </div>
 
       {/* Crisis Hotlines */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-6">Crisis Hotlines & Resources</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {crisisResources.map((resource, index) => {
             const Icon = resource.icon;
             return (
-              <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-4">
+              <div key={index} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                     <Icon className="h-6 w-6 text-white" />
                   </div>
@@ -171,7 +171,7 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
       </div>
 
       {/* Safety Tips */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-6">Safety & Coping Strategies</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {safetyTips.map((tip, index) => (
@@ -186,12 +186,12 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
       </div>
 
       {/* International Resources */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-200 p-6">
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-200 p-5 sm:p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">International Crisis Support</h2>
         <p className="text-gray-700 mb-4">
           If you&apos;re located outside the United States, please visit these resources for crisis support in your country:
         </p>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-3 sm:gap-4">
           <a href="https://findahelpline.com" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-white border border-purple-300 rounded-lg hover:bg-purple-50 transition-colors text-purple-700 font-medium">
             Find a Helpline (Global)
           </a>
@@ -202,7 +202,7 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
       </div>
 
       {/* Return to Chat */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 text-center">
         <h3 className="text-lg font-bold text-gray-800 mb-2">Continue Your Journey</h3>
         <p className="text-gray-600 mb-4">
           After getting the support you need, Lumora is here to help you continue your mental health journey.
@@ -210,7 +210,7 @@ export function CrisisSupport({ onReturnToChat }: CrisisSupportProps) {
         <button
           type="button"
           onClick={onReturnToChat}
-          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+          className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
         >
           Return to Chat
         </button>

@@ -228,10 +228,10 @@ export function MoodTracker() {
   }, [dateFormatter, moodEntries]);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-4xl mx-auto space-y-6">
       {/* Today's Mood Entry */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
           <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-red-500 rounded-full flex items-center justify-center">
             <Smile className="h-5 w-5 text-white" />
           </div>
@@ -241,7 +241,7 @@ export function MoodTracker() {
         {/* Mood Selection */}
         <div className="mb-6">
           <p className="text-sm font-medium text-gray-700 mb-3">Select your mood:</p>
-          <div className="flex justify-between max-w-md">
+          <div className="flex flex-wrap justify-center gap-3 max-w-md sm:justify-between">
             {moodEmojis.map((emoji, index) => (
               <button
                 key={index}
@@ -317,15 +317,15 @@ export function MoodTracker() {
       </div>
 
       {/* Mood History */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-white" />
             </div>
             <h2 className="text-xl font-bold text-gray-800">Your Mood Journey</h2>
           </div>
-          <div className="text-right">
+          <div className="text-center sm:text-right">
             <p className="text-sm text-gray-600">7-day average</p>
             {averageMood !== null ? (
               <p className={`text-2xl font-bold ${moodColors[Math.round(averageMood)]}`}>
@@ -349,10 +349,18 @@ export function MoodTracker() {
         ) : (
           <div className="space-y-3">
             {formattedEntries.map((entry) => (
-              <div key={entry.id} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className="w-16 text-sm text-gray-600">{entry.displayDateLabel}</div>
+              <div
+                key={entry.id}
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <div className="flex items-center justify-between w-full sm:w-20 text-sm text-gray-600">
+                  <span>{entry.displayDateLabel}</span>
+                  <span className={`text-xs font-medium sm:hidden ${moodColors[entry.mood]}`}>
+                    {moodLabels[entry.mood]}
+                  </span>
+                </div>
                 <div className="text-2xl">{moodEmojis[entry.mood]}</div>
-                <div className="flex-1">
+                <div className="flex-1 w-full">
                   <p className="font-medium text-gray-800">{entry.note || 'No note added.'}</p>
                   {entry.activities.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
@@ -364,7 +372,7 @@ export function MoodTracker() {
                     </div>
                   )}
                 </div>
-                <div className={`text-sm font-medium ${moodColors[entry.mood]}`}>
+                <div className={`hidden sm:block text-sm font-medium ${moodColors[entry.mood]}`}>
                   {moodLabels[entry.mood]}
                 </div>
               </div>

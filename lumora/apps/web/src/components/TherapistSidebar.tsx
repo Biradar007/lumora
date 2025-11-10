@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, LayoutDashboard, LogOut, ShieldCheck, UserCircle } from 'lucide-react';
+import { CheckCircle2, LayoutDashboard, LogOut, ShieldCheck, UserCircle, X } from 'lucide-react';
 import type { TherapistOnboardingProgress } from '@/lib/therapistOnboarding';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmailVerificationModal } from './EmailVerificationModal';
@@ -25,6 +25,9 @@ interface TherapistSidebarProps {
   status?: string;
   onLogout: () => Promise<void>;
   signingOut: boolean;
+  variant?: 'desktop' | 'mobile';
+  onClose?: () => void;
+  className?: string;
 }
 
 const NAV_ITEMS = [
@@ -47,6 +50,9 @@ export function TherapistSidebar({
   status,
   onLogout,
   signingOut,
+  variant = 'desktop',
+  onClose,
+  className = '',
 }: TherapistSidebarProps) {
   const { user, profile } = useAuth();
   const pathname = usePathname();
@@ -67,11 +73,16 @@ export function TherapistSidebar({
   const handleOpenVerification = () => setVerifyModalOpen(true);
   const handleCloseVerification = () => setVerifyModalOpen(false);
 
+  const isMobile = variant === 'mobile';
+  const containerClass = isMobile
+    ? `flex h-full w-full flex-col border-r border-gray-200 bg-white ${className}`
+    : `hidden md:flex md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-64 lg:w-72 md:flex-col border-r border-gray-200 bg-white ${className}`;
+
   return (
     <>
-      <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-64 lg:w-72 md:flex-col border-r border-gray-200 bg-white">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
+      <aside className={containerClass}>
+        <div className={`${isMobile ? 'p-4' : 'p-6'} border-b border-gray-200`}>
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
               <div>
@@ -81,13 +92,22 @@ export function TherapistSidebar({
                   </span>
                   <span className="text-sm text-gray-500">(Beta)</span>
                 </div>
-                <p className="text-sm font-bold text-gray-500 hidden sm:block">Light for the mind</p>
+                  <p className="text-xs sm:text-sm font-bold text-muted-foreground mt-0.5">Light for the mind</p>
               </div>
             </div>
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className={`flex-1 ${isMobile ? 'p-4 space-y-2 overflow-y-auto' : 'p-4 space-y-2'}`}>
           {NAV_ITEMS.map(({ href, label, Icon }) => {
             const isActive = pathname.startsWith(href);
             return (
@@ -100,6 +120,7 @@ export function TherapistSidebar({
                     ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-500 text-blue-700'
                     : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
                 `}
+                onClick={isMobile ? onClose : undefined}
               >
                 <span className="flex items-center gap-3">
                   <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-indigo-500'}`} />
@@ -154,6 +175,9 @@ export function TherapistSidebar({
                 type="button"
                 onClick={() => {
                   void onLogout();
+                  if (isMobile) {
+                    onClose?.();
+                  }
                 }}
                 disabled={signingOut}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
@@ -181,6 +205,7 @@ export function TherapistSidebar({
               <Link
                 href="/therapist/onboarding"
                 className="inline-flex items-center justify-center rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:text-indigo-900"
+                onClick={isMobile ? onClose : undefined}
               >
                 Continue onboarding
               </Link>
@@ -192,7 +217,7 @@ export function TherapistSidebar({
               <p className="text-xs text-red-600">
                 If you&apos;re in crisis, call 988 (Suicide & Crisis Lifeline) or go to your nearest emergency room.
               </p>
-            </div>
+          </div>
         </div>
       </aside>
       {verifyModalOpen ? (

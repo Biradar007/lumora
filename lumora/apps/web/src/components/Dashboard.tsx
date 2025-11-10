@@ -38,22 +38,24 @@ export function Dashboard() {
   const maxActivities = Math.max(...weeklyMoods.map(d => d.activities));
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-white" />
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center shrink-0">
+              <BarChart3 className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-800">Your Mental Health Journey</h1>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Your Mental Health Journey</h1>
+          <p className="text-gray-600">
+            Track your progress and celebrate your achievements in mental wellness.
+          </p>
         </div>
-        <p className="text-gray-600">
-          Track your progress and celebrate your achievements in mental wellness.
-        </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
@@ -104,22 +106,25 @@ export function Dashboard() {
       </div>
 
       {/* Weekly Mood Chart */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-6">This Week&rsquo;s Mood</h2>
-        <div className="space-y-4">
+        <div className="space-y-5">
           {weeklyMoods.map((day, index) => (
-            <div key={index} className="flex items-center gap-4">
-              <div className="w-12 text-sm font-medium text-gray-600">{day.day}</div>
-              <div className="flex-1 flex items-center gap-3">
+            <div key={index} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex items-center justify-between w-full sm:w-12">
+                <div className="text-sm font-medium text-gray-600">{day.day}</div>
+                <div className="text-sm font-semibold text-gray-700 sm:hidden">{day.mood}/5</div>
+              </div>
+              <div className="flex-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 w-full">
                 <div className="flex-1 bg-gray-200 rounded-full h-3 relative overflow-hidden">
                   <div 
                     className={`h-full rounded-full ${getMoodColor(day.mood)} transition-all duration-500`}
                     style={{ width: `${(day.mood / 5) * 100}%` }}
                   />
                 </div>
-                <div className="text-sm font-medium text-gray-700 w-8">{day.mood}/5</div>
+                <div className="hidden sm:block text-sm font-medium text-gray-700 w-10">{day.mood}/5</div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex gap-1">
                   {Array.from({ length: maxActivities }).map((_, i) => (
                     <div
@@ -138,7 +143,7 @@ export function Dashboard() {
       </div>
 
       {/* Achievements */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
             <Award className="h-5 w-5 text-white" />
@@ -183,7 +188,7 @@ export function Dashboard() {
       </div>
 
       {/* Motivational Quote */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200 p-6 text-center">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200 p-5 sm:p-6 text-center">
         <p className="text-lg italic text-gray-700 mb-2">
           &ldquo;The greatest revolution of our generation is the discovery that human beings, by changing the inner attitudes of their minds, can change the outer aspects of their lives.&rdquo;
         </p>

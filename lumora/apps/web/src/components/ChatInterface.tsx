@@ -37,6 +37,7 @@ const welcomeMessage: DisplayMessage = {
 
 let guestMessageCache: DisplayMessage[] | null = null;
 const typingDotDelays = [0, 0.18, 0.36];
+const MOBILE_CONVERSATIONS_EVENT = 'lumora:toggle-mobile-conversations';
 
 function formatTimestamp(date?: Date) {
   if (!date) return '';
@@ -195,7 +196,7 @@ export function ChatInterface() {
   useEffect(() => {
     if (!textareaRef.current) return;
     const textarea = textareaRef.current;
-    const MIN_HEIGHT = 48;
+    const MIN_HEIGHT = 36;
     const MAX_HEIGHT = 240;
 
     textarea.style.height = 'auto';
@@ -223,6 +224,19 @@ export function ChatInterface() {
       return initial;
     });
   }, [uid]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const handler = () => {
+      setMobileSessionsOpen((prev) => !prev);
+    };
+    window.addEventListener(MOBILE_CONVERSATIONS_EVENT, handler);
+    return () => {
+      window.removeEventListener(MOBILE_CONVERSATIONS_EVENT, handler);
+    };
+  }, []);
 
   useEffect(() => {
     if (!uid) {
@@ -588,28 +602,15 @@ export function ChatInterface() {
         </aside>
 
         <section className="flex flex-1 min-h-0 flex-col">
-          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/60 bg-white/70 px-6 py-5 backdrop-blur-md">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-               <div>
+          <header className="hidden flex-wrap items-center justify-between gap-4 border-b border-white/60 bg-white/70 px-6 py-5 backdrop-blur-md md:flex">
+            <div className="space-y-1">
               <h3 className="font-semibold text-gray-800">Chat</h3>
               <p className="text-sm text-green-600">Online • Always here for you</p>
-            </div>
-              </div>
-              <p className="text-xs text-slate-400">
-                {uid
-                  ? ''
-                  : 'Sign in to keep your conversations safe and revisit them anytime.'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 lg:hidden">
-              <button
-                type="button"
-                onClick={() => setMobileSessionsOpen((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-100 hover:bg-white"
-              >
-                Conversations
-              </button>
+              {!uid ? (
+                <p className="text-xs text-slate-400">
+                  Sign in to keep your conversations safe and revisit them anytime.
+                </p>
+              ) : null}
             </div>
           </header>
 
@@ -688,8 +689,8 @@ export function ChatInterface() {
             )}
           </div>
 
-          <div className="border-t border-white/60 bg-white/80 px-6 py-5 backdrop-blur-lg">
-            <div className="rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_24px_48px_-28px_rgba(79,70,229,0.45)]">
+          <div className="border-t border-white/60 bg-white/80 px-3 py-3 backdrop-blur-lg sm:px-6 sm:py-4">
+            <div className="rounded-[20px] border border-white/70 bg-white/90 px-3 py-2.5 shadow-[0_20px_40px_-28px_rgba(79,70,229,0.45)]">
               <textarea
                 ref={textareaRef}
                 value={inputValue}
@@ -698,11 +699,11 @@ export function ChatInterface() {
                 placeholder={
                   uid ? 'How are you feeling today?' : "Share how you're feeling - no account needed."
                 }
-                className="w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
-                rows={2}
+                className="w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-1.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none sm:text-base"
+                rows={1}
               />
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100/60 pt-3">
-                <p className="text-xs text-slate-400">
+              <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-slate-100/60 pt-2 sm:justify-between">
+                <p className="text-xs text-slate-400 flex-1">
                   {uid
                     ? 'Your conversation autosaves to your account.'
                     : 'Guest chats are not stored. Sign in anytime to keep a history.'}
@@ -711,10 +712,10 @@ export function ChatInterface() {
                   type="button"
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:px-5 sm:py-2 sm:text-sm sm:font-semibold"
                 >
                   <Send className="h-4 w-4" />
-                  {isTyping ? 'Sending...' : 'Send'}
+                  <span className="hidden sm:inline">{isTyping ? 'Sending...' : 'Send'}</span>
                 </button>
               </div>
             </div>

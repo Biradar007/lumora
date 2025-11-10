@@ -19,8 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { TherapistProfile, ConnectionRequest, Connection, Consent, ConsentScopes, Appointment } from '@/types/domain';
-import { FirebaseError } from 'firebase/app';
-import { collection, doc, getDoc, getDocs, getFirestore, query, where } from 'firebase/firestore';
+import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebaseClient';
 import { RequestButton } from '@/components/RequestButton';
 
@@ -47,6 +46,12 @@ interface ResourcesProps {
   onNavigateToCrisis?: () => void;
 }
 
+type DirectoryTherapist = TherapistProfile & {
+  displayName?: string | null;
+  email?: string | null;
+  photoUrl?: string | null;
+};
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const authedFetcher = ([url, headers]: [string, Record<string, string>]) =>
   fetch(url, { headers }).then((res) => res.json());
@@ -60,7 +65,6 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     { refreshInterval: 5 * 60 * 1000 }
   );
 
-  const [therapistDetails, setTherapistDetails] = useState<(TherapistProfile & { displayName?: string; email?: string })[]>([]);
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [consents, setConsents] = useState<Record<string, ConsentState>>({});
@@ -100,16 +104,17 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     data: therapistData,
     isLoading: therapistsLoading,
     error: therapistError,
-  } = useSWR<{ therapists: TherapistProfile[] }>(
+  } = useSWR<{ therapists: DirectoryTherapist[] }>(
     user ? ['/api/directory/therapists', headers] : null,
     authedFetcher,
     { refreshInterval: 5 * 60 * 1000 }
   );
 
   const contacts = data?.contacts ?? [];
-  const verifiedTherapists = useMemo(
-    () => (therapistData?.therapists ?? []).filter((therapist) => therapist.status === 'VERIFIED'),
-    [therapistData?.therapists]
+  const therapistDetails = therapistData?.therapists ?? [];
+  const connectedTherapists = useMemo(
+    () => therapistDetails.filter((therapist) => connectionsByTherapist.has(therapist.id)),
+    [connectionsByTherapist, therapistDetails]
   );
 
   const activeAppointmentsByConnection = useMemo(() => {
@@ -121,89 +126,6 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
     });
     return map;
   }, [appointments]);
-  useEffect(() => {
-    if (!user || !headers['x-user-id']) {
-      return;
-    }
-    const loadDirectory = async () => {
-      try {
-        const response = await fetch('/api/directory/therapists', { headers });
-        if (!response.ok) {
-          return;
-        }
-        const data = (await response.json()) as { therapists: TherapistProfile[] };
-        const verified = (data.therapists ?? []).filter((profile) => profile.status === 'VERIFIED');
-        if (verified.length > 0) {
-          setTherapistDetails(verified);
-        }
-      } catch (innerError) {
-        console.error('Failed to load therapist directory', innerError);
-      }
-    };
-    void loadDirectory();
-  }, [headers, user]);
-
-  useEffect(() => {
-    const hydrate = async (profiles: TherapistProfile[]) => {
-      try {
-        const db = getFirestore(getFirebaseApp());
-        const entries = await Promise.all(
-          profiles.map(async (profile) => {
-            try {
-              const userSnapshot = await getDoc(doc(db, 'users', profile.id));
-              const userData = userSnapshot.data() ?? {};
-              return {
-                ...profile,
-                displayName: userData.displayName ?? userData.name ?? userData.email ?? profile.id,
-                email: userData.email ?? undefined,
-              };
-            } catch (innerError) {
-              if (innerError instanceof FirebaseError && innerError.code === 'permission-denied') {
-                console.debug('Skipped therapist user profile due to permission rules', profile.id);
-                return { ...profile };
-              }
-              console.warn('Failed to fetch therapist user profile', innerError);
-              return { ...profile };
-            }
-          })
-        );
-        setTherapistDetails(entries);
-      } catch (innerError) {
-        console.error('Failed to hydrate therapist directory', innerError);
-        setTherapistDetails(profiles);
-      }
-    };
-
-    if (!user) {
-      setTherapistDetails([]);
-      return;
-    }
-
-    if (verifiedTherapists.length > 0) {
-      void hydrate(verifiedTherapists);
-      return;
-    }
-
-    const loadFallback = async () => {
-      try {
-        const db = getFirestore(getFirebaseApp());
-        const snapshot = await getDocs(
-          query(
-            collection(db, 'therapistProfiles'),
-            where('status', '==', 'VERIFIED'),
-            where('visible', '==', true)
-          )
-        );
-        const fallback = snapshot.docs.map((docSnapshot) => docSnapshot.data() as TherapistProfile);
-        await hydrate(fallback);
-      } catch (innerError) {
-        console.error('Failed to load fallback therapists', innerError);
-      }
-    };
-
-    void loadFallback();
-  }, [verifiedTherapists, user]);
-
   useEffect(() => {
     if (!user?.uid || !headers['x-user-id']) {
       return;
@@ -431,18 +353,18 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center">
-            <HeartHandshake className="h-5 w-5 text-white" />
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
+        <div className="flex flex-col gap-3 mb-4 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center shrink-0">
+              <HeartHandshake className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-800">Support & Resources</h1>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Support & Resources</h1>
-            <p className="text-sm text-gray-600">
-              Connect with caring professionals and on-campus services ready to help.
-            </p>
-          </div>
+          <p className="text-sm text-gray-600">
+            Connect with caring professionals and on-campus services ready to help.
+          </p>
         </div>
         <p className="text-sm text-gray-600">
           These contacts are provided by your counseling center. Reach out to schedule an appointment,
@@ -451,11 +373,11 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
       </section>
 
       {!isLoading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {contacts.map((contact, index) => (
             <article
               key={`${contact.name}-${index}`}
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-6 space-y-4"
+              className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 space-y-4 sm:p-6"
             >
               <header>
                 <h2 className="text-lg font-semibold text-gray-800">{contact.name}</h2>
@@ -506,22 +428,22 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
       )}
 
       {user ? (
-        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           {consentError ? (
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
               {consentError}
             </div>
           ) : null}
-          <header className="flex items-center justify-between gap-4">
+          <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Verified Lumora therapists</h2>
               <p className="text-sm text-slate-600">
-                Browse licensed clinicians who are approved to support Lumora members. Send a request to connect directly.
+                Manage the Lumora therapists you&apos;re connected with today and revisit past connections all in one place.
               </p>
             </div>
             <Link
               href="/resources/therapists"
-              className="hidden md:inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:text-indigo-900"
+              className="hidden items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:text-indigo-900 sm:inline-flex"
             >
               View directory
             </Link>
@@ -541,19 +463,25 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
             <p className="text-sm text-slate-500">Loading appointments…</p>
           ) : null}
 
-          {therapistsLoading && therapistDetails.length === 0 ? (
+          {therapistsLoading && connectedTherapists.length === 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Array.from({ length: 2 }).map((_, index) => (
                 <div key={index} className="h-32 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-100 animate-pulse" />
               ))}
             </div>
-          ) : therapistDetails.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-              No verified therapists are available yet. Check back soon as our network grows.
+          ) : connectedTherapists.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 space-y-2">
+              <p className="font-semibold text-slate-700">You haven&apos;t connected with a Lumora therapist yet.</p>
+              <p>
+                <Link href="/resources/therapists" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                  Visit the directory
+                </Link>{' '}
+                to browse verified clinicians and request a private connection.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {therapistDetails.map((therapist) => {
+              {connectedTherapists.map((therapist) => {
                 const status = determineStatus(therapist.id);
                 const connection = connectionsByTherapist.get(therapist.id);
                 const isActive = connection?.status === 'ACTIVE';
@@ -575,10 +503,10 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                     key={therapist.id}
                     className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <h3 className="text-sm font-semibold text-slate-900">
-                          {therapist.displayName ?? 'Lumora therapist'}
+                          {therapist.displayName ?? therapist.email ?? therapist.id}
                         </h3>
                         {therapist.email && <p className="text-xs text-slate-500">{therapist.email}</p>}
                       </div>
@@ -612,7 +540,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                     </div>
                     {connection ? (
                       <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full">
                           <span
                             className={`inline-flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                               isActive
@@ -624,7 +552,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                           </span>
                           <Link
                             href={`/user/resources/chat/${connection.id}`}
-                            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                            className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-center transition ${
                               isActive
                                 ? 'bg-indigo-600 text-white hover:bg-indigo-500'
                                 : 'bg-slate-200 text-slate-700 hover:bg-slate-200'
@@ -638,14 +566,14 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                               <button
                                 type="button"
                                 onClick={() => setSelectedAppointment(activeAppointment)}
-                                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-50"
+                                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 text-center transition hover:border-indigo-300 hover:bg-indigo-50"
                               >
                                 View appointment
                               </button>
                             ) : (
                               <Link
                                 href={`/user/resources/schedule/${connection.id}`}
-                                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-50"
+                                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 text-center transition hover:border-indigo-300 hover:bg-indigo-50"
                               >
                                 Schedule appointment
                               </Link>
@@ -656,7 +584,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                               type="button"
                               onClick={() => handleDisconnect(connection)}
                               disabled={disconnectBusy}
-                              className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
+                              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-600 text-center transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
                             >
                               {disconnectBusy ? 'Disconnecting…' : 'Disconnect'}
                             </button>
