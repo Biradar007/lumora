@@ -10,9 +10,17 @@ interface TherapistCardProps {
   photoUrl?: string;
   connectionStatus?: ReactNode;
   actions?: ReactNode;
+  showStatusBadge?: boolean;
 }
 
-export function TherapistCard({ profile, name, photoUrl, connectionStatus, actions }: TherapistCardProps) {
+export function TherapistCard({
+  profile,
+  name,
+  photoUrl,
+  connectionStatus,
+  actions,
+  showStatusBadge = true,
+}: TherapistCardProps) {
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <header className="flex items-start justify-between gap-4">
@@ -59,7 +67,7 @@ export function TherapistCard({ profile, name, photoUrl, connectionStatus, actio
         {profile.modality?.inPerson && <span className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700">In-person</span>}
       </div>
       <footer className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <ConnectionStatusBadge status={profile.status} visible={profile.visible} />
+        {showStatusBadge ? <ConnectionStatusBadge status={profile.status} visible={profile.visible} /> : null}
         {actions}
       </footer>
     </article>

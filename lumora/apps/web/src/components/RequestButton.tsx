@@ -47,7 +47,7 @@ export function RequestButton({ status, onRequest }: RequestButtonProps) {
       type="button"
       onClick={handleClick}
       disabled={disabled}
-      className={`inline-flex min-w-[180px] items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-80 ${toneMap[status]}`}
+      className={`inline-flex w-full sm:w-auto sm:min-w-[180px] items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition text-center disabled:cursor-not-allowed disabled:opacity-80 ${toneMap[status]}`}
     >
       {pending ? 'Sending…' : labelMap[status]}
     </button>

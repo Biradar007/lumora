@@ -1,51 +1,62 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, LogIn, LogOut } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import type { ViewType } from './user/viewTypes';
-import { useAuth } from '@/contexts/AuthContext';
-import { useAuthUI } from '@/contexts/AuthUIContext';
 
 interface HeaderProps {
   onMenuClick: () => void;
   currentView: ViewType;
+  showDirectoryShortcut?: boolean;
 }
 
-const viewTitles: Record<ViewType, string> = {
-  chat: 'Chat with Lumora',
-  mood: 'Mood Tracking',
-  journal: 'Daily Journal',
-  resources: 'Resources & Tools',
-  dashboard: 'Your Journey',
-  crisis: 'Crisis Support',
-};
-
-export function Header({ onMenuClick, currentView }: HeaderProps) {
-  const { profile, user, logout, guestMode } = useAuth();
-  const { requestLogin } = useAuthUI();
-  const [signingOut, setSigningOut] = useState(false);
+export function Header({ onMenuClick, currentView, showDirectoryShortcut = true }: HeaderProps) {
   const router = useRouter();
 
-  const displayName =
-    profile?.displayName ||
-    profile?.name ||
-    user?.displayName ||
-    user?.email ||
-    (guestMode ? 'Guest session' : 'Lumora');
+  const viewCopy: Partial<Record<ViewType, { title: string; subtitle?: string }>> = {
+    resources: { title: 'Resources', subtitle: 'Guides, tips, and exercises.' },
+    mood: { title: 'Mood tracker', subtitle: 'Daily check-ins and trends.' },
+    journal: { title: 'Journal', subtitle: 'Reflect and capture what matters.' },
+    dashboard: { title: 'Dashboard', subtitle: 'Your wellbeing at a glance.' },
+    crisis: { title: 'Crisis support', subtitle: 'Immediate help and safety tools.' },
+  };
 
-  const handleLogout = async () => {
-    try {
-      setSigningOut(true);
-      await logout();
-      router.replace('/');
-    } finally {
-      setSigningOut(false);
+  const handleToggleConversations = () => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('lumora:toggle-mobile-conversations'));
+  };
+
+  const handleViewDirectory = () => {
+    router.push('/resources/therapists');
+  };
+
+  const getViewLabel = () => {
+    if (currentView === 'chat') {
+      return (
+        <div className="space-y-0.5">
+          <h1 className="text-base font-semibold text-slate-900">Chat</h1>
+          <p className="text-xs font-medium text-emerald-600">Online • Always here for you</p>
+        </div>
+      );
     }
+    const copy = viewCopy[currentView];
+    if (copy) {
+      return (
+        <div className="space-y-0.5">
+          <h1 className="text-base font-semibold text-slate-900">{copy.title}</h1>
+          {copy.subtitle ? <p className="text-xs text-slate-500">{copy.subtitle}</p> : null}
+        </div>
+      );
+    }
+    return (
+      <div>
+        <h1 className="text-base font-semibold text-slate-900">Lumora</h1>
+      </div>
+    );
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-4 flex items-center justify-between md:hidden">
+    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-4 flex items-center justify-between md:hidden fixed top-0 inset-x-0 z-40">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
@@ -53,7 +64,25 @@ export function Header({ onMenuClick, currentView }: HeaderProps) {
         >
           <Menu className="h-5 w-5 text-gray-600" />
         </button>
+        {getViewLabel()}
       </div>
+      {currentView === 'chat' ? (
+        <button
+          type="button"
+          onClick={handleToggleConversations}
+          className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-100 hover:bg-indigo-50"
+        >
+          Conversations
+        </button>
+      ) : currentView === 'resources' && showDirectoryShortcut ? (
+        <button
+          type="button"
+          onClick={handleViewDirectory}
+          className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-100 hover:bg-indigo-50"
+        >
+          View directory
+        </button>
+      ) : null}
     </header>
   );
 }
