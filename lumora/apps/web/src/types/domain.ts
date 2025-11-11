@@ -118,7 +118,7 @@ export interface ChatMessage {
   aiRiskScore?: number;
 }
 
-export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'DECLINED' | 'CANCELLED';
 
 export interface Appointment {
   id: string;
@@ -130,6 +130,15 @@ export interface Appointment {
   status: AppointmentStatus;
   location: 'video' | 'in-person';
   videoLink?: string;
+  googleCalendarEventId?: string | null;
+  zoomMeetingId?: string | null;
+  createdAt: number;
+  updatedAt: number;
+  notes?: string;
+  proposedStart?: number;
+  proposedEnd?: number;
+  proposedBy?: 'user' | 'therapist';
+  cancelledBy?: 'user' | 'therapist';
 }
 
 export interface JournalEntry {
@@ -137,6 +146,18 @@ export interface JournalEntry {
   userId: string;
   tenantId?: string;
   content: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
+export interface MoodEntry {
+  id: string;
+  userId: string;
+  tenantId?: string;
+  mood: number;
+  note?: string;
+  activities: string[];
+  entryDate: string;
   createdAt: number;
   updatedAt?: number;
 }

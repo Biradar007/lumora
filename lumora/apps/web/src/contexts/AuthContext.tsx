@@ -23,9 +23,27 @@ interface AuthContextValue {
   guestMode: boolean;
   enableGuestMode: () => void;
   disableGuestMode: () => void;
+  profileComplete: boolean;
+  profileCompletionPending: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function isProfileComplete(profile: UserProfile | null): boolean {
+  if (!profile) {
+    return false;
+  }
+  if (profile.role !== 'user' && profile.role !== 'therapist' && profile.role !== 'admin') {
+    return false;
+  }
+  if (typeof profile.age !== 'number' || !Number.isFinite(profile.age) || profile.age <= 0 || profile.age > 120) {
+    return false;
+  }
+  if (!profile.gender || typeof profile.gender !== 'string' || profile.gender.trim().length === 0) {
+    return false;
+  }
+  return true;
+}
 
 async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
   try {
@@ -75,15 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [guestMode, setGuestMode] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(false);
 
   const loadProfile = useCallback(
     async (firebaseUser: FirebaseUser | null) => {
       if (!firebaseUser) {
         setProfile(null);
+        setProfileComplete(false);
         return;
       }
       const freshProfile = await fetchUserProfile(firebaseUser.uid);
       setProfile(freshProfile);
+      setProfileComplete(isProfileComplete(freshProfile));
     },
     []
   );
@@ -139,8 +160,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       guestMode,
       enableGuestMode,
       disableGuestMode,
+      profileComplete,
+      profileCompletionPending: Boolean(user) && !profileComplete,
     }),
-    [disableGuestMode, enableGuestMode, guestMode, loading, logout, profile, refreshProfile, user]
+    [
+      disableGuestMode,
+      enableGuestMode,
+      guestMode,
+      loading,
+      logout,
+      profile,
+      profileComplete,
+      refreshProfile,
+      user,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

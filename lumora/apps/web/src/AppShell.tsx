@@ -9,7 +9,7 @@ const DEFAULT_USER_ROUTE = '/user/chat';
 
 export default function AppShell() {
   const [showLanding, setShowLanding] = useState(true);
-  const { loading, profile } = useAuth();
+  const { loading, profile, profileCompletionPending } = useAuth();
   const router = useRouter();
   const wasAuthenticatedRef = useRef(false);
 
@@ -30,6 +30,9 @@ export default function AppShell() {
   }, [loading, profile]);
 
   const navigateToWorkspace = useCallback(() => {
+    if (profileCompletionPending) {
+      return;
+    }
     if (profile?.role === 'therapist') {
       router.replace('/therapist/dashboard');
       return;
@@ -39,21 +42,21 @@ export default function AppShell() {
       return;
     }
     router.replace(DEFAULT_USER_ROUTE);
-  }, [profile?.role, router]);
+  }, [profile?.role, profileCompletionPending, router]);
 
   const dismissLanding = useCallback(() => {
     setShowLanding(false);
-    if (!loading) {
+    if (!loading && !profileCompletionPending) {
       navigateToWorkspace();
     }
-  }, [loading, navigateToWorkspace]);
+  }, [loading, navigateToWorkspace, profileCompletionPending]);
 
   useEffect(() => {
-    if (showLanding || loading) {
+    if (showLanding || loading || profileCompletionPending) {
       return;
     }
     navigateToWorkspace();
-  }, [loading, navigateToWorkspace, showLanding]);
+  }, [loading, navigateToWorkspace, profileCompletionPending, showLanding]);
 
   if (showLanding) {
     return <LandingPage onEnterApp={dismissLanding} />;

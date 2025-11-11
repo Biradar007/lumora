@@ -215,16 +215,10 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
               data-aos="fade-up"
               data-aos-delay="160"
             >
-              <a
-                href="#features"
-                className="w-full sm:w-auto rounded-full bg-gradient-to-r from-serene-400 to-accent px-9 py-4 text-[15px] font-semibold text-white shadow-lg shadow-serene-400/30 transition-all hover:shadow-xl hover:shadow-serene-400/40 hover:scale-[1.02] active:scale-95"
-              >
-                Follow the Signal
-              </a>
               <button
                 type="button"
                 onClick={onEnterApp}
-                className="w-full sm:w-auto rounded-full border-2 border-calm-200/60 bg-white/80 backdrop-blur-sm px-9 py-4 text-[15px] font-semibold text-foreground transition-all hover:bg-white hover:shadow-md hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto rounded-full bg-gradient-to-r from-serene-400 to-accent px-9 py-4 text-[15px] font-semibold text-white shadow-lg shadow-serene-400/30 transition-all hover:shadow-xl hover:shadow-serene-400/40 hover:scale-[1.02] active:scale-95"
               >
                 Start Exploring
               </button>
@@ -236,7 +230,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             >
               <div className="flex items-center gap-2.5">
                 <span className="h-2 w-2 rounded-full bg-accent" />
-                From stress to support. // 2025
+                From stress to support.
               </div>
               <div className="flex items-center gap-2.5">
                 <i data-feather="shield" className="h-4 w-4 opacity-70" />
@@ -331,9 +325,9 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <div className="mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-success/20 to-success/10 shadow-sm">
                   <i data-feather="command" className="h-6 w-6 text-success" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-3">CSUF-CAPS Connection</h3>
+                <h3 className="text-xl font-bold text-foreground mb-3">Human Connection</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                  Book appointments or reach out directly to CSUF Counseling and Psychological Services from within the app.
+                  Book appointments or reach out directly to licensed therapists from within the app.
                 </p>
               </div>
             </div>
@@ -352,7 +346,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             </div>
           </div>
               <div>
-                <p className="text-sm text-muted-foreground">Light for the mind. Becoming.</p>
+                <p className="text-sm text-muted-foreground">Light for the mind.</p>
               </div>
             </div>
             <div className="flex items-center gap-8 text-sm">
