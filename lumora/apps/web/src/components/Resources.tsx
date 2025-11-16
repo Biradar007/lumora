@@ -10,10 +10,10 @@ import {
   ExternalLink,
   HeartHandshake,
   ArrowRight,
-  Award,
   Languages,
   Video,
   MessageCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -505,14 +505,12 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-900">
-                          {therapist.displayName ?? therapist.email ?? therapist.id}
+                        <h3 className="flex items-center gap-1 text-sm font-semibold text-slate-900">
+                          <span>{therapist.displayName ?? therapist.email ?? therapist.id}</span>
+                                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
                         </h3>
                         {therapist.email && <p className="text-xs text-slate-500">{therapist.email}</p>}
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                        <Award className="h-3 w-3" /> Verified
-                      </span>
                     </div>
                     {therapist.bio ? (
                       <p className="text-xs text-slate-600 line-clamp-3">{therapist.bio}</p>
