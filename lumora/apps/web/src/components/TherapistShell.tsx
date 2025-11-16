@@ -86,7 +86,7 @@ export function TherapistShell({ children }: TherapistShellProps) {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="rounded-lg border border-slate-200 p-2 text-slate-600 md:hidden"
+                className="border-slate-200 p-2 text-slate-600 md:hidden"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="h-5 w-5" />

@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Menu } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminSidebar } from './AdminSidebar';
 
@@ -30,8 +31,13 @@ export function useAdminSection(): AdminSectionContextValue {
 export function AdminShell({ children }: AdminShellProps) {
   const { profile, loading, logout } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [signingOut, setSigningOut] = useState(false);
-  const [activeSection, setActiveSection] = useState<AdminSection>('pending');
+  const [activeSection, setActiveSectionState] = useState<AdminSection>(() => {
+    const sectionParam = searchParams.get('section');
+    return sectionParam === 'all' ? 'all' : 'pending';
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (loading) {
@@ -51,6 +57,20 @@ export function AdminShell({ children }: AdminShellProps) {
     [profile?.displayName, profile?.email, profile?.name]
   );
 
+  useEffect(() => {
+    const sectionParam = searchParams.get('section');
+    const nextSection = sectionParam === 'all' ? 'all' : 'pending';
+    setActiveSectionState(nextSection);
+  }, [searchParams]);
+
+  const handleSectionChange = (section: AdminSection) => {
+    setActiveSectionState(section);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('section', section);
+    const queryString = params.toString();
+    router.replace(queryString ? `/admin?${queryString}` : '/admin', { scroll: false });
+  };
+
   const handleLogout = async () => {
     try {
       setSigningOut(true);
@@ -66,45 +86,59 @@ export function AdminShell({ children }: AdminShellProps) {
   }
 
   return (
-    <AdminSectionContext.Provider value={{ activeSection, setActiveSection }}>
+    <AdminSectionContext.Provider value={{ activeSection, setActiveSection: handleSectionChange }}>
       <div className="min-h-screen bg-slate-50">
         <AdminSidebar
           adminName={adminName}
           onLogout={handleLogout}
           signingOut={signingOut}
           activeSection={activeSection}
-          onSelectSection={setActiveSection}
+          onSelectSection={handleSectionChange}
         />
         <div className="flex h-screen flex-col transition-[margin] duration-300 ease-in-out md:ml-64 lg:ml-72">
-          <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-            <div className="flex items-center justify-between gap-4 px-6 py-4">
-              <div>
-                <p className="text-3xl font-semibold uppercase tracking-wide text-slate-500">Moderator workspace</p>
-              </div>
-              <div className="flex gap-2 md:hidden">
+          <header className="border-b border-slate-200 bg-white/90 backdrop-blur fixed inset-x-0 top-0 z-40 md:static">
+            <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setActiveSection('pending')}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold ${
-                    activeSection === 'pending' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'
-                  }`}
+                  className="border-slate-200 p-2 text-slate-600 md:hidden"
+                  onClick={() => setSidebarOpen(true)}
                 >
-                  Pending
+                  <Menu className="h-5 w-5" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveSection('all')}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold ${
-                    activeSection === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  All therapists
-                </button>
+                <p className="text-xl font-semibold uppercase tracking-wide text-slate-500 sm:text-2xl">
+                  Moderator workspace
+                </p>
               </div>
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto px-6 py-6">{children}</main>
+          <main className="flex-1 overflow-y-auto px-4 py-6 pt-20 sm:px-6 md:pt-0">{children}</main>
         </div>
+        {sidebarOpen ? (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <div className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-full bg-white shadow-2xl transition-transform md:hidden">
+              <AdminSidebar
+                adminName={adminName}
+                onLogout={async () => {
+                  await handleLogout();
+                  setSidebarOpen(false);
+                }}
+                signingOut={signingOut}
+                activeSection={activeSection}
+                onSelectSection={(section) => {
+                  handleSectionChange(section);
+                  setSidebarOpen(false);
+                }}
+                variant="mobile"
+                onClose={() => setSidebarOpen(false)}
+              />
+            </div>
+          </>
+        ) : null}
       </div>
     </AdminSectionContext.Provider>
   );
