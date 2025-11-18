@@ -11,9 +11,10 @@ import { VIEW_TO_PATH, type ViewType } from './user/viewTypes';
 interface UserShellProps {
   activeView: ViewType;
   children: ReactNode;
+  showDirectoryShortcut?: boolean;
 }
 
-export function UserShell({ activeView, children }: UserShellProps) {
+export function UserShell({ activeView, children, showDirectoryShortcut = true }: UserShellProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -43,10 +44,14 @@ export function UserShell({ activeView, children }: UserShellProps) {
           onClose={() => setSidebarOpen(false)}
         />
 
-        <div className="flex h-screen flex-col transition-[margin] duration-300 ease-in-out md:ml-64 lg:ml-72">
-          <Header onMenuClick={() => setSidebarOpen(true)} currentView={activeView} />
+        <div className="flex h-screen flex-col transition-[margin] duration-300 ease-in-out md:ml-64 lg:ml-72 xl:ml-80">
+          <Header
+            onMenuClick={() => setSidebarOpen(true)}
+            currentView={activeView}
+            showDirectoryShortcut={showDirectoryShortcut}
+          />
 
-          <main className={`flex-1 ${activeView === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>{children}</main>
+          <main className={`flex-1 pt-16 md:pt-0 ${activeView === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>{children}</main>
         </div>
 
         {sidebarOpen && (

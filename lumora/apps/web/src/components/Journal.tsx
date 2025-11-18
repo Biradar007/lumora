@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, PenLine, Bold, Italic, List, ListOrdered, Type, MinusCircle } from 'lucide-react';
+import { Loader2, PenLine, Bold, Italic, List, ListOrdered, Type, MinusCircle, X } from 'lucide-react';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { JournalEntry } from '@/types/domain';
 import { extractPlainText, sanitizeJournalHtml } from '@/lib/journalHtml';
@@ -30,6 +30,8 @@ const FONT_SIZE_COMMAND_MAP: Record<string, string> = {
   '22px': '5',
 };
 
+const PREVIEW_CHAR_LIMIT = 260;
+
 interface JournalErrorState {
   fetch?: string;
   submit?: string;
@@ -44,6 +46,7 @@ export function Journal() {
   const [selectedFontFamily, setSelectedFontFamily] = useState<string>(FONT_FAMILY_OPTIONS[0].value);
   const [selectedFontSize, setSelectedFontSize] = useState<string>(FONT_SIZE_OPTIONS[1].value);
   const [errors, setErrors] = useState<JournalErrorState>({});
+  const [expandedEntry, setExpandedEntry] = useState<JournalEntry | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const selectionRef = useRef<Range | null>(null);
 
@@ -482,21 +485,80 @@ export function Journal() {
           </div>
         ) : null}
         <div className="space-y-3">
-          {entries.map((entry) => (
-            <article key={entry.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                {new Date(entry.createdAt).toLocaleString()}
-              </p>
-              <div
-                className="mt-3 prose prose-sm max-w-none text-slate-700"
-                dangerouslySetInnerHTML={{ __html: sanitizeJournalHtml(entry.content) }}
-              />
-            </article>
-          ))}
+          {entries.map((entry) => {
+            const preview = buildEntryPreview(entry.content);
+            return (
+              <article key={entry.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {new Date(entry.createdAt).toLocaleString()}
+                </p>
+                <p className="mt-3 text-sm text-slate-700 leading-relaxed whitespace-pre-line">{preview.text}</p>
+                {preview.truncated ? (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedEntry(entry)}
+                    className="mt-3 text-sm font-semibold text-indigo-600 hover:underline"
+                  >
+                    Show more
+                  </button>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
       </div>
+
+      {expandedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-indigo-100 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {new Date(expandedEntry.createdAt).toLocaleString()}
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900">Journal entry</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExpandedEntry(null)}
+                className="rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close journal entry"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
+              <div
+                className="prose prose-sm max-w-none text-slate-700"
+                dangerouslySetInnerHTML={{ __html: sanitizeJournalHtml(expandedEntry.content) }}
+              />
+            </div>
+            <div className="flex justify-end border-t border-slate-100 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setExpandedEntry(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function buildEntryPreview(html: string): { text: string; truncated: boolean } {
+  const sanitized = sanitizeJournalHtml(html);
+  const plain = extractPlainText(sanitized).replace(/\s+/g, ' ').trim();
+  if (!plain) {
+    return { text: 'Empty entry', truncated: false };
+  }
+  if (plain.length <= PREVIEW_CHAR_LIMIT) {
+    return { text: plain, truncated: false };
+  }
+  return { text: `${plain.slice(0, PREVIEW_CHAR_LIMIT).trim()}…`, truncated: true };
 }
 
 function wrapSelectionWithHeading(selection: Selection, editor: HTMLElement) {

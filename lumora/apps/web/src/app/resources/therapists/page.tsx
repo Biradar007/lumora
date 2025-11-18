@@ -7,7 +7,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFirebaseApp } from '@/lib/firebaseClient';
 import { getFirestore } from 'firebase/firestore';
-import { ConnectionStatusBadge } from '@/components/ConnectionStatusBadge';
 import { RequestButton } from '@/components/RequestButton';
 import { TherapistCard } from '@/components/TherapistCard';
 import { UserShell } from '@/components/UserShell';
@@ -15,8 +14,9 @@ import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { TherapistProfile, ConnectionRequest, Connection } from '@/types/domain';
 
 interface DirectoryEntry extends TherapistProfile {
-  displayName?: string;
-  photoUrl?: string;
+  displayName?: string | null;
+  photoUrl?: string | null;
+  email?: string | null;
 }
 
 export default function TherapistDirectoryPage() {
@@ -38,22 +38,8 @@ export default function TherapistDirectoryPage() {
       if (!response.ok) {
         return;
       }
-      const data = (await response.json()) as { therapists: TherapistProfile[] };
-      const verifiedTherapists = (data.therapists ?? []).filter((entry) => entry.status === 'VERIFIED');
-      if (verifiedTherapists.length === 0) {
-        const db = getFirestore(getFirebaseApp());
-        const snapshot = await getDocs(
-          query(
-            collection(db, 'therapistProfiles'),
-            where('status', '==', 'VERIFIED'),
-            where('visible', '==', true)
-          )
-        );
-        const fallbackTherapists = snapshot.docs.map((docSnapshot) => docSnapshot.data() as TherapistProfile);
-        setTherapists(fallbackTherapists);
-        return;
-      }
-      setTherapists(verifiedTherapists);
+      const data = (await response.json()) as { therapists: DirectoryEntry[] };
+      setTherapists((data.therapists ?? []).filter((entry) => entry.status === 'VERIFIED'));
     };
     void loadDirectory();
   }, [headers]);
@@ -77,6 +63,12 @@ export default function TherapistDirectoryPage() {
 
   const filteredTherapists = useMemo(() => {
     return therapists.filter((therapist) => {
+      const hasActiveConnection = connections.some(
+        (connection) => connection.therapistId === therapist.id && connection.status === 'ACTIVE'
+      );
+      if (hasActiveConnection) {
+        return false;
+      }
       if (specialtyFilter && !therapist.specialties?.includes(specialtyFilter)) {
         return false;
       }
@@ -91,7 +83,7 @@ export default function TherapistDirectoryPage() {
       }
       return true;
     });
-  }, [languageFilter, modalityFilter, specialtyFilter, therapists]);
+  }, [connections, languageFilter, modalityFilter, specialtyFilter, therapists]);
 
   const determineStatus = (therapistId: string) => {
     const activeConnection = connections.find(
@@ -140,8 +132,8 @@ export default function TherapistDirectoryPage() {
   };
 
   return (
-    <UserShell activeView="resources">
-      <div className="mx-auto w-full max-w-5xl space-y-6 p-6">
+    <UserShell activeView="resources" showDirectoryShortcut={false}>
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6">
         <header className="space-y-4">
           <Link
             href="/user/resources"
@@ -151,11 +143,11 @@ export default function TherapistDirectoryPage() {
             Back to resources
           </Link>
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-teal-500 text-white shadow-[0_18px_35px_-18px_rgba(16,185,129,0.55)]">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-teal-500 text-white shadow-[0_18px_35px_-18px_rgba(16,185,129,0.55)]">
               <HeartHandshake className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-3xl font-semibold text-slate-900">Find a therapist</h1>
+              <h1 className="text-xl font-semibold text-slate-900">Find a therapist</h1>
               <p className="text-sm text-slate-600">
                 Browse verified Lumora therapists to request a private connection.
               </p>
@@ -163,9 +155,9 @@ export default function TherapistDirectoryPage() {
           </div>
         </header>
 
-        <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-[0_45px_90px_-48px_rgba(79,70,229,0.45)] backdrop-blur">
+        <section className="rounded-3xl border border-white/70 bg-white/80 p-4 shadow-[0_45px_90px_-48px_rgba(79,70,229,0.45)] backdrop-blur sm:p-6">
           <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-100 bg-white/70 p-5">
+            <div className="rounded-2xl border border-slate-100 bg-white/70 p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Filter directory</h2>
@@ -181,7 +173,7 @@ export default function TherapistDirectoryPage() {
                   </button>
                 ) : null}
               </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <label className="text-xs font-medium text-slate-600">
                   Specialty
                   <select
@@ -247,21 +239,14 @@ export default function TherapistDirectoryPage() {
                 <div className="space-y-4">
                   {filteredTherapists.map((therapist) => {
                     const status = determineStatus(therapist.id);
-                    const pendingRequest = requests.find((request) => request.therapistId === therapist.id);
                     return (
                       <TherapistCard
                         key={therapist.id}
                         profile={therapist}
-                        name={therapist.displayName}
-                        photoUrl={therapist.photoUrl}
+                        name={therapist.displayName ?? therapist.email ?? therapist.id}
+                        // photoUrl={therapist.photoUrl}
                         actions={<RequestButton status={status} onRequest={() => sendRequest(therapist.id)} />}
-                        connectionStatus={
-                          <ConnectionStatusBadge
-                            status={therapist.status}
-                            visible={therapist.visible}
-                            requestStatus={pendingRequest?.status}
-                          />
-                        }
+                        showStatusBadge={false}
                       />
                     );
                   })}

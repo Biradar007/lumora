@@ -58,21 +58,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
         {promptVisible && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 px-4 py-8 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-indigo-100">
-              {showLoginForm ? (
-                <div className="p-6">
-                  <AuthForm />
-                  <div className="mt-6 flex flex-col items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleContinueAsGuest}
-                      className="inline-flex justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-                    >
-                      No Thanks, Just Browse
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+            <div className="rounded-2xl bg-white shadow-2xl border border-indigo-100">
+              {showLoginForm ? <AuthForm onContinueAsGuest={handleContinueAsGuest} /> : null}
             </div>
           </div>
         )}
