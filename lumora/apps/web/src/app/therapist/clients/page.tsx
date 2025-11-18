@@ -26,6 +26,14 @@ const EMPTY_SCOPES: ConsentScopes = {
   journals: false,
 };
 
+const formatAppointmentRange = (appointment: Appointment) => {
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  return `${formatter.format(new Date(appointment.start))} – ${formatter.format(new Date(appointment.end))}`;
+};
+
 export default function TherapistClientsPage() {
   const headers = useApiHeaders();
   const router = useRouter();
@@ -42,6 +50,7 @@ export default function TherapistClientsPage() {
   const [sessionMessagesExpanded, setSessionMessagesExpanded] = useState<Record<string, boolean>>({});
   const [journalExpanded, setJournalExpanded] = useState<Record<string, boolean>>({});
   const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const canFetch = Boolean(headers['x-user-id']);
 
   const {
@@ -434,12 +443,24 @@ export default function TherapistClientsPage() {
                   {isActive ? 'Open chat' : 'View chat history'}
                 </Link>
                 {isActive ? (
-                  <Link
-                    href={`/therapist/clients/schedule/${connection.id}`}
-                    className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-300"
-                  >
-                    {activeAppointments[connection.id] ? 'View appointment' : 'Schedule appointment'}
-                  </Link>
+                  activeAppointments[connection.id] ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAppointment(activeAppointments[connection.id] ?? null)}
+                        className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300"
+                      >
+                        View appointment
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      href={`/therapist/clients/schedule/${connection.id}`}
+                      className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-300"
+                    >
+                      Schedule appointment
+                    </Link>
+                  )
                 ) : null}
                 {isActive ? (
                   <button
@@ -605,6 +626,67 @@ export default function TherapistClientsPage() {
           );
         })}
       </div>
+      {selectedAppointment ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-8">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Appointment details</h2>
+            </div>
+            <dl className="space-y-3 text-sm text-slate-700">
+              <div>
+                <dt className="font-semibold text-slate-900">Time</dt>
+                <dd>{formatAppointmentRange(selectedAppointment)}</dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-900">Location</dt>
+                <dd>
+                  {selectedAppointment.location === 'video'
+                    ? 'Online (video session)'
+                    : 'In-person session'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-900">Status</dt>
+                <dd
+                  className={
+                    selectedAppointment.status === 'CONFIRMED'
+                      ? 'text-emerald-600 font-semibold'
+                      : selectedAppointment.status === 'PENDING'
+                        ? 'text-amber-600 font-semibold'
+                        : 'text-slate-700 font-semibold'
+                  }
+                >
+                  {selectedAppointment.status}
+                </dd>
+              </div>
+              {selectedAppointment.videoLink ? (
+                <div>
+                  <dt className="font-semibold text-slate-900">Join link</dt>
+                  <dd>
+                    <a
+                      href={selectedAppointment.videoLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-indigo-600 hover:text-indigo-500 break-all"
+                    >
+                      {selectedAppointment.videoLink}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setSelectedAppointment(null)}
+                className="inline-flex flex-1 items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
