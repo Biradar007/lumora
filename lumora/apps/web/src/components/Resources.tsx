@@ -107,7 +107,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   } = useSWR<{ therapists: DirectoryTherapist[] }>(
     user ? ['/api/directory/therapists', headers] : null,
     authedFetcher,
-    { refreshInterval: 5 * 60 * 1000 }
+    { refreshInterval: 10 * 60 * 1000 }
   );
 
   const contacts = data?.contacts ?? [];
