@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { sanitizeJournalHtml } from '@/lib/journalHtml';
 import type {
@@ -16,6 +17,9 @@ import type {
   Appointment,
 } from '@/types/domain';
 
+const CLIENTS_REFRESH_MS = 30_000;
+const APPOINTMENTS_REFRESH_MS = 15_000;
+
 const EMPTY_SCOPES: ConsentScopes = {
   chatSummary: false,
   moodTrends: false,
@@ -25,10 +29,6 @@ const EMPTY_SCOPES: ConsentScopes = {
 export default function TherapistClientsPage() {
   const headers = useApiHeaders();
   const router = useRouter();
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [consents, setConsents] = useState<Record<string, Consent>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [journalEntries, setJournalEntries] = useState<Record<string, JournalEntry[]>>({});
   const [journalLoading, setJournalLoading] = useState<Record<string, boolean>>({});
   const [journalError, setJournalError] = useState<Record<string, string>>({});
@@ -42,66 +42,102 @@ export default function TherapistClientsPage() {
   const [sessionMessagesExpanded, setSessionMessagesExpanded] = useState<Record<string, boolean>>({});
   const [journalExpanded, setJournalExpanded] = useState<Record<string, boolean>>({});
   const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
-  const [activeAppointments, setActiveAppointments] = useState<Record<string, Appointment | null>>({});
+  const canFetch = Boolean(headers['x-user-id']);
 
-  useEffect(() => {
-    if (!headers['x-user-id']) {
-      return;
-    }
-    const load = async () => {
-      try {
-        setLoading(true);
-        setActiveAppointments({});
-        const [connectionsResponse, consentsResponse] = await Promise.all([
-          fetch('/api/connections', { headers }),
-          fetch('/api/consents', { headers }),
-        ]);
-        if (!connectionsResponse.ok) {
-          throw new Error('Failed to load connections');
-        }
-        const connectionsData = (await connectionsResponse.json()) as { connections: Connection[] };
-        setConnections(connectionsData.connections ?? []);
-
-        if (consentsResponse.ok) {
-          const consentData = (await consentsResponse.json()) as { consents: Consent[] };
-          const map: Record<string, Consent> = {};
-          (consentData.consents ?? []).forEach((consent) => {
-            map[consent.connectionId] = consent;
-          });
-          setConsents(map);
-        } else {
-          setError('Unable to load shared data preferences right now.');
-        }
-        const appointmentMap: Record<string, Appointment | null> = {};
-        try {
-          const appointmentsResponse = await fetch('/api/appointments', { headers });
-          if (appointmentsResponse.ok) {
-            const appointmentData = (await appointmentsResponse.json()) as { appointments: Appointment[] };
-            (appointmentData.appointments ?? []).forEach((appointment) => {
-              if (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') {
-                const existing = appointmentMap[appointment.connectionId];
-                if (!existing || appointment.start < existing.start) {
-                  appointmentMap[appointment.connectionId] = appointment;
-                }
-              }
-            });
-          } else {
-            console.error('Failed to load appointments', appointmentsResponse.status);
-          }
-        } catch (appointmentsError) {
-          console.error('Failed to load appointments', appointmentsError);
-        }
-        setActiveAppointments(appointmentMap);
-      } catch (err) {
-        console.error(err);
-        setError('Unable to load client data. Please try again later.');
-        setActiveAppointments({});
-      } finally {
-        setLoading(false);
+  const {
+    data: connectionsData,
+    error: connectionsError,
+    mutate: mutateConnections,
+  } = useSWR<{ connections: Connection[] }>(
+    canFetch ? ['therapist-connections', headers['x-user-id']] : null,
+    async () => {
+      const response = await fetch('/api/connections', { headers });
+      if (!response.ok) {
+        throw new Error('Failed to load connections');
       }
-    };
-    void load();
-  }, [headers]);
+      return (await response.json()) as { connections: Connection[] };
+    },
+    {
+      refreshInterval: CLIENTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
+    }
+  );
+
+  const {
+    data: consentsData,
+    error: consentsError,
+    mutate: mutateConsents,
+  } = useSWR<{ consents: Consent[] }>(
+    canFetch ? ['therapist-consents', headers['x-user-id']] : null,
+    async () => {
+      const response = await fetch('/api/consents', { headers });
+      if (!response.ok) {
+        throw new Error('Unable to load shared data preferences right now.');
+      }
+      return (await response.json()) as { consents: Consent[] };
+    },
+    {
+      refreshInterval: CLIENTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
+    }
+  );
+
+  const {
+    data: appointmentsData,
+    error: appointmentsError,
+    mutate: mutateAppointments,
+  } = useSWR<{ appointments: Appointment[] }>(
+    canFetch ? ['therapist-connections-appointments', headers['x-user-id']] : null,
+    async () => {
+      const response = await fetch('/api/appointments', { headers });
+      if (!response.ok) {
+        throw new Error('Failed to load appointments');
+      }
+      return (await response.json()) as { appointments: Appointment[] };
+    },
+    {
+      refreshInterval: APPOINTMENTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
+    }
+  );
+
+  const connections = connectionsData?.connections ?? [];
+  const consents = useMemo(() => {
+    const map: Record<string, Consent> = {};
+    (consentsData?.consents ?? []).forEach((consent) => {
+      map[consent.connectionId] = consent;
+    });
+    return map;
+  }, [consentsData?.consents]);
+
+  const activeAppointments = useMemo(() => {
+    const map: Record<string, Appointment | null> = {};
+    (appointmentsData?.appointments ?? []).forEach((appointment) => {
+      if (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') {
+        const existing = map[appointment.connectionId];
+        if (!existing || appointment.start < existing.start) {
+          map[appointment.connectionId] = appointment;
+        }
+      }
+    });
+    return map;
+  }, [appointmentsData?.appointments]);
+
+  const loading = canFetch && (!connectionsData || !consentsData);
+  const error =
+    connectionsError instanceof Error
+      ? connectionsError.message
+      : consentsError instanceof Error
+        ? consentsError.message
+        : appointmentsError instanceof Error
+          ? appointmentsError.message
+          : null;
 
   const hasConnections = connections.length > 0;
 
@@ -235,33 +271,7 @@ export default function TherapistClientsPage() {
       if (!response.ok) {
         throw new Error('disconnect_failed');
       }
-      const now = Date.now();
-      setConnections((prev) =>
-        prev.map((item) =>
-          item.id === connection.id
-            ? {
-                ...item,
-                status: 'ENDED',
-                endedAt: now,
-              }
-            : item
-        )
-      );
-      setConsents((prev) => {
-        const existing = prev[connection.id];
-        if (!existing) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [connection.id]: {
-            ...existing,
-            scopes: { ...EMPTY_SCOPES },
-            revokedAt: now,
-            updatedAt: now,
-          },
-        };
-      });
+      await Promise.all([mutateConnections(), mutateConsents(), mutateAppointments()]);
       setSessionsByConnection((prev) => {
         if (!prev[connection.id]) {
           return prev;
@@ -343,14 +353,7 @@ export default function TherapistClientsPage() {
       setSessionMessagesError((prev) => stripPrefixedKeys(prev));
       setSessionMessagesLoading((prev) => stripPrefixedKeys(prev));
       setSessionMessagesExpanded((prev) => stripPrefixedKeys(prev));
-      setActiveAppointments((prev) => {
-        if (!prev[connection.id]) {
-          return prev;
-        }
-        const copy = { ...prev };
-        delete copy[connection.id];
-        return copy;
-      });
+      // Active appointment map will refresh through mutateAppointments
     } catch (err) {
       console.error('Failed to disconnect client connection', err);
       if (typeof window !== 'undefined') {

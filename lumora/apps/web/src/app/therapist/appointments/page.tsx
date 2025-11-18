@@ -1,40 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { Appointment } from '@/types/domain';
+
+const APPOINTMENTS_REFRESH_MS = 15_000;
+
+const fetchAppointments = async (headers: HeadersInit): Promise<Appointment[]> => {
+  const response = await fetch('/api/appointments', { headers });
+  if (!response.ok) {
+    throw new Error('Unable to load appointments.');
+  }
+  const data = (await response.json()) as { appointments?: Appointment[] };
+  return data.appointments ?? [];
+};
 
 export default function TherapistAppointmentsPage() {
   const headers = useApiHeaders();
   const router = useRouter();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<'ALL' | Appointment['status']>('ALL');
   const [modeFilter, setModeFilter] = useState<'ALL' | 'video' | 'in-person'>('ALL');
+  const canFetch = Boolean(headers['x-user-id']);
 
-  const load = async () => {
-    setError(null);
-    const response = await fetch('/api/appointments', { headers });
-    if (!response.ok) {
-      setError('Unable to load appointments.');
-      return;
+  const {
+    data: appointments,
+    isLoading,
+    error,
+    mutate,
+  } = useSWR<Appointment[]>(
+    canFetch ? ['therapist-appointments', headers['x-user-id']] : null,
+    () => fetchAppointments(headers),
+    {
+      refreshInterval: APPOINTMENTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
     }
-    const data = (await response.json()) as { appointments: Appointment[] };
-    setAppointments(data.appointments ?? []);
-  };
-
-  useEffect(() => {
-    if (!headers['x-user-id']) {
-      return;
-    }
-    void load();
-  }, [headers]);
+  );
 
   const mutateAppointment = async (id: string, payload: Record<string, unknown>) => {
-    setError(null);
+    setActionError(null);
     const response = await fetch(`/api/appointments/${id}`, {
       method: 'PATCH',
       headers,
@@ -42,10 +52,10 @@ export default function TherapistAppointmentsPage() {
     });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      setError(data.error ?? 'Failed to update appointment');
+      setActionError(data.error ?? 'Failed to update appointment');
       return;
     }
-    await load();
+    await mutate();
   };
 
   const handleConfirm = (id: string) => mutateAppointment(id, { action: 'CONFIRM' });
@@ -60,7 +70,7 @@ export default function TherapistAppointmentsPage() {
     }
     const proposedStart = Date.parse(input);
     if (Number.isNaN(proposedStart)) {
-      setError('Invalid date format. Use YYYY-MM-DDTHH:mm.');
+      setActionError('Invalid date format. Use YYYY-MM-DDTHH:mm.');
       return;
     }
     const duration = appointment.end - appointment.start;
@@ -68,7 +78,7 @@ export default function TherapistAppointmentsPage() {
     await mutateAppointment(appointment.id, { action: 'RESCHEDULE', start: proposedStart, end: proposedEnd });
   };
 
-  const filteredAppointments = appointments.filter((appointment) => {
+  const filteredAppointments = (appointments ?? []).filter((appointment) => {
     if (statusFilter !== 'ALL' && appointment.status !== statusFilter) {
       return false;
     }
@@ -78,10 +88,12 @@ export default function TherapistAppointmentsPage() {
     return true;
   });
 
-  const sortedAppointments = [...filteredAppointments].sort((a, b) => {
-    const delta = a.start - b.start;
-    return sortOrder === 'asc' ? delta : -delta;
-  });
+  const sortedAppointments = useMemo(() => {
+    return [...filteredAppointments].sort((a, b) => {
+      const delta = a.start - b.start;
+      return sortOrder === 'asc' ? delta : -delta;
+    });
+  }, [filteredAppointments, sortOrder]);
 
   return (
     <div className="space-y-6">
@@ -97,7 +109,9 @@ export default function TherapistAppointmentsPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Appointments</h1>
         <p className="text-sm text-slate-600">Confirm or cancel pending session requests.</p>
       </header>
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error || actionError ? (
+        <p className="text-sm text-rose-600">{actionError ?? (error instanceof Error ? error.message : String(error))}</p>
+      ) : null}
       <section className="space-y-4">
         <div className="flex flex-wrap justify-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex min-w-[180px] flex-col text-sm text-slate-600">
@@ -148,7 +162,9 @@ export default function TherapistAppointmentsPage() {
           </div>
         </div>
 
-        {sortedAppointments.length === 0 ? (
+        {isLoading ? (
+          <p className="text-sm text-slate-500">Loading appointments…</p>
+        ) : sortedAppointments.length === 0 ? (
           <p className="text-sm text-slate-500">No appointments match these filters.</p>
         ) : null}
 

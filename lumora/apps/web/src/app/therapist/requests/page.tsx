@@ -1,79 +1,102 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { Appointment, ConnectionRequest } from '@/types/domain';
+
+const REQUESTS_REFRESH_MS = 15_000;
+
+const fetchConnectionRequests = async (headers: HeadersInit): Promise<ConnectionRequest[]> => {
+  const response = await fetch('/api/requests/inbox', { headers });
+  if (!response.ok) {
+    throw new Error('Unable to load connection requests.');
+  }
+  const data = (await response.json()) as { requests?: ConnectionRequest[] };
+  return data.requests ?? [];
+};
+
+const fetchAppointmentRequests = async (headers: HeadersInit): Promise<Appointment[]> => {
+  const response = await fetch('/api/appointments', { headers });
+  if (!response.ok) {
+    throw new Error('Unable to load appointment requests.');
+  }
+  const data = (await response.json()) as { appointments?: Appointment[] };
+  return (data.appointments ?? []).filter((appointment) => appointment.status === 'PENDING');
+};
 
 export default function TherapistRequestsPage() {
   const headers = useApiHeaders();
   const router = useRouter();
-  const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
-  const [appointmentRequests, setAppointmentRequests] = useState<Appointment[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'connections' | 'appointments'>('connections');
+  const canFetch = Boolean(headers['x-user-id']);
 
-  const load = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const [connectionResponse, appointmentResponse] = await Promise.all([
-        fetch('/api/requests/inbox', { headers }),
-        fetch('/api/appointments', { headers }),
-      ]);
-
-      if (!connectionResponse.ok) {
-        throw new Error('connection_requests_failed');
-      }
-      const connectionData = (await connectionResponse.json()) as { requests: ConnectionRequest[] };
-      setConnectionRequests(connectionData.requests ?? []);
-
-      if (!appointmentResponse.ok) {
-        console.error('Failed to load appointment requests', appointmentResponse.status);
-        setAppointmentRequests([]);
-        setError((prev) => prev ?? 'Unable to load appointment requests right now.');
-      } else {
-        const appointmentData = (await appointmentResponse.json()) as { appointments: Appointment[] };
-        const pendingAppointments = (appointmentData.appointments ?? []).filter(
-          (appointment) => appointment.status === 'PENDING'
-        );
-        setAppointmentRequests(pendingAppointments);
-      }
-    } catch (err) {
-      console.error('Failed to load request inbox', err);
-      setError('Unable to load requests.');
-      setConnectionRequests([]);
-      setAppointmentRequests([]);
-    } finally {
-      setLoading(false);
+  const {
+    data: connectionRequests,
+    isLoading: connectionLoading,
+    error: connectionError,
+    mutate: mutateConnections,
+  } = useSWR<ConnectionRequest[]>(
+    canFetch ? ['therapist-connection-requests', headers['x-user-id']] : null,
+    () => fetchConnectionRequests(headers),
+    {
+      refreshInterval: REQUESTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
     }
-  };
+  );
 
-  useEffect(() => {
-    if (!headers['x-user-id']) {
-      return;
+  const {
+    data: appointmentRequests,
+    isLoading: appointmentLoading,
+    error: appointmentError,
+    mutate: mutateAppointments,
+  } = useSWR<Appointment[]>(
+    canFetch ? ['therapist-appointment-requests', headers['x-user-id']] : null,
+    () => fetchAppointmentRequests(headers),
+    {
+      refreshInterval: REQUESTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
     }
-    void load();
-  }, [headers]);
+  );
+
+  const loading = connectionLoading || appointmentLoading;
+  const connectionErrorMessage =
+    connectionError instanceof Error
+      ? connectionError.message
+      : connectionError
+        ? 'Unable to load connection requests.'
+        : null;
+  const appointmentErrorMessage =
+    appointmentError instanceof Error
+      ? appointmentError.message
+      : appointmentError
+        ? 'Unable to load appointment requests.'
+        : null;
+  const error = actionError ?? connectionErrorMessage ?? appointmentErrorMessage;
 
   const respondToConnection = async (id: string, action: 'accept' | 'decline', reason?: string) => {
-    setError(null);
+    setActionError(null);
     const response = await fetch(`/api/requests/${id}/${action}`, {
       method: 'POST',
       headers,
       body: action === 'decline' ? JSON.stringify({ reason }) : undefined,
     });
     if (!response.ok) {
-      setError('Unable to update request.');
+      setActionError('Unable to update request.');
       return;
     }
-    await load();
+    await mutateConnections();
   };
 
   const mutateAppointment = async (id: string, payload: Record<string, unknown>) => {
-    setError(null);
+    setActionError(null);
     const response = await fetch(`/api/appointments/${id}`, {
       method: 'PATCH',
       headers,
@@ -81,10 +104,10 @@ export default function TherapistRequestsPage() {
     });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      setError(data.error ?? 'Failed to update appointment');
+      setActionError(data.error ?? 'Failed to update appointment');
       return;
     }
-    await load();
+    await mutateAppointments();
   };
 
   const handleConfirm = (id: string) => mutateAppointment(id, { action: 'CONFIRM' });
@@ -97,7 +120,7 @@ export default function TherapistRequestsPage() {
     }
     const proposedStart = Date.parse(input);
     if (Number.isNaN(proposedStart)) {
-      setError('Invalid date format. Use YYYY-MM-DDTHH:mm.');
+      setActionError('Invalid date format. Use YYYY-MM-DDTHH:mm.');
       return;
     }
     const duration = appointment.end - appointment.start;
@@ -137,7 +160,7 @@ export default function TherapistRequestsPage() {
                 : 'text-slate-600 hover:text-slate-700'
             }`}
           >
-            Connection requests ({connectionRequests.length})
+            Connection requests ({connectionRequests?.length ?? 0})
           </button>
           <button
             type="button"
@@ -148,17 +171,17 @@ export default function TherapistRequestsPage() {
                 : 'text-slate-600 hover:text-slate-700'
             }`}
           >
-            Appointment requests ({appointmentRequests.length})
+            Appointment requests ({appointmentRequests?.length ?? 0})
           </button>
         </div>
         <div className="space-y-4 p-4">
           {loading ? <p className="text-sm text-slate-500">Loading requests…</p> : null}
           {activeTab === 'connections' ? (
             <>
-              {!loading && connectionRequests.length === 0 ? (
+              {!loading && (connectionRequests?.length ?? 0) === 0 ? (
                 <p className="text-sm text-slate-500">No pending connection requests.</p>
               ) : null}
-              {connectionRequests.map((request) => (
+              {connectionRequests?.map((request) => (
                 <div
                   key={request.id}
                   className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
@@ -191,10 +214,10 @@ export default function TherapistRequestsPage() {
             </>
           ) : (
             <>
-              {!loading && appointmentRequests.length === 0 ? (
+              {!loading && (appointmentRequests?.length ?? 0) === 0 ? (
                 <p className="text-sm text-slate-500">No pending appointment requests.</p>
               ) : null}
-              {appointmentRequests.map((appointment) => (
+              {appointmentRequests?.map((appointment) => (
                 <div
                   key={appointment.id}
                   className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
