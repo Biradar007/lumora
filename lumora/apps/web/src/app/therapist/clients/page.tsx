@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { sanitizeJournalHtml } from '@/lib/journalHtml';
 import type {
@@ -16,19 +17,26 @@ import type {
   Appointment,
 } from '@/types/domain';
 
+const CLIENTS_REFRESH_MS = 30_000;
+const APPOINTMENTS_REFRESH_MS = 15_000;
+
 const EMPTY_SCOPES: ConsentScopes = {
   chatSummary: false,
   moodTrends: false,
   journals: false,
 };
 
+const formatAppointmentRange = (appointment: Appointment) => {
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  return `${formatter.format(new Date(appointment.start))} – ${formatter.format(new Date(appointment.end))}`;
+};
+
 export default function TherapistClientsPage() {
   const headers = useApiHeaders();
   const router = useRouter();
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [consents, setConsents] = useState<Record<string, Consent>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [journalEntries, setJournalEntries] = useState<Record<string, JournalEntry[]>>({});
   const [journalLoading, setJournalLoading] = useState<Record<string, boolean>>({});
   const [journalError, setJournalError] = useState<Record<string, string>>({});
@@ -42,66 +50,104 @@ export default function TherapistClientsPage() {
   const [sessionMessagesExpanded, setSessionMessagesExpanded] = useState<Record<string, boolean>>({});
   const [journalExpanded, setJournalExpanded] = useState<Record<string, boolean>>({});
   const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
-  const [activeAppointments, setActiveAppointments] = useState<Record<string, Appointment | null>>({});
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
+  const canFetch = Boolean(headers['x-user-id']);
 
-  useEffect(() => {
-    if (!headers['x-user-id']) {
-      return;
-    }
-    const load = async () => {
-      try {
-        setLoading(true);
-        setActiveAppointments({});
-        const [connectionsResponse, consentsResponse] = await Promise.all([
-          fetch('/api/connections', { headers }),
-          fetch('/api/consents', { headers }),
-        ]);
-        if (!connectionsResponse.ok) {
-          throw new Error('Failed to load connections');
-        }
-        const connectionsData = (await connectionsResponse.json()) as { connections: Connection[] };
-        setConnections(connectionsData.connections ?? []);
-
-        if (consentsResponse.ok) {
-          const consentData = (await consentsResponse.json()) as { consents: Consent[] };
-          const map: Record<string, Consent> = {};
-          (consentData.consents ?? []).forEach((consent) => {
-            map[consent.connectionId] = consent;
-          });
-          setConsents(map);
-        } else {
-          setError('Unable to load shared data preferences right now.');
-        }
-        const appointmentMap: Record<string, Appointment | null> = {};
-        try {
-          const appointmentsResponse = await fetch('/api/appointments', { headers });
-          if (appointmentsResponse.ok) {
-            const appointmentData = (await appointmentsResponse.json()) as { appointments: Appointment[] };
-            (appointmentData.appointments ?? []).forEach((appointment) => {
-              if (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') {
-                const existing = appointmentMap[appointment.connectionId];
-                if (!existing || appointment.start < existing.start) {
-                  appointmentMap[appointment.connectionId] = appointment;
-                }
-              }
-            });
-          } else {
-            console.error('Failed to load appointments', appointmentsResponse.status);
-          }
-        } catch (appointmentsError) {
-          console.error('Failed to load appointments', appointmentsError);
-        }
-        setActiveAppointments(appointmentMap);
-      } catch (err) {
-        console.error(err);
-        setError('Unable to load client data. Please try again later.');
-        setActiveAppointments({});
-      } finally {
-        setLoading(false);
+  const {
+    data: connectionsData,
+    error: connectionsError,
+    mutate: mutateConnections,
+  } = useSWR<{ connections: Connection[] }>(
+    canFetch ? ['therapist-connections', headers['x-user-id']] : null,
+    async () => {
+      const response = await fetch('/api/connections', { headers });
+      if (!response.ok) {
+        throw new Error('Failed to load connections');
       }
-    };
-    void load();
-  }, [headers]);
+      return (await response.json()) as { connections: Connection[] };
+    },
+    {
+      refreshInterval: CLIENTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
+    }
+  );
+
+  const {
+    data: consentsData,
+    error: consentsError,
+    mutate: mutateConsents,
+  } = useSWR<{ consents: Consent[] }>(
+    canFetch ? ['therapist-consents', headers['x-user-id']] : null,
+    async () => {
+      const response = await fetch('/api/consents', { headers });
+      if (!response.ok) {
+        throw new Error('Unable to load shared data preferences right now.');
+      }
+      return (await response.json()) as { consents: Consent[] };
+    },
+    {
+      refreshInterval: CLIENTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
+    }
+  );
+
+  const {
+    data: appointmentsData,
+    error: appointmentsError,
+    mutate: mutateAppointments,
+  } = useSWR<{ appointments: Appointment[] }>(
+    canFetch ? ['therapist-connections-appointments', headers['x-user-id']] : null,
+    async () => {
+      const response = await fetch('/api/appointments', { headers });
+      if (!response.ok) {
+        throw new Error('Failed to load appointments');
+      }
+      return (await response.json()) as { appointments: Appointment[] };
+    },
+    {
+      refreshInterval: APPOINTMENTS_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
+    }
+  );
+
+  const connections = connectionsData?.connections ?? [];
+  const consents = useMemo(() => {
+    const map: Record<string, Consent> = {};
+    (consentsData?.consents ?? []).forEach((consent) => {
+      map[consent.connectionId] = consent;
+    });
+    return map;
+  }, [consentsData?.consents]);
+
+  const activeAppointments = useMemo(() => {
+    const map: Record<string, Appointment | null> = {};
+    (appointmentsData?.appointments ?? []).forEach((appointment) => {
+      if (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') {
+        const existing = map[appointment.connectionId];
+        if (!existing || appointment.start < existing.start) {
+          map[appointment.connectionId] = appointment;
+        }
+      }
+    });
+    return map;
+  }, [appointmentsData?.appointments]);
+
+  const loading = canFetch && (!connectionsData || !consentsData);
+  const error =
+    connectionsError instanceof Error
+      ? connectionsError.message
+      : consentsError instanceof Error
+        ? consentsError.message
+        : appointmentsError instanceof Error
+          ? appointmentsError.message
+          : null;
 
   const hasConnections = connections.length > 0;
 
@@ -217,6 +263,46 @@ export default function TherapistClientsPage() {
     }
   };
 
+  const handleCancelAppointment = async (appointment: Appointment) => {
+    if (!headers['x-user-id']) {
+      return;
+    }
+    const reason =
+      typeof window !== 'undefined'
+        ? window.prompt('Please provide a brief explanation for cancelling this appointment.')
+        : null;
+    if (reason === null) {
+      return;
+    }
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      if (typeof window !== 'undefined') {
+        window.alert('Cancellation requires an explanation.');
+      }
+      return;
+    }
+    setCancellingAppointmentId(appointment.id);
+    try {
+      const response = await fetch(`/api/appointments/${appointment.id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'CANCEL', reason: trimmedReason }),
+      });
+      if (!response.ok) {
+        throw new Error('cancel_failed');
+      }
+      await mutateAppointments();
+      setSelectedAppointment(null);
+    } catch (error) {
+      console.error('Failed to cancel appointment', error);
+      if (typeof window !== 'undefined') {
+        window.alert('Unable to cancel this appointment right now. Please try again.');
+      }
+    } finally {
+      setCancellingAppointmentId(null);
+    }
+  };
+
   const handleDisconnect = async (connection: Connection) => {
     if (typeof window !== 'undefined') {
       const confirmed = window.confirm(
@@ -235,33 +321,7 @@ export default function TherapistClientsPage() {
       if (!response.ok) {
         throw new Error('disconnect_failed');
       }
-      const now = Date.now();
-      setConnections((prev) =>
-        prev.map((item) =>
-          item.id === connection.id
-            ? {
-                ...item,
-                status: 'ENDED',
-                endedAt: now,
-              }
-            : item
-        )
-      );
-      setConsents((prev) => {
-        const existing = prev[connection.id];
-        if (!existing) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [connection.id]: {
-            ...existing,
-            scopes: { ...EMPTY_SCOPES },
-            revokedAt: now,
-            updatedAt: now,
-          },
-        };
-      });
+      await Promise.all([mutateConnections(), mutateConsents(), mutateAppointments()]);
       setSessionsByConnection((prev) => {
         if (!prev[connection.id]) {
           return prev;
@@ -343,14 +403,7 @@ export default function TherapistClientsPage() {
       setSessionMessagesError((prev) => stripPrefixedKeys(prev));
       setSessionMessagesLoading((prev) => stripPrefixedKeys(prev));
       setSessionMessagesExpanded((prev) => stripPrefixedKeys(prev));
-      setActiveAppointments((prev) => {
-        if (!prev[connection.id]) {
-          return prev;
-        }
-        const copy = { ...prev };
-        delete copy[connection.id];
-        return copy;
-      });
+      // Active appointment map will refresh through mutateAppointments
     } catch (err) {
       console.error('Failed to disconnect client connection', err);
       if (typeof window !== 'undefined') {
@@ -431,12 +484,24 @@ export default function TherapistClientsPage() {
                   {isActive ? 'Open chat' : 'View chat history'}
                 </Link>
                 {isActive ? (
-                  <Link
-                    href={`/therapist/clients/schedule/${connection.id}`}
-                    className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-300"
-                  >
-                    {activeAppointments[connection.id] ? 'View appointment' : 'Schedule appointment'}
-                  </Link>
+                  activeAppointments[connection.id] ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAppointment(activeAppointments[connection.id] ?? null)}
+                        className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300"
+                      >
+                        View appointment
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      href={`/therapist/clients/schedule/${connection.id}`}
+                      className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-300"
+                    >
+                      Schedule appointment
+                    </Link>
+                  )
                 ) : null}
                 {isActive ? (
                   <button
@@ -602,6 +667,77 @@ export default function TherapistClientsPage() {
           );
         })}
       </div>
+      {selectedAppointment ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-8">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Appointment details</h2>
+            </div>
+            <dl className="space-y-3 text-sm text-slate-700">
+              <div>
+                <dt className="font-semibold text-slate-900">Time</dt>
+                <dd>{formatAppointmentRange(selectedAppointment)}</dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-900">Location</dt>
+                <dd>
+                  {selectedAppointment.location === 'video'
+                    ? 'Online (video session)'
+                    : 'In-person session'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-900">Status</dt>
+                <dd
+                  className={
+                    selectedAppointment.status === 'CONFIRMED'
+                      ? 'text-emerald-600 font-semibold'
+                      : selectedAppointment.status === 'PENDING'
+                        ? 'text-amber-600 font-semibold'
+                        : 'text-slate-700 font-semibold'
+                  }
+                >
+                  {selectedAppointment.status}
+                </dd>
+              </div>
+              {selectedAppointment.videoLink ? (
+                <div>
+                  <dt className="font-semibold text-slate-900">Join link</dt>
+                  <dd>
+                    <a
+                      href={selectedAppointment.videoLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-indigo-600 hover:text-indigo-500 break-all"
+                    >
+                      {selectedAppointment.videoLink}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              {selectedAppointment.status !== 'CANCELLED' ? (
+                <button
+                  type="button"
+                  onClick={() => handleCancelAppointment(selectedAppointment)}
+                  disabled={cancellingAppointmentId === selectedAppointment.id}
+                  className="inline-flex flex-1 items-center justify-center rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {cancellingAppointmentId === selectedAppointment.id ? 'Cancelling…' : 'Cancel appointment'}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setSelectedAppointment(null)}
+                className="inline-flex flex-1 items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

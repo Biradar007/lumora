@@ -16,7 +16,7 @@ interface CreateAppointmentPayload {
 
 export async function POST(request: Request) {
   try {
-    const auth = requireAuth(request, { roles: ['user'] });
+    const auth = requireAuth(request, { roles: ['user', 'therapist'] });
     const body = (await request.json()) as CreateAppointmentPayload;
     if (!body?.connectionId || !body?.therapistId || !body?.start || !body?.end || !body?.location) {
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
@@ -28,11 +28,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'connection_not_found' }, { status: 404 });
     }
     const connection = snapshot.data() as Connection;
-    if (connection.userId !== auth.userId) {
-      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-    }
     if (connection.therapistId !== body.therapistId) {
       return NextResponse.json({ error: 'invalid_therapist' }, { status: 400 });
+    }
+    if (auth.role === 'user' && connection.userId !== auth.userId) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+    if (auth.role === 'therapist' && connection.therapistId !== auth.userId) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
     const appointmentsCollection = db.collection('appointments');
     const existingSnapshot = await appointmentsCollection.where('connectionId', '==', body.connectionId).get();
@@ -48,11 +51,11 @@ export async function POST(request: Request) {
     const appointment: Appointment = {
       id: appointmentRef.id,
       connectionId: body.connectionId,
-      therapistId: body.therapistId,
-      userId: auth.userId,
+      therapistId: connection.therapistId,
+      userId: connection.userId,
       start: body.start,
       end: body.end,
-      status: 'PENDING',
+      status: auth.role === 'therapist' ? 'CONFIRMED' : 'PENDING',
       location: body.location,
       videoLink: body.videoLink,
       googleCalendarEventId: null,

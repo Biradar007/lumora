@@ -1,80 +1,96 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ConnectionRequest, Appointment, Connection } from '@/types/domain';
 import { Loader2 } from 'lucide-react';
 
+interface DashboardData {
+  requests: ConnectionRequest[];
+  appointments: Appointment[];
+  connections: Connection[];
+}
+
+interface CalendarStatus {
+  connected: boolean;
+  calendarId?: string;
+  updatedAt?: number | null;
+}
+
+const DASHBOARD_REFRESH_MS = 15_000;
+const CALENDAR_REFRESH_MS = 60_000;
+
+const fetchDashboardData = async (headers: HeadersInit): Promise<DashboardData> => {
+  const [requestsRes, appointmentsRes, connectionsRes] = await Promise.all([
+    fetch('/api/requests/inbox', { headers }),
+    fetch('/api/appointments', { headers }).catch(() => null),
+    fetch('/api/connections', { headers }).catch(() => null),
+  ]);
+
+  const [requests, appointments, connections] = await Promise.all([
+    requestsRes?.ok
+      ? requestsRes.json().then((data: { requests?: ConnectionRequest[] }) => data.requests ?? [])
+      : [],
+    appointmentsRes?.ok
+      ? appointmentsRes.json().then((data: { appointments?: Appointment[] }) => data.appointments ?? [])
+      : [],
+    connectionsRes?.ok
+      ? connectionsRes.json().then((data: { connections?: Connection[] }) => data.connections ?? [])
+      : [],
+  ]);
+
+  return { requests, appointments, connections };
+};
+
+const fetchCalendarStatus = async (headers: HeadersInit): Promise<CalendarStatus> => {
+  const response = await fetch('/api/integrations/google-calendar/status', { headers });
+  if (!response.ok) {
+    throw new Error('Unavailable');
+  }
+  return response.json() as Promise<CalendarStatus>;
+};
+
 export default function TherapistDashboard() {
   const headers = useApiHeaders();
   const { user } = useAuth();
-  const [requests, setRequests] = useState<ConnectionRequest[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [calendarStatus, setCalendarStatus] = useState<{ connected: boolean; calendarId?: string; updatedAt?: number | null } | null>(null);
-  const [calendarLoading, setCalendarLoading] = useState(false);
-  const [calendarError, setCalendarError] = useState<string | null>(null);
+  const shouldFetch = Boolean(headers['x-user-id']);
 
-  useEffect(() => {
-    if (!headers['x-user-id']) {
-      return;
+  const { data: dashboardData } = useSWR<DashboardData>(
+    shouldFetch ? ['therapist-dashboard', headers['x-user-id']] : null,
+    () => fetchDashboardData(headers),
+    {
+      refreshInterval: DASHBOARD_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
     }
-    const load = async () => {
-      const [requestsRes, appointmentsRes, connectionsRes] = await Promise.all([
-        fetch('/api/requests/inbox', { headers }),
-        fetch('/api/appointments', { headers }).catch(() => null),
-        fetch('/api/connections', { headers }).catch(() => null),
-      ]);
-      if (requestsRes?.ok) {
-        const data = (await requestsRes.json()) as { requests: ConnectionRequest[] };
-        setRequests(data.requests ?? []);
-      }
-      if (appointmentsRes?.ok) {
-        const data = (await appointmentsRes.json()) as { appointments: Appointment[] };
-        setAppointments(data.appointments ?? []);
-      }
-      if (connectionsRes?.ok) {
-        const data = (await connectionsRes.json()) as { connections: Connection[] };
-        setConnections(data.connections ?? []);
-      } else {
-        setConnections([]);
-      }
-    };
-    void load();
-  }, [headers]);
+  );
 
-  useEffect(() => {
-    if (!headers['x-user-id']) {
-      return;
+  const {
+    data: calendarStatus,
+    isLoading: calendarLoading,
+    error: calendarError,
+  } = useSWR<CalendarStatus>(
+    shouldFetch ? ['calendar-status', headers['x-user-id']] : null,
+    () => fetchCalendarStatus(headers),
+    {
+      refreshInterval: CALENDAR_REFRESH_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: true,
     }
-    const loadCalendarStatus = async () => {
-      setCalendarLoading(true);
-      setCalendarError(null);
-      try {
-        const response = await fetch('/api/integrations/google-calendar/status', { headers });
-        if (!response.ok) {
-          setCalendarStatus(null);
-          setCalendarError('Unavailable');
-          return;
-        }
-        const data = (await response.json()) as { connected: boolean; calendarId?: string; updatedAt?: number | null };
-        setCalendarStatus(data);
-      } catch (error) {
-        console.error('Failed to load calendar status', error);
-        setCalendarStatus(null);
-        setCalendarError('Unavailable');
-      } finally {
-        setCalendarLoading(false);
-      }
-    };
-    void loadCalendarStatus();
-  }, [headers]);
+  );
+
+  const requests = dashboardData?.requests ?? [];
+  const appointments = dashboardData?.appointments ?? [];
+  const connections = dashboardData?.connections ?? [];
 
   const todaysAppointments = useMemo(() => {
     const now = new Date();
-    return appointments.filter((appointment) => {
+    return appointments.filter((appointment: Appointment) => {
       if (appointment.status !== 'CONFIRMED') {
         return false;
       }
@@ -84,9 +100,12 @@ export default function TherapistDashboard() {
   }, [appointments]);
 
   const activeConnections = useMemo(
-    () => connections.filter((connection) => connection.status === 'ACTIVE'),
+    () => connections.filter((connection: Connection) => connection.status === 'ACTIVE'),
     [connections]
   );
+
+  const calendarErrorMessage =
+    calendarError instanceof Error ? calendarError.message : calendarError ? String(calendarError) : null;
 
   return (
     <div className="space-y-6">
@@ -138,7 +157,7 @@ export default function TherapistDashboard() {
             <>
               <p className="mt-3 text-sm font-semibold text-slate-600">Not connected</p>
               <p className="text-xs text-slate-500">Connect Google Calendar to prevent double bookings.</p>
-              {calendarError ? <p className="text-[11px] text-rose-500">{calendarError}</p> : null}
+              {calendarErrorMessage ? <p className="text-[11px] text-rose-500">{calendarErrorMessage}</p> : null}
             </>
           )}
           <Link href="/therapist/profile" className="mt-4 inline-flex text-sm font-medium text-indigo-600">

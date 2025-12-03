@@ -75,6 +75,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
   const connectionsByTherapist = useMemo(() => {
     const map = new Map<string, Connection>();
     connections.forEach((connection) => {
@@ -294,6 +295,49 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
         delete copy[connectionId];
         return copy;
       });
+    }
+  };
+
+  const handleCancelAppointment = async (appointment: Appointment) => {
+    if (!headers['x-user-id']) {
+      return;
+    }
+    const reason =
+      typeof window !== 'undefined'
+        ? window.prompt('Please share why you need to cancel this appointment.')
+        : null;
+    if (reason === null) {
+      return;
+    }
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      if (typeof window !== 'undefined') {
+        window.alert('Cancellation requires a brief explanation.');
+      }
+      return;
+    }
+    setCancellingAppointmentId(appointment.id);
+    try {
+      const response = await fetch(`/api/appointments/${appointment.id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'CANCEL', reason: trimmedReason }),
+      });
+      if (!response.ok) {
+        throw new Error('cancel_failed');
+      }
+      const data = (await response.json()) as { appointment: Appointment };
+      setAppointments((prev) =>
+        prev.map((appt) => (appt.id === data.appointment.id ? data.appointment : appt))
+      );
+      setSelectedAppointment(data.appointment);
+    } catch (error) {
+      console.error('Failed to cancel appointment', error);
+      if (typeof window !== 'undefined') {
+        window.alert('Unable to cancel this appointment right now. Please try again.');
+      }
+    } finally {
+      setCancellingAppointmentId(null);
     }
   };
 
@@ -705,7 +749,15 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
               </div>
               <div>
                 <dt className="font-semibold text-slate-900">Status</dt>
-                <dd className={selectedAppointment.status === 'CONFIRMED' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>
+                <dd
+                  className={
+                    selectedAppointment.status === 'CONFIRMED'
+                      ? 'text-emerald-600 font-semibold'
+                      : selectedAppointment.status === 'PENDING'
+                        ? 'text-amber-600 font-semibold'
+                        : 'text-slate-700 font-semibold'
+                  }
+                >
                   {selectedAppointment.status === 'CONFIRMED'
                     ? 'Confirmed'
                     : selectedAppointment.status === 'PENDING'
@@ -729,13 +781,25 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                 </div>
               ) : null}
             </dl>
-            <button
-              type="button"
-              onClick={() => setSelectedAppointment(null)}
-              className="mt-6 w-full inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-            >
-              Close
-            </button>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              {selectedAppointment.status !== 'CANCELLED' ? (
+                <button
+                  type="button"
+                  onClick={() => handleCancelAppointment(selectedAppointment)}
+                  disabled={cancellingAppointmentId === selectedAppointment.id}
+                  className="inline-flex flex-1 items-center justify-center rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {cancellingAppointmentId === selectedAppointment.id ? 'Cancelling…' : 'Cancel appointment'}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setSelectedAppointment(null)}
+                className="inline-flex flex-1 items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
