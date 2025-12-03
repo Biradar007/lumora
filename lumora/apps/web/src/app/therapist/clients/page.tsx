@@ -51,6 +51,7 @@ export default function TherapistClientsPage() {
   const [journalExpanded, setJournalExpanded] = useState<Record<string, boolean>>({});
   const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
   const canFetch = Boolean(headers['x-user-id']);
 
   const {
@@ -259,6 +260,46 @@ export default function TherapistClientsPage() {
         delete copy[connectionId];
         return copy;
       });
+    }
+  };
+
+  const handleCancelAppointment = async (appointment: Appointment) => {
+    if (!headers['x-user-id']) {
+      return;
+    }
+    const reason =
+      typeof window !== 'undefined'
+        ? window.prompt('Please provide a brief explanation for cancelling this appointment.')
+        : null;
+    if (reason === null) {
+      return;
+    }
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      if (typeof window !== 'undefined') {
+        window.alert('Cancellation requires an explanation.');
+      }
+      return;
+    }
+    setCancellingAppointmentId(appointment.id);
+    try {
+      const response = await fetch(`/api/appointments/${appointment.id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'CANCEL', reason: trimmedReason }),
+      });
+      if (!response.ok) {
+        throw new Error('cancel_failed');
+      }
+      await mutateAppointments();
+      setSelectedAppointment(null);
+    } catch (error) {
+      console.error('Failed to cancel appointment', error);
+      if (typeof window !== 'undefined') {
+        window.alert('Unable to cancel this appointment right now. Please try again.');
+      }
+    } finally {
+      setCancellingAppointmentId(null);
     }
   };
 
@@ -676,6 +717,16 @@ export default function TherapistClientsPage() {
               ) : null}
             </dl>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              {selectedAppointment.status !== 'CANCELLED' ? (
+                <button
+                  type="button"
+                  onClick={() => handleCancelAppointment(selectedAppointment)}
+                  disabled={cancellingAppointmentId === selectedAppointment.id}
+                  className="inline-flex flex-1 items-center justify-center rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {cancellingAppointmentId === selectedAppointment.id ? 'Cancelling…' : 'Cancel appointment'}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setSelectedAppointment(null)}

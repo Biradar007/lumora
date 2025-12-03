@@ -130,7 +130,7 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
       }
       throw new Error(data.error ?? 'Failed to book appointment');
     }
-    setMessage('notify');
+    setMessage(user?.uid === connection.therapistId ? 'confirmed' : 'notify');
   };
 
   if (!user) {
@@ -231,7 +231,7 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
         ) : null}
         <h1 className="text-2xl font-semibold text-slate-900">Schedule a session</h1>
         <p className="text-sm text-slate-600">
-          Choose a time that works for you. We&apos;ll notify your therapist to confirm.
+          Choose a time that works for you. Therapists confirm immediately when they book a session for a client.
         </p>
       </header>
       {therapistProfile && therapistProfile.availability?.length > 0 && (
@@ -265,6 +265,15 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
           </span>
           <span>Appointment requested.</span>
         </div>
-      ) : null}    </div>
+      ) : message === 'confirmed' ? (
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <span className="relative flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-600" />
+          </span>
+          <span>Appointment confirmed.</span>
+        </div>
+      ) : null}
+    </div>
   );
 }
