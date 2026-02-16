@@ -318,7 +318,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   Reflect on your feelings with daily journaling prompts that help you process emotions and track growth.                </p>
               </div>
 
-               <div
+               {/* <div
                 className="group relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-sm border border-calm-200/60 p-8 shadow-sm transition-all hover:shadow-xl hover:scale-[1.02] hover:border-serene-400/30"
                 data-aos="fade-up"
                 data-aos-delay="160">
@@ -329,7 +329,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
                   Book appointments or reach out directly to licensed therapists from within the app.
                 </p>
-              </div>
+              </div> */}
             </div>
           </div>
         </section>
