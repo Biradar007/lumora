@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, Heart, BookOpen, BarChart3, AlertCircle, PenSquare, X } from 'lucide-react';
+import { MessageCircle, Heart, BarChart3, AlertCircle, PenSquare, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
 import type { ViewType } from './user/viewTypes';
@@ -20,7 +20,7 @@ const menuItems = [
     icon: MessageCircle,
     color: 'text-blue-600',
     preview: false,
-    requiresAuth: false,
+    requiresAuth: true,
   },
   {
     id: 'mood' as ViewType,
@@ -60,7 +60,7 @@ const menuItems = [
     icon: AlertCircle,
     color: 'text-red-600',
     preview: false,
-    requiresAuth: false,
+    requiresAuth: true,
   },
 ];
 

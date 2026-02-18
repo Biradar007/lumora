@@ -1,13 +1,12 @@
 'use client';
 
-import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User, X } from 'lucide-react';
+import { Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 import { useAuth } from '@/contexts/AuthContext';
-import { useApiHeaders } from '@/hooks/useApiHeaders';
 import {
   addMessage,
   createSession,
@@ -27,6 +26,41 @@ interface DisplayMessage {
   pending?: boolean;
 }
 
+interface ChatUsage {
+  plan: 'free' | 'pro';
+  messagesUsed: number;
+  messagesRemaining?: number;
+  periodEnd: string;
+  cooldownUntil?: string;
+  retryAfterSeconds?: number;
+}
+
+interface MeResponse {
+  user: {
+    plan: 'free' | 'pro';
+  };
+  usage: {
+    messagesUsed: number;
+    messagesRemaining?: number;
+    periodEnd: string;
+    cooldownUntil?: string;
+    retryAfterSeconds?: number;
+  };
+}
+
+interface AiChatSuccessResponse {
+  reply: string;
+  usage: ChatUsage;
+}
+
+interface AiChatErrorResponse {
+  code?: 'LIMIT_REACHED' | 'COOLDOWN';
+  retryAfterSeconds?: number;
+  usage?: Partial<ChatUsage>;
+}
+
+const FREE_MONTHLY_MESSAGE_LIMIT = 30;
+
 const welcomeMessage: DisplayMessage = {
   id: 'lumora-welcome',
   content:
@@ -35,7 +69,6 @@ const welcomeMessage: DisplayMessage = {
   timestamp: new Date(),
 };
 
-let guestMessageCache: DisplayMessage[] | null = null;
 const typingDotDelays = [0, 0.18, 0.36];
 const MOBILE_CONVERSATIONS_EVENT = 'lumora:toggle-mobile-conversations';
 
@@ -58,10 +91,30 @@ function mapRecordToDisplay(messages: MessageRecord[]): DisplayMessage[] {
   }));
 }
 
+function normalizeUsage(usage: ChatUsage): ChatUsage {
+  if (usage.plan === 'free' && usage.messagesRemaining === undefined) {
+    return {
+      ...usage,
+      messagesRemaining: Math.max(0, FREE_MONTHLY_MESSAGE_LIMIT - usage.messagesUsed),
+    };
+  }
+  return usage;
+}
+
+function parseRetryAfterSeconds(usage: ChatUsage): number {
+  if (typeof usage.retryAfterSeconds === 'number' && usage.retryAfterSeconds > 0) {
+    return Math.ceil(usage.retryAfterSeconds);
+  }
+  if (!usage.cooldownUntil) {
+    return 0;
+  }
+  const diffMs = new Date(usage.cooldownUntil).getTime() - Date.now();
+  return diffMs > 0 ? Math.ceil(diffMs / 1000) : 0;
+}
+
 export function ChatInterface() {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
-  const apiHeaders = useApiHeaders();
 
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -74,74 +127,32 @@ export function ChatInterface() {
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [, setSessionTokens] = useState<Record<string, string>>({});
-  const sessionTokensRef = useRef<Record<string, string>>({});
-  const updateSessionTokens = useCallback(
-    (updater: (current: Record<string, string>) => Record<string, string>) => {
-      setSessionTokens((prev) => {
-        const next = updater(prev);
-        sessionTokensRef.current = next;
-        return next;
-      });
-    },
-    []
-  );
+  const [chatError, setChatError] = useState<string | null>(null);
 
-  const [guestMessages, setGuestMessages] = useState<DisplayMessage[]>(() => {
-    if (guestMessageCache && guestMessageCache.length) {
-      return guestMessageCache;
-    }
-    guestMessageCache = [welcomeMessage];
-    return guestMessageCache;
-  });
+  const [usage, setUsage] = useState<ChatUsage | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [limitReached, setLimitReached] = useState(false);
+
   const [mobileSessionsOpen, setMobileSessionsOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const ensureSessionToken = useCallback(
-    async (sessionId: string | null): Promise<string | null> => {
-      if (!uid || !sessionId) {
-        return null;
-      }
-
-      const existing = sessionTokensRef.current[sessionId];
-      if (existing) {
-        return existing;
-      }
-
-      try {
-        const response = await fetch('/api/chat/token', {
-          method: 'POST',
-          headers: apiHeaders,
-          body: JSON.stringify({ sessionId }),
-        });
-
-        if (!response.ok) {
-          if (response.status === 401 || response.status === 403) {
-            console.warn('Session token request unauthorized. Skipping token refresh.');
-            return null;
-          }
-          const detail = await response.text().catch(() => 'token_request_failed');
-          throw new Error(detail || 'token_request_failed');
-        }
-
-        const data: { token: string } = await response.json();
-        updateSessionTokens((prev) => ({ ...prev, [sessionId]: data.token }));
-        return data.token;
-      } catch (error) {
-        console.error('Failed to ensure session token', error);
-        return null;
-      }
-    },
-    [apiHeaders, uid, updateSessionTokens]
-  );
+  const applyUsage = useCallback((nextUsage: ChatUsage) => {
+    const normalized = normalizeUsage(nextUsage);
+    setUsage(normalized);
+    setCooldownRemaining(parseRetryAfterSeconds(normalized));
+    if (normalized.plan === 'free') {
+      setLimitReached((normalized.messagesRemaining ?? 0) <= 0);
+    } else {
+      setLimitReached(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!uid) {
       setSessions([]);
       setActiveSessionId(null);
-      updateSessionTokens(() => ({}));
       return;
     }
 
@@ -162,16 +173,15 @@ export function ChatInterface() {
     return () => {
       unsubscribe();
       setSessions([]);
-      updateSessionTokens(() => ({}));
     };
-  }, [uid, sessionsLimit, updateSessionTokens]);
+  }, [uid, sessionsLimit]);
 
   useEffect(() => {
     if (!uid || !activeSessionId) {
       setMessages([]);
       return;
     }
-    void ensureSessionToken(activeSessionId);
+
     setMessagesLoading(true);
 
     const unsubscribe = subscribeMessages(
@@ -191,7 +201,71 @@ export function ChatInterface() {
       unsubscribe();
       setMessages([]);
     };
-  }, [uid, activeSessionId, messagesLimit, ensureSessionToken]);
+  }, [uid, activeSessionId, messagesLimit]);
+
+  useEffect(() => {
+    if (!user) {
+      setUsage(null);
+      setCooldownRemaining(0);
+      setLimitReached(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadUsage = async () => {
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch('/api/me', {
+          method: 'GET',
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as MeResponse;
+        if (cancelled) {
+          return;
+        }
+
+        applyUsage({
+          plan: payload.user.plan,
+          messagesUsed: payload.usage.messagesUsed,
+          messagesRemaining: payload.usage.messagesRemaining,
+          periodEnd: payload.usage.periodEnd,
+          cooldownUntil: payload.usage.cooldownUntil,
+          retryAfterSeconds: payload.usage.retryAfterSeconds,
+        });
+      } catch (error) {
+        console.error('Failed to load chat usage', error);
+      }
+    };
+
+    void loadUsage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyUsage, user]);
+
+  const cooldownActive = cooldownRemaining > 0;
+
+  useEffect(() => {
+    if (!cooldownActive) {
+      return;
+    }
+    const interval = window.setInterval(() => {
+      setCooldownRemaining((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [cooldownActive]);
 
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -207,23 +281,7 @@ export function ChatInterface() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, guestMessages, isTyping]);
-
-  useEffect(() => {
-    if (uid) {
-      guestMessageCache = [welcomeMessage];
-      return;
-    }
-
-    setGuestMessages((prev) => {
-      if (prev.length) {
-        return prev;
-      }
-      const initial = guestMessageCache && guestMessageCache.length ? guestMessageCache : [welcomeMessage];
-      guestMessageCache = initial;
-      return initial;
-    });
-  }, [uid]);
+  }, [messages, isTyping]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -238,15 +296,9 @@ export function ChatInterface() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!uid) {
-      guestMessageCache = guestMessages;
-    }
-  }, [guestMessages, uid]);
-
   const displayMessages: DisplayMessage[] = useMemo(() => {
     if (!uid || !activeSessionId) {
-      return guestMessages;
+      return [welcomeMessage];
     }
     const mapped = mapRecordToDisplay(messages);
     const hasWelcome = mapped.some((message) => message.id === welcomeMessage.id);
@@ -254,10 +306,37 @@ export function ChatInterface() {
       return mapped;
     }
     return [welcomeMessage, ...mapped];
-  }, [uid, activeSessionId, messages, guestMessages]);
+  }, [uid, activeSessionId, messages]);
 
   const lastDisplayedMessage = displayMessages.length ? displayMessages[displayMessages.length - 1] : null;
   const showTypingIndicator = isTyping && lastDisplayedMessage?.sender === 'user';
+
+  const usageSummary = useMemo(() => {
+    if (!usage) {
+      return null;
+    }
+    if (usage.plan === 'pro') {
+      return 'Pro: unlimited';
+    }
+    return `Remaining messages this month: ${usage.messagesRemaining ?? 0}`;
+  }, [usage]);
+
+  const periodResetLabel = useMemo(() => {
+    if (!usage?.periodEnd) {
+      return null;
+    }
+    const date = new Date(usage.periodEnd);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }, [usage?.periodEnd]);
+
+  const sendDisabled = !inputValue.trim() || isTyping || cooldownActive || limitReached;
 
   const handleCreateSession = async () => {
     if (!uid) {
@@ -268,7 +347,6 @@ export function ChatInterface() {
       setActiveSessionId(sessionId);
       setMessagesLimit(50);
       setMessages([]);
-      await ensureSessionToken(sessionId);
     } catch (error) {
       console.error('Failed to create session', error);
     }
@@ -294,14 +372,6 @@ export function ChatInterface() {
     if (!confirmed) return;
     try {
       await deleteSession(uid, session.id);
-      updateSessionTokens((prev) => {
-        if (!prev[session.id]) {
-          return prev;
-        }
-        const next = { ...prev };
-        delete next[session.id];
-        return next;
-      });
       if (activeSessionId === session.id) {
         setActiveSessionId(null);
         setMessages([]);
@@ -313,66 +383,13 @@ export function ChatInterface() {
 
   const handleSendMessage = async () => {
     const trimmed = inputValue.trim();
-    if (!trimmed) return;
-
-    if (!uid) {
-      const userMessage: DisplayMessage = {
-        id: `guest-${Date.now()}`,
-        content: trimmed,
-        sender: 'user',
-        timestamp: new Date(),
-      };
-      const nextMessages = [...guestMessages, userMessage];
-      setGuestMessages(nextMessages);
-      setInputValue('');
-      setIsTyping(true);
-
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: apiHeaders,
-          body: JSON.stringify({
-            sessionId: 'guest',
-            messages: nextMessages.map((message) => ({
-              role: message.sender,
-              content: message.content,
-            })),
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('chat_request_failed');
-        }
-
-        const data: { reply?: string } = await response.json();
-        const reply = data.reply?.trim();
-
-        const assistantMessage: DisplayMessage = {
-          id: `guest-${Date.now() + 1}`,
-          content:
-            reply || 'Thank you for sharing. I am here to listen and support you.',
-          sender: 'assistant',
-          timestamp: new Date(),
-        };
-
-        setGuestMessages((prev) => [...prev, assistantMessage]);
-      } catch (error) {
-        console.error('Guest chat request failed', error);
-        const fallbackMessage: DisplayMessage = {
-          id: `guest-${Date.now() + 1}`,
-          content: 'I had trouble reaching our support service. Please try again in a moment.',
-          sender: 'assistant',
-          timestamp: new Date(),
-        };
-        setGuestMessages((prev) => [...prev, fallbackMessage]);
-      } finally {
-        setIsTyping(false);
-      }
+    if (!trimmed || !uid || !user || cooldownActive || limitReached) {
       return;
     }
 
     setInputValue('');
     setIsTyping(true);
+    setChatError(null);
 
     let sessionId = activeSessionId ?? null;
 
@@ -382,80 +399,81 @@ export function ChatInterface() {
         setActiveSessionId(sessionId);
         setMessages([]);
         setMessagesLimit(50);
-        await ensureSessionToken(sessionId);
       }
 
       if (!sessionId) {
         throw new Error('Unable to resolve session.');
       }
 
-      const token = await ensureSessionToken(sessionId);
-      if (!token) {
-        throw new Error('Unable to obtain secure session token.');
-      }
-
-      const currentSessionId = sessionId;
-
-      await addMessage(uid, sessionId, 'user', trimmed);
-
-      const response = await fetch('/api/chat', {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
-        headers: apiHeaders,
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          token,
+          threadId: sessionId,
           message: trimmed,
         }),
       });
 
-      let reply: string | undefined;
-      if (response.ok) {
-        const data: { reply?: string } = await response.json();
-        reply = data.reply?.trim();
-      } else {
-        if (response.status === 401 && currentSessionId) {
-          updateSessionTokens((prev) => {
-            if (!prev[currentSessionId]) {
-              return prev;
-            }
-            const next = { ...prev };
-            delete next[currentSessionId];
-            return next;
-          });
-
-          const refreshedToken = await ensureSessionToken(currentSessionId);
-          if (!refreshedToken) {
-            throw new Error('chat_request_failed');
-          }
-
-          const retryResponse = await fetch('/api/chat', {
-            method: 'POST',
-            headers: apiHeaders,
-            body: JSON.stringify({ token: refreshedToken, message: trimmed }),
-          });
-
-          if (!retryResponse.ok) {
-            throw new Error('chat_request_failed');
-          }
-
-          const retryData: { reply?: string } = await retryResponse.json();
-          reply = retryData.reply?.trim();
-        } else {
-          throw new Error('chat_request_failed');
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => ({}))) as AiChatErrorResponse;
+        if (errorPayload.usage && typeof errorPayload.usage.messagesUsed === 'number' && typeof errorPayload.usage.periodEnd === 'string') {
+          applyUsage(
+            normalizeUsage({
+              plan: errorPayload.usage.plan === 'pro' ? 'pro' : usage?.plan ?? 'free',
+              messagesUsed: errorPayload.usage.messagesUsed,
+              messagesRemaining: errorPayload.usage.messagesRemaining,
+              periodEnd: errorPayload.usage.periodEnd,
+              cooldownUntil: errorPayload.usage.cooldownUntil,
+              retryAfterSeconds: errorPayload.usage.retryAfterSeconds ?? errorPayload.retryAfterSeconds,
+            })
+          );
+        } else if (response.status === 429 && typeof errorPayload.retryAfterSeconds === 'number') {
+          setCooldownRemaining(Math.max(0, Math.ceil(errorPayload.retryAfterSeconds)));
         }
+
+        if (response.status === 402 || errorPayload.code === 'LIMIT_REACHED') {
+          setLimitReached(true);
+          setChatError("You've used 30 messages this month. Upgrade to continue.");
+          return;
+        }
+
+        if (response.status === 429 || errorPayload.code === 'COOLDOWN') {
+          const retryAfter =
+            errorPayload.retryAfterSeconds ??
+            (errorPayload.usage && typeof errorPayload.usage.retryAfterSeconds === 'number'
+              ? errorPayload.usage.retryAfterSeconds
+              : cooldownRemaining);
+          setChatError(`Cooldown active. Try again in ${Math.max(1, Math.ceil(retryAfter || 1))}s.`);
+          return;
+        }
+
+        if (response.status === 401) {
+          setChatError('Your session expired. Please sign in again.');
+          return;
+        }
+
+        throw new Error('chat_request_failed');
       }
 
+      const data = (await response.json()) as AiChatSuccessResponse;
+      if (data.usage) {
+        applyUsage(data.usage);
+      }
+
+      await addMessage(uid, sessionId, 'user', trimmed);
       await addMessage(
         uid,
         sessionId,
         'assistant',
-        reply || 'Thank you for sharing. I am here to listen and support you.'
+        data.reply?.trim() || 'Thank you for sharing. I am here to listen and support you.'
       );
     } catch (error) {
       console.error('Failed to send message', error);
-      const fallback = 'I had trouble reaching our support service. Please try again in a moment.';
-      if (uid && sessionId) {
-        await addMessage(uid, sessionId, 'assistant', fallback);
-      }
+      setChatError('I had trouble reaching our support service. Please try again in a moment.');
     } finally {
       setIsTyping(false);
     }
@@ -512,9 +530,7 @@ export function ChatInterface() {
             <span className="mt-2">Loading conversations…</span>
           </div>
         ) : sessions.length === 0 ? (
-          <div className="p-4 text-sm text-gray-500">
-            {uid ? 'No conversations yet. Start one to see it here.' : 'Create an account to save your conversations.'}
-          </div>
+          <div className="p-4 text-sm text-gray-500">No conversations yet. Start one to see it here.</div>
         ) : (
           <ul className="divide-y divide-gray-100">
             {sessions.map((session) => {
@@ -540,12 +556,8 @@ export function ChatInterface() {
                     }`}
                   >
                     <div className="flex flex-col">
-                      <span className="font-semibold">
-                        {session.title ?? 'New conversation'}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        Updated {formatTimestamp(session.updatedAt)}
-                      </span>
+                      <span className="font-semibold">{session.title ?? 'New conversation'}</span>
+                      <span className="text-xs text-gray-400">Updated {formatTimestamp(session.updatedAt)}</span>
                     </div>
                     <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:hover:opacity-100 lg:group-hover:opacity-100">
                       <button
@@ -606,13 +618,22 @@ export function ChatInterface() {
             <div className="space-y-1">
               <h3 className="font-semibold text-gray-800">Chat</h3>
               <p className="text-sm text-green-600">Online • Always here for you</p>
-              {!uid ? (
-                <p className="text-xs text-slate-400">
-                  Sign in to keep your conversations safe and revisit them anytime.
-                </p>
+              {usageSummary ? <p className="text-xs text-slate-500">{usageSummary}</p> : null}
+              {usage?.plan === 'free' && periodResetLabel ? (
+                <p className="text-xs text-slate-500">Resets on: {periodResetLabel}</p>
               ) : null}
+              {cooldownActive ? <p className="text-xs font-medium text-amber-600">Cooldown: {cooldownRemaining}s</p> : null}
             </div>
           </header>
+
+          {limitReached ? (
+            <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p className="font-medium">You&apos;ve used 30 messages this month.</p>
+              <Link href="/pricing" className="mt-1 inline-flex text-sm font-semibold text-amber-800 underline">
+                Upgrade to Pro
+              </Link>
+            </div>
+          ) : null}
 
           <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white/40 via-indigo-50/40 to-indigo-100/40 px-6 py-8">
             {messagesLoading && uid ? (
@@ -627,7 +648,6 @@ export function ChatInterface() {
                   const bubbleClasses = isAssistant
                     ? 'bg-white/90 text-slate-700 border border-white/80 shadow-[0_30px_60px_-30px_rgba(79,70,229,0.35)]'
                     : 'bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 text-white shadow-[0_35px_65px_-30px_rgba(37,99,235,0.65)]';
-                  const metaClasses = isAssistant ? 'text-slate-400' : 'text-indigo-100/90';
 
                   return (
                     <div key={message.id} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
@@ -660,7 +680,6 @@ export function ChatInterface() {
                             ) : null}
                           </div>
                         </div>
-                        
                       </div>
                     </div>
                   );
@@ -697,27 +716,27 @@ export function ChatInterface() {
                 onChange={(event) => setInputValue(event.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder={
-                  uid ? 'How are you feeling today?' : "Share how you're feeling - no account needed."
+                  limitReached ? 'Monthly limit reached. Upgrade to continue.' : 'How are you feeling today?'
                 }
                 className="w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-1.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none sm:text-base"
                 rows={1}
+                disabled={limitReached || cooldownActive}
               />
               <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-slate-100/60 pt-2 sm:justify-between">
-                <p className="text-xs text-slate-400 flex-1">
-                  {uid
-                    ? 'Your conversation autosaves to your account.'
-                    : 'Guest chats are not stored. Sign in anytime to keep a history.'}
-                </p>
+                <p className="text-xs text-slate-400 flex-1">Your conversation autosaves to your account.</p>
                 <button
                   type="button"
                   onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || isTyping}
+                  disabled={sendDisabled}
                   className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-600 text-white shadow-[0_16px_32px_-24px_rgba(37,99,235,0.7)] transition hover:from-indigo-600 hover:via-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:px-5 sm:py-2 sm:text-sm sm:font-semibold"
                 >
                   <Send className="h-4 w-4" />
-                  <span className="hidden sm:inline">{isTyping ? 'Sending...' : 'Send'}</span>
+                  <span className="hidden sm:inline">
+                    {isTyping ? 'Sending...' : cooldownActive ? `Wait ${cooldownRemaining}s` : limitReached ? 'Limit reached' : 'Send'}
+                  </span>
                 </button>
               </div>
+              {chatError ? <p className="mt-2 text-xs text-rose-600">{chatError}</p> : null}
             </div>
           </div>
         </section>

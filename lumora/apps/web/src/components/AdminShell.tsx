@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Menu } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminSidebar } from './AdminSidebar';
 
@@ -31,6 +31,7 @@ export function useAdminSection(): AdminSectionContextValue {
 export function AdminShell({ children }: AdminShellProps) {
   const { profile, loading, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [signingOut, setSigningOut] = useState(false);
   const [activeSection, setActiveSectionState] = useState<AdminSection>(() => {
@@ -43,14 +44,18 @@ export function AdminShell({ children }: AdminShellProps) {
     if (loading) {
       return;
     }
-    if (profile?.role !== 'admin') {
-      if (profile?.role === 'therapist') {
+    if (!profile) {
+      router.replace(`/login?next=${encodeURIComponent(pathname || '/admin')}`);
+      return;
+    }
+    if (profile.role !== 'admin') {
+      if (profile.role === 'therapist') {
         router.replace('/therapist/dashboard');
       } else {
-        router.replace('/home');
+        router.replace('/user/chat');
       }
     }
-  }, [loading, profile?.role, router]);
+  }, [loading, pathname, profile, router]);
 
   const adminName = useMemo(
     () => profile?.displayName ?? profile?.name ?? profile?.email ?? 'Admin workspace',

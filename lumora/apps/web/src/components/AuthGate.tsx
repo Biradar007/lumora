@@ -1,48 +1,36 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthForm } from '@/components/AuthForm';
 import { AuthUIProvider } from '@/contexts/AuthUIContext';
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { user, loading, guestMode, enableGuestMode, profileCompletionPending } = useAuth();
-  const [promptVisible, setPromptVisible] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState(true);
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const nextPath = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
+
+  const loginPath = useMemo(() => `/login?next=${encodeURIComponent(nextPath)}`, [nextPath]);
 
   useEffect(() => {
     if (loading) {
       return;
     }
 
-    if (profileCompletionPending) {
-      setPromptVisible(true);
-      setShowLoginForm(true);
-      return;
+    if (!user) {
+      router.replace(loginPath);
     }
-
-    if (user) {
-      setPromptVisible(false);
-      setShowLoginForm(false);
-      return;
-    }
-
-    if (!guestMode && !promptVisible) {
-      setPromptVisible(true);
-      setShowLoginForm(true);
-    }
-  }, [guestMode, loading, profileCompletionPending, promptVisible, user]);
-
-  const handleContinueAsGuest = useCallback(() => {
-    enableGuestMode();
-    setPromptVisible(false);
-    setShowLoginForm(false);
-  }, [enableGuestMode]);
+  }, [loading, loginPath, router, user]);
 
   const requestLogin = useCallback(() => {
-    setPromptVisible(true);
-    setShowLoginForm(true);
-  }, []);
+    router.replace(loginPath);
+  }, [loginPath, router]);
 
   const providerValue = useMemo(
     () => ({
@@ -51,19 +39,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
     [requestLogin]
   );
 
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
+        Checking your session...
+      </div>
+    );
+  }
+
   return (
     <AuthUIProvider value={providerValue}>
-      <div className="relative min-h-screen">
-        {children}
-
-        {promptVisible && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 px-4 py-8 backdrop-blur-sm">
-            <div className="rounded-2xl bg-white shadow-2xl border border-indigo-100">
-              {showLoginForm ? <AuthForm onContinueAsGuest={handleContinueAsGuest} /> : null}
-            </div>
-          </div>
-        )}
-      </div>
+      <div className="relative min-h-screen">{children}</div>
     </AuthUIProvider>
   );
 }

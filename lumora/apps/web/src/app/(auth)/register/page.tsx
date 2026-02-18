@@ -23,7 +23,7 @@ export default function RegisterPage() {
             <AuthForm initialMode="register" />
             <p className="mt-6 text-center text-sm text-slate-500">
               Already have an account?{' '}
-              <Link href="/" className="font-semibold text-indigo-600">
+              <Link href="/login" className="font-semibold text-indigo-600">
                 Log in instead
               </Link>
             </p>

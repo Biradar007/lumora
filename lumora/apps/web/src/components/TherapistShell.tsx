@@ -29,17 +29,17 @@ export function TherapistShell({ children }: TherapistShellProps) {
       return;
     }
     if (!user) {
-      router.replace('/');
+      router.replace(`/login?next=${encodeURIComponent(pathname || '/therapist/dashboard')}`);
       return;
     }
     if (userProfile?.role !== 'therapist') {
       if (userProfile?.role === 'admin') {
         router.replace('/admin');
       } else {
-        router.replace('/home');
+        router.replace('/user/chat');
       }
     }
-  }, [loading, router, user, userProfile?.role]);
+  }, [loading, pathname, router, user, userProfile?.role]);
 
   const therapistName = useMemo(
     () =>

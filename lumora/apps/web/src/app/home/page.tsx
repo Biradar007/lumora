@@ -1,7 +1,5 @@
-'use client';
-
-import AppShell from '@/AppShell';
+import { redirect } from 'next/navigation';
 
 export default function HomePage() {
-  return <AppShell />;
+  redirect('/');
 }

@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import type { Role } from '@/types/domain';
+import { getServerAuth } from '@/lib/firestoreServer';
 
 export interface RequestAuth {
   userId: string;
   role: Role;
   tenantId?: string;
+}
+
+export interface FirebaseRequestAuth {
+  userId: string;
+  token: string;
+  decodedToken: DecodedIdToken;
 }
 
 export class UnauthorizedError extends Error {
@@ -40,6 +48,29 @@ export function requireAuth(request: Request, options?: { roles?: Role[] }): Req
   }
 
   return { userId, role, tenantId };
+}
+
+function resolveBearerToken(request: Request): string {
+  const authHeader = request.headers.get('authorization') ?? '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match || !match[1]?.trim()) {
+    throw new UnauthorizedError('Authentication required');
+  }
+  return match[1].trim();
+}
+
+export async function requireFirebaseAuth(request: Request): Promise<FirebaseRequestAuth> {
+  const token = resolveBearerToken(request);
+  try {
+    const decodedToken = await getServerAuth().verifyIdToken(token, true);
+    return {
+      userId: decodedToken.uid,
+      token,
+      decodedToken,
+    };
+  } catch {
+    throw new UnauthorizedError('Authentication required');
+  }
 }
 
 export function jsonError(error: unknown, fallbackStatus = 500) {

@@ -1,7 +1,7 @@
 "use client"
 
 import { type FormEvent, useCallback, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { doc, getDoc, getFirestore } from "firebase/firestore"
 import { FirebaseError } from "firebase/app"
 import { Loader2, MailCheck } from "lucide-react"
@@ -49,6 +49,16 @@ function resolveRole(value: unknown): Role {
   return "user"
 }
 
+function resolveNextPath(value: string | null): string | null {
+  if (!value) {
+    return null
+  }
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return null
+  }
+  return value
+}
+
 async function fetchUserRole(uid: string): Promise<Role> {
   const db = getFirestore(getFirebaseApp())
   const snap = await getDoc(doc(db, "users", uid))
@@ -70,6 +80,7 @@ interface AuthFormProps {
 export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormProps) {
   const { refreshProfile, logout } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [mode, setMode] = useState<Mode>(initialMode)
   const [loading, setLoading] = useState(false)
@@ -104,8 +115,14 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
     gender: genderOptions[0]?.value,
   })
 
+  const nextPath = useMemo(() => resolveNextPath(searchParams.get("next")), [searchParams])
+
   const navigateByRole = useCallback(
     (role: Role) => {
+      if (nextPath) {
+        router.push(nextPath)
+        return
+      }
       if (role === "admin") {
         router.push("/admin")
         return
@@ -116,7 +133,7 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
       }
       router.push("/user/chat")
     },
-    [router],
+    [nextPath, router],
   )
   
   const resetMessages = useCallback(() => {
