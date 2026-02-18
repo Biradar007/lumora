@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import Image from "next/image"
 
 declare global {
   interface Window {
@@ -330,6 +329,54 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   Book appointments or reach out directly to licensed therapists from within the app.
                 </p>
               </div> */}
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="relative z-10 bg-transparent py-12">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="mx-auto max-w-3xl text-center mb-10" data-aos="fade-up">
+              <h2 className="text-3xl font-bold text-foreground md:text-4xl text-balance">Pricing</h2>
+              <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+                Start free. Upgrade when you need unlimited AI chat.
+              </p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div
+                className="rounded-3xl border border-calm-200/70 bg-white/80 p-8 shadow-sm"
+                data-aos="fade-up"
+                data-aos-delay="40"
+              >
+                <p className="text-sm font-semibold uppercase tracking-wide text-slate-600">Free</p>
+                <p className="mt-3 text-3xl font-bold text-foreground">$0</p>
+                <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                  <li>30 AI messages per calendar month</li>
+                  <li>Cooldown after daily usage thresholds</li>
+                  <li>Mood tracking, journal, and dashboard</li>
+                </ul>
+              </div>
+
+              <div
+                className="rounded-3xl border border-serene-300/70 bg-gradient-to-br from-serene-50 to-white p-8 shadow-sm"
+                data-aos="fade-up"
+                data-aos-delay="100"
+              >
+                <p className="text-sm font-semibold uppercase tracking-wide text-serene-700">Pro</p>
+                <p className="mt-3 text-3xl font-bold text-foreground">Unlimited</p>
+                <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                  <li>Unlimited AI chat messages</li>
+                  <li>No cooldown restrictions</li>
+                  <li>Priority feature rollouts</li>
+                </ul>
+                <button
+                  type="button"
+                  onClick={onEnterApp}
+                  className="mt-7 rounded-full bg-gradient-to-r from-serene-400 to-accent px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.01]"
+                >
+                  Get Started
+                </button>
+              </div>
             </div>
           </div>
         </section>

@@ -190,7 +190,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             code: 'LIMIT_REACHED',
-            upgradePath: '/pricing',
+            upgradePath: '/#pricing',
             usage: usagePayload,
           },
           { status: 402 }
@@ -310,7 +310,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           code: 'LIMIT_REACHED',
-          upgradePath: '/pricing',
+          upgradePath: '/#pricing',
           usage: error.usage,
         },
         { status: 402 }

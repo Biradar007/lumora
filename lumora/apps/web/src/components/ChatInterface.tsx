@@ -629,7 +629,7 @@ export function ChatInterface() {
           {limitReached ? (
             <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <p className="font-medium">You&apos;ve used 30 messages this month.</p>
-              <Link href="/pricing" className="mt-1 inline-flex text-sm font-semibold text-amber-800 underline">
+              <Link href="/#pricing" className="mt-1 inline-flex text-sm font-semibold text-amber-800 underline">
                 Upgrade to Pro
               </Link>
             </div>
