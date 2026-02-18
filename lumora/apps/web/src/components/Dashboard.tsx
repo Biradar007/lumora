@@ -5,6 +5,7 @@ import { TrendingUp, Calendar, Award, BarChart3, Heart, BookOpen, MessageCircle,
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { useAuth } from '@/contexts/AuthContext';
 import { listSessions, type SessionRecord } from '@/lib/chatStore';
+import { InsightReports } from '@/components/InsightReports';
 import type { MoodEntry, JournalEntry } from '@/types/domain';
 
 const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Excellent'];
@@ -291,6 +292,8 @@ export function Dashboard() {
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
       </div>
+
+      <InsightReports mode="dashboard" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-2">

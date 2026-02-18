@@ -367,7 +367,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
                   <li>Unlimited AI chat messages</li>
                   <li>No cooldown restrictions</li>
-                  <li>Priority feature rollouts</li>
+                  <li>Weekly AI Reports</li>
                 </ul>
                 <button
                   type="button"

@@ -18,6 +18,7 @@ export function Header({ onMenuClick, currentView, showDirectoryShortcut = true 
     mood: { title: 'Mood tracker', subtitle: 'Daily check-ins and trends.' },
     journal: { title: 'Journal', subtitle: 'Reflect and capture what matters.' },
     dashboard: { title: 'Dashboard', subtitle: 'Your wellbeing at a glance.' },
+    reports: { title: 'Reports', subtitle: 'Automatically generated mental health insights.' },
     crisis: { title: 'Crisis support', subtitle: 'Immediate help and safety tools.' },
   };
 

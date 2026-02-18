@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, Heart, BarChart3, AlertCircle, PenSquare, X } from 'lucide-react';
+import { MessageCircle, Heart, BarChart3, AlertCircle, PenSquare, FileText, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
 import type { ViewType } from './user/viewTypes';
@@ -51,6 +51,14 @@ const menuItems = [
     label: 'Dashboard',
     icon: BarChart3,
     color: 'text-purple-600',
+    preview: false,
+    requiresAuth: true,
+  },
+  {
+    id: 'reports' as ViewType,
+    label: 'Reports',
+    icon: FileText,
+    color: 'text-indigo-600',
     preview: false,
     requiresAuth: true,
   },
