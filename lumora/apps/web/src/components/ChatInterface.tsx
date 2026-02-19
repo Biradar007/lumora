@@ -1,12 +1,13 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, MessageSquare, PenLine, Plus, Send, Trash2, User, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 import { useAuth } from '@/contexts/AuthContext';
+import { createCheckoutSessionUrl, getBillingErrorMessage } from '@/lib/billingClient';
 import {
   addMessage,
   createSession,
@@ -114,6 +115,7 @@ function parseRetryAfterSeconds(usage: ChatUsage): number {
 
 export function ChatInterface() {
   const { user } = useAuth();
+  const router = useRouter();
   const uid = user?.uid ?? null;
 
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
@@ -132,6 +134,7 @@ export function ChatInterface() {
   const [usage, setUsage] = useState<ChatUsage | null>(null);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
 
   const [mobileSessionsOpen, setMobileSessionsOpen] = useState(false);
 
@@ -381,6 +384,32 @@ export function ChatInterface() {
     }
   };
 
+  const handleUpgradeToPro = useCallback(async () => {
+    if (upgradeLoading) {
+      return;
+    }
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent('/billing/upgrade')}`);
+      return;
+    }
+
+    setUpgradeLoading(true);
+    setChatError(null);
+    try {
+      const token = await user.getIdToken();
+      const checkoutUrl = await createCheckoutSessionUrl({
+        idToken: token,
+        returnPath: '/user/chat',
+      });
+      window.location.assign(checkoutUrl);
+    } catch (error) {
+      console.error('Failed to start checkout from chat', error);
+      const errorCode = error instanceof Error ? error.message : 'billing_session_failed';
+      setChatError(getBillingErrorMessage(errorCode));
+      setUpgradeLoading(false);
+    }
+  }, [router, upgradeLoading, user]);
+
   const handleSendMessage = async () => {
     const trimmed = inputValue.trim();
     if (!trimmed || !uid || !user || cooldownActive || limitReached) {
@@ -629,9 +658,14 @@ export function ChatInterface() {
           {limitReached ? (
             <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <p className="font-medium">You&apos;ve used 30 messages this month.</p>
-              <Link href="/#pricing" className="mt-1 inline-flex text-sm font-semibold text-amber-800 underline">
+              <button
+                type="button"
+                onClick={() => void handleUpgradeToPro()}
+                disabled={upgradeLoading}
+                className="mt-1 inline-flex text-sm font-semibold text-amber-800 underline disabled:cursor-not-allowed disabled:opacity-70"
+              >
                 Upgrade to Pro
-              </Link>
+              </button>
             </div>
           ) : null}
 

@@ -1,6 +1,9 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
+import { createCheckoutSessionUrl, getBillingErrorMessage } from "@/lib/billingClient"
 
 declare global {
   interface Window {
@@ -106,8 +109,38 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onEnterApp }: LandingPageProps) {
+  const { user } = useAuth()
+  const router = useRouter()
   const vantaContainerRef = useRef<HTMLDivElement | null>(null)
   const vantaInstanceRef = useRef<{ destroy?: () => void } | null>(null)
+  const [upgradeLoading, setUpgradeLoading] = useState(false)
+  const [upgradeError, setUpgradeError] = useState<string | null>(null)
+
+  const handleUpgradeToPro = useCallback(async () => {
+    if (upgradeLoading) {
+      return
+    }
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent("/billing/upgrade")}`)
+      return
+    }
+
+    setUpgradeLoading(true)
+    setUpgradeError(null)
+    try {
+      const token = await user.getIdToken()
+      const checkoutUrl = await createCheckoutSessionUrl({
+        idToken: token,
+        returnPath: "/#pricing",
+      })
+      window.location.assign(checkoutUrl)
+    } catch (error) {
+      console.error("Failed to start checkout from landing", error)
+      const errorCode = error instanceof Error ? error.message : "billing_session_failed"
+      setUpgradeError(getBillingErrorMessage(errorCode))
+      setUpgradeLoading(false)
+    }
+  }, [router, upgradeLoading, user])
 
   useEffect(() => {
     let isMounted = true
@@ -371,11 +404,13 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </ul>
                 <button
                   type="button"
-                  onClick={onEnterApp}
-                  className="mt-7 rounded-full bg-gradient-to-r from-serene-400 to-accent px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.01]"
+                  onClick={() => void handleUpgradeToPro()}
+                  disabled={upgradeLoading}
+                  className="mt-7 rounded-full bg-gradient-to-r from-serene-400 to-accent px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Get Started
+                  {upgradeLoading ? "Opening..." : "Upgrade to Pro"}
                 </button>
+                {upgradeError ? <p className="mt-3 text-sm text-rose-600">{upgradeError}</p> : null}
               </div>
             </div>
           </div>

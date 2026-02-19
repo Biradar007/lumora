@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Loader2, FileText, CalendarClock, TrendingUp } from 'lucide-react';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
+import { useAuth } from '@/contexts/AuthContext';
+import { createCheckoutSessionUrl, getBillingErrorMessage } from '@/lib/billingClient';
 
 type InsightPlan = 'free' | 'pro';
 
@@ -56,9 +59,39 @@ function formatCreatedAt(value: string): string {
 
 export function InsightReports({ mode }: InsightReportsProps) {
   const headers = useApiHeaders();
+  const { user } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
   const [data, setData] = useState<InsightReportsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  const handleUpgradeToPro = useCallback(async () => {
+    if (upgradeLoading) {
+      return;
+    }
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent('/billing/upgrade')}`);
+      return;
+    }
+
+    setUpgradeLoading(true);
+    setError(null);
+    try {
+      const token = await user.getIdToken();
+      const checkoutUrl = await createCheckoutSessionUrl({
+        idToken: token,
+        returnPath: pathname || '/user/reports',
+      });
+      window.location.assign(checkoutUrl);
+    } catch (checkoutError) {
+      console.error('Failed to start checkout from insights', checkoutError);
+      const errorCode = checkoutError instanceof Error ? checkoutError.message : 'billing_session_failed';
+      setError(getBillingErrorMessage(errorCode));
+      setUpgradeLoading(false);
+    }
+  }, [pathname, router, upgradeLoading, user]);
 
   useEffect(() => {
     if (!headers['x-user-id']) {
@@ -185,12 +218,14 @@ export function InsightReports({ mode }: InsightReportsProps) {
             View all reports
           </Link>
           {data.plan === 'free' ? (
-            <Link
-              href="/#pricing"
-              className="inline-flex items-center rounded-full border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50"
+            <button
+              type="button"
+              onClick={() => void handleUpgradeToPro()}
+              disabled={upgradeLoading}
+              className="inline-flex items-center rounded-full border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-70"
             >
               Upgrade to Pro
-            </Link>
+            </button>
           ) : null}
         </div>
       </div>
@@ -213,9 +248,14 @@ export function InsightReports({ mode }: InsightReportsProps) {
         {data.plan === 'free' ? (
           <p className="mt-3 text-sm text-indigo-700">
             {data.upgradeMessage}{' '}
-            <Link href="/#pricing" className="font-semibold underline">
+            <button
+              type="button"
+              onClick={() => void handleUpgradeToPro()}
+              disabled={upgradeLoading}
+              className="font-semibold underline disabled:cursor-not-allowed disabled:opacity-70"
+            >
               View plans
-            </Link>
+            </button>
           </p>
         ) : null}
         {data.insufficientDataMessage ? (
@@ -270,4 +310,3 @@ export function InsightReports({ mode }: InsightReportsProps) {
     </div>
   );
 }
-
