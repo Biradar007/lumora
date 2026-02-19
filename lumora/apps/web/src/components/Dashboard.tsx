@@ -293,7 +293,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <InsightReports mode="dashboard" />
+      {/* <InsightReports mode="dashboard" /> */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-2">

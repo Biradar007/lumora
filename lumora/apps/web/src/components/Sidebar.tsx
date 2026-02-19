@@ -54,14 +54,14 @@ const menuItems = [
     preview: false,
     requiresAuth: true,
   },
-  {
-    id: 'reports' as ViewType,
-    label: 'Reports',
-    icon: FileText,
-    color: 'text-indigo-600',
-    preview: false,
-    requiresAuth: true,
-  },
+  // {
+  //   id: 'reports' as ViewType,
+  //   label: 'Reports',
+  //   icon: FileText,
+  //   color: 'text-indigo-600',
+  //   preview: false,
+  //   requiresAuth: true,
+  // },
   {
     id: 'crisis' as ViewType,
     label: 'Crisis Support',

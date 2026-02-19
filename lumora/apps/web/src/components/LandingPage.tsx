@@ -400,7 +400,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   <li>Unlimited AI chat</li>
                   <li>No cooldown restrictions</li>
                   <li>Mood tracking, journal, and dashboard</li>
-                  <li>Weekly AI Reports</li>
+                  {/* <li>Weekly AI Reports</li> */}
                 </ul>
                 <button
                   type="button"
