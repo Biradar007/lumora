@@ -66,7 +66,6 @@ export interface VerifySignupCodeParams {
   code: string;
   password: string;
   name: string;
-  role?: 'user' | 'therapist';
   age?: number;
   gender?: string;
 }
@@ -83,7 +82,6 @@ export async function verifySignupCode(payload: VerifySignupCodeParams): Promise
     code: payload.code.trim(),
     password: payload.password,
     name: payload.name.trim(),
-    role: payload.role ?? 'user',
     age: typeof payload.age === 'number' ? payload.age : undefined,
     gender: payload.gender ?? undefined,
   };
@@ -169,7 +167,7 @@ export { getFirebaseAuth };
 
 export async function completeGoogleSignup(
   idToken: string,
-  payload: { role: 'user' | 'therapist'; age: number; gender: string }
+  payload: { age: number; gender: string }
 ): Promise<Role> {
   const data = await postJson<{
     profile: { role: string };

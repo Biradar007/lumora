@@ -335,70 +335,10 @@ async function handleCronGenerateInsights(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const now = new Date();
-  const weeklyPeriod = getWeeklyInsightPeriod(now);
-  const monthlyPeriod = getMonthlyInsightPeriod(now);
-  const db = getServerFirestore();
-  const url = new URL(request.url);
-  const cursor = url.searchParams.get('cursor');
-
-  let query = db.collection('users').orderBy(FieldPath.documentId()).limit(MAX_USERS_PER_RUN + 1);
-  if (cursor) {
-    query = query.startAfter(cursor);
-  }
-
-  const snapshot = await query.get();
-  const documents = snapshot.docs.slice(0, MAX_USERS_PER_RUN);
-  const hasMore = snapshot.docs.length > MAX_USERS_PER_RUN;
-  const nextCursor = hasMore && documents.length > 0 ? documents[documents.length - 1].id : null;
-
-  const results: UserProcessResult[] = [];
-
-  for (const docSnapshot of documents) {
-    const uid = docSnapshot.id;
-    const userData = (docSnapshot.data() ?? {}) as UserRecord;
-    try {
-      const result = await processUser({
-        db,
-        uid,
-        userData,
-        now,
-        weeklyPeriod,
-        monthlyPeriod,
-      });
-      results.push(result);
-    } catch (error) {
-      console.error('[cron/generate-insights] failed user', { uid, error });
-      results.push({
-        uid,
-        plan: resolvePlan(userData.plan),
-        status: 'failed',
-        reason: error instanceof Error ? error.message : 'unknown_error',
-      });
-    }
-  }
-
-  const summary = {
-    processed: results.length,
-    generated: results.filter((result) => result.status === 'generated').length,
-    skipped: results.filter((result) => result.status === 'skipped').length,
-    failed: results.filter((result) => result.status === 'failed').length,
-  };
-
   return NextResponse.json({
     ok: true,
-    now: now.toISOString(),
-    weeklyPeriod: {
-      start: weeklyPeriod.periodStart.toISOString(),
-      end: weeklyPeriod.periodEnd.toISOString(),
-    },
-    monthlyPeriod: {
-      start: monthlyPeriod.periodStart.toISOString(),
-      end: monthlyPeriod.periodEnd.toISOString(),
-    },
-    summary,
-    nextCursor,
-    results,
+    code: 'AUTO_GENERATION_DISABLED',
+    message: 'Automatic insight generation is disabled. Generate reports from the reports page.',
   });
 }
 

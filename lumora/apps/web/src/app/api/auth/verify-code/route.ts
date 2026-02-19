@@ -70,7 +70,6 @@ export async function POST(request: Request) {
       code?: string;
       password?: string;
       name?: string;
-      role?: string;
       age?: number | string;
       gender?: string;
     };
@@ -79,7 +78,7 @@ export async function POST(request: Request) {
     const codeRaw = body.code;
     const password = body.password;
     const name = body.name?.trim() ?? '';
-    const requestedRole = body.role === 'therapist' ? 'therapist' : 'user';
+    const requestedRole = 'user';
     const ageRaw = body.age;
     const genderRaw = body.gender;
 

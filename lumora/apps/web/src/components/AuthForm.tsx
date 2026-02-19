@@ -22,15 +22,6 @@ type Mode = "login" | "register"
 
 const MIN_PASSWORD_LENGTH = 8
 
-const roleOptions: Array<{ value: "user" | "therapist"; label: string; description: string }> = [
-  { value: "user", label: "User", description: "Track wellbeing, chat with Lumora, and access resources." },
-  {
-    value: "therapist",
-    label: "Therapist",
-    description: "Manage clients, appointments, and insights in the therapist workspace.",
-  },
-]
-
 const genderOptions = [
   { value: "female", label: "Female" },
   { value: "male", label: "Male" },
@@ -94,11 +85,9 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
   const [googleDetails, setGoogleDetails] = useState<{
     age: string
     gender: (typeof genderOptions)[number]["value"]
-    role: "user" | "therapist"
   }>({
     age: "",
     gender: genderOptions[0]?.value ?? "female",
-    role: "user",
   })
   const [googleDetailError, setGoogleDetailError] = useState<string | null>(null)
   const [googleDetailSubmitting, setGoogleDetailSubmitting] = useState(false)
@@ -109,7 +98,6 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
     name: "",
     email: "",
     password: "",
-    role: "user",
     code: "",
     age: undefined,
     gender: genderOptions[0]?.value,
@@ -153,7 +141,6 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
       name: "",
       email: "",
       password: "",
-      role: "user",
       code: "",
       age: undefined,
       gender: genderOptions[0]?.value,
@@ -213,7 +200,6 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
             genderOptions.find((option) => option.value === existingGender)?.value ??
             genderOptions[0]?.value ??
             "female",
-          role: existingRole === "therapist" ? "therapist" : "user",
         })
         setGoogleDetailError(null)
         setInfoMessage(null)
@@ -415,7 +401,6 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
         const role = await completeGoogleSignup(googleCompletion.idToken, {
           age: parsedAge,
           gender: googleDetails.gender,
-          role: googleDetails.role,
         })
         await refreshProfile()
         setGoogleCompletion(null)
@@ -431,7 +416,7 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
         setGoogleDetailSubmitting(false)
       }
     },
-    [googleCompletion, googleDetails.age, googleDetails.gender, googleDetails.role, navigateByRole, refreshProfile],
+    [googleCompletion, googleDetails.age, googleDetails.gender, navigateByRole, refreshProfile],
   )
 
   const handleCancelGoogleDetails = useCallback(async () => {
@@ -615,27 +600,6 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-indigo-900 mb-1">Role</label>
-              <div className="grid gap-2 grid-cols-2">
-                {roleOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setRegisterValues((prev) => ({ ...prev, role: option.value }))}
-                    className={`rounded-lg border px-2.5 py-2 text-left transition ${
-                      registerValues.role === option.value
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                        : "border-indigo-200 bg-white text-indigo-700 hover:border-indigo-300"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{option.label}</p>
-                    <p className="text-xs text-indigo-600/80 mt-0.5 leading-tight">{option.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-indigo-900">Verify your email</label>
               <div className="flex gap-2">
@@ -764,32 +728,6 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-indigo-900 mb-1">Role</label>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {roleOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() =>
-                        setGoogleDetails((prev) => ({
-                          ...prev,
-                          role: option.value,
-                        }))
-                      }
-                      className={`rounded-lg border px-3 py-2 text-left transition ${
-                        googleDetails.role === option.value
-                          ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                          : "border-indigo-200 bg-white text-indigo-700 hover:border-indigo-300"
-                      }`}
-                    >
-                      <p className="text-sm font-semibold">{option.label}</p>
-                      <p className="text-xs text-indigo-600/80 mt-1">{option.description}</p>
-                    </button>
-                  ))}
                 </div>
               </div>
 

@@ -384,8 +384,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <p className="text-sm font-semibold uppercase tracking-wide text-slate-600">Free</p>
                 <p className="mt-3 text-3xl font-bold text-foreground">$0</p>
                 <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-                  <li>30 AI messages per calendar month</li>
-                  <li>Cooldown after daily usage thresholds</li>
+                  <li>AI Chat</li>
                   <li>Mood tracking, journal, and dashboard</li>
                 </ul>
               </div>
@@ -398,8 +397,9 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <p className="text-sm font-semibold uppercase tracking-wide text-serene-700">Pro</p>
                 <p className="mt-3 text-3xl font-bold text-foreground">Unlimited</p>
                 <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-                  <li>Unlimited AI chat messages</li>
+                  <li>Unlimited AI chat</li>
                   <li>No cooldown restrictions</li>
+                  <li>Mood tracking, journal, and dashboard</li>
                   <li>Weekly AI Reports</li>
                 </ul>
                 <button

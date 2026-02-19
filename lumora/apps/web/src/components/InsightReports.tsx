@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createCheckoutSessionUrl, getBillingErrorMessage } from '@/lib/billingClient';
 
 type InsightPlan = 'free' | 'pro';
+type WeeklySlotStatus = 'past' | 'previous' | 'active' | 'future';
 
 interface InsightReportSummary {
   id: string;
@@ -26,19 +27,42 @@ interface InsightReportSummary {
   };
 }
 
+interface WeeklySlot {
+  weekStart: string;
+  weekEnd: string;
+  label: string;
+  status: WeeklySlotStatus;
+  canGenerate: boolean;
+  hasReport: boolean;
+  reportId: string | null;
+  journalDaysTracked: number;
+  moodDaysTracked: number;
+  insufficientData: boolean;
+  message: string | null;
+}
+
 interface InsightReportsResponse {
   plan: InsightPlan;
-  frequency: string;
   nextGeneration: string;
   upgradeMessage: string | null;
   insufficientDataMessage: string | null;
   latestReport: InsightReportSummary | null;
   history: InsightReportSummary[];
   reportList: InsightReportSummary[];
+  weeklyGeneration?: {
+    monthLabel: string;
+    weeks: WeeklySlot[];
+  };
 }
 
 interface InsightReportsProps {
   mode: 'dashboard' | 'full';
+}
+
+interface ReportMonthGroup {
+  key: string;
+  monthLabel: string;
+  reports: InsightReportSummary[];
 }
 
 function formatPeriodLabel(report: InsightReportSummary): string {
@@ -57,15 +81,83 @@ function formatCreatedAt(value: string): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function getWeekStatusLabel(status: WeeklySlotStatus): string {
+  switch (status) {
+    case 'previous':
+      return 'Previous week';
+    case 'active':
+      return 'Current week';
+    case 'future':
+      return 'Future week';
+    default:
+      return 'Past week';
+  }
+}
+
+function getGenerateButtonLabel(slot: WeeklySlot, generating: boolean): string {
+  if (generating) {
+    return 'Generating...';
+  }
+  if (slot.hasReport) {
+    return 'Generated';
+  }
+  if (slot.status === 'active') {
+    return 'Current week';
+  }
+  if (slot.status === 'future') {
+    return 'Future week';
+  }
+  if (slot.status === 'past') {
+    return 'Locked';
+  }
+  return 'Generate report';
+}
+
 export function InsightReports({ mode }: InsightReportsProps) {
   const headers = useApiHeaders();
   const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+
   const [data, setData] = useState<InsightReportsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [generatingWeekStart, setGeneratingWeekStart] = useState<string | null>(null);
+  const [generateNotice, setGenerateNotice] = useState<string | null>(null);
+
+  const loadReports = useCallback(async () => {
+    if (!headers['x-user-id']) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const includeMarkdown = mode === 'full' ? '1' : '0';
+      const limit = mode === 'full' ? '200' : '16';
+      const response = await fetch(`/api/insights/reports?includeMarkdown=${includeMarkdown}&limit=${limit}`, {
+        headers,
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        throw new Error('insights_fetch_failed');
+      }
+      const payload = (await response.json()) as InsightReportsResponse;
+      setData(payload);
+    } catch (fetchError) {
+      console.error('Failed to load insight reports', fetchError);
+      setError('We could not load your insight reports right now.');
+    } finally {
+      setLoading(false);
+    }
+  }, [headers, mode]);
+
+  useEffect(() => {
+    void loadReports();
+  }, [loadReports]);
 
   const handleUpgradeToPro = useCallback(async () => {
     if (upgradeLoading) {
@@ -93,62 +185,105 @@ export function InsightReports({ mode }: InsightReportsProps) {
     }
   }, [pathname, router, upgradeLoading, user]);
 
-  useEffect(() => {
-    if (!headers['x-user-id']) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const includeMarkdown = mode === 'full' ? '1' : '0';
-        const limit = mode === 'full' ? '36' : '16';
-        const response = await fetch(`/api/insights/reports?includeMarkdown=${includeMarkdown}&limit=${limit}`, {
-          headers,
-          cache: 'no-store',
-        });
-        if (!response.ok) {
-          throw new Error('insights_fetch_failed');
-        }
-        const payload = (await response.json()) as InsightReportsResponse;
-        if (!cancelled) {
-          setData(payload);
-        }
-      } catch (fetchError) {
-        console.error('Failed to load insight reports', fetchError);
-        if (!cancelled) {
-          setError('We could not load your insight reports right now.');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  const handleGenerateWeeklyReport = useCallback(
+    async (weekStart: string) => {
+      if (generatingWeekStart) {
+        return;
       }
-    };
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [headers, mode]);
+      setGeneratingWeekStart(weekStart);
+      setGenerateNotice(null);
+      setError(null);
+
+      try {
+        const response = await fetch('/api/insights/reports', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            periodStart: weekStart,
+          }),
+        });
+
+        const payload = (await response.json().catch(() => ({}))) as {
+          code?: string;
+          message?: string;
+        };
+
+        if (!response.ok) {
+          if (payload.code === 'INSUFFICIENT_DATA') {
+            setGenerateNotice(payload.message ?? 'Insufficient data. please journal and moodtrack regularly.');
+          } else if (payload.code === 'WEEK_LOCKED') {
+            setGenerateNotice('Only the previous completed week can be generated.');
+          } else {
+            setError(payload.message ?? 'Could not generate report right now.');
+          }
+          return;
+        }
+
+        if (payload.code === 'REPORT_EXISTS') {
+          setGenerateNotice('Report already exists for the previous week.');
+        } else {
+          setGenerateNotice('Report generated successfully.');
+        }
+
+        await loadReports();
+      } catch (generateError) {
+        console.error('Failed to generate report', generateError);
+        setError('Could not generate report right now.');
+      } finally {
+        setGeneratingWeekStart(null);
+      }
+    },
+    [generatingWeekStart, headers, loadReports]
+  );
 
   const historyList = useMemo(() => {
     if (!data) {
       return [];
     }
-    return mode === 'dashboard' ? data.history : data.reportList.slice(1);
+    return mode === 'dashboard' ? data.history.slice(0, 6) : data.reportList.slice(1);
+  }, [data, mode]);
+
+  const groupedReports = useMemo<ReportMonthGroup[]>(() => {
+    if (!data || mode !== 'full') {
+      return [];
+    }
+
+    const buckets = new Map<string, { monthLabel: string; monthStart: number; reports: InsightReportSummary[] }>();
+
+    for (const report of data.reportList) {
+      const start = new Date(report.periodStart);
+      if (Number.isNaN(start.getTime())) {
+        continue;
+      }
+      const key = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, '0')}`;
+      const monthStart = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1);
+      const monthLabel = start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      const existing = buckets.get(key) ?? {
+        monthLabel,
+        monthStart,
+        reports: [],
+      };
+      existing.reports.push(report);
+      buckets.set(key, existing);
+    }
+
+    return Array.from(buckets.entries())
+      .sort((a, b) => b[1].monthStart - a[1].monthStart)
+      .map(([key, value]) => ({
+        key,
+        monthLabel: value.monthLabel,
+        reports: value.reports.sort(
+          (a, b) => new Date(b.periodStart).getTime() - new Date(a.periodStart).getTime()
+        ),
+      }));
   }, [data, mode]);
 
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Loading insight reports…</span>
+        <span>Loading insight reports...</span>
       </div>
     );
   }
@@ -171,7 +306,6 @@ export function InsightReports({ mode }: InsightReportsProps) {
           <div className="space-y-1">
             <h3 className="text-lg font-semibold text-slate-900">Insights</h3>
             <p className="text-xs text-slate-500">{data.nextGeneration}</p>
-            <p className="text-xs font-medium text-slate-600">{data.frequency}</p>
           </div>
         </div>
 
@@ -217,16 +351,6 @@ export function InsightReports({ mode }: InsightReportsProps) {
           >
             View all reports
           </Link>
-          {data.plan === 'free' ? (
-            <button
-              type="button"
-              onClick={() => void handleUpgradeToPro()}
-              disabled={upgradeLoading}
-              className="inline-flex items-center rounded-full border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              Upgrade to Pro
-            </button>
-          ) : null}
         </div>
       </div>
     );
@@ -242,68 +366,114 @@ export function InsightReports({ mode }: InsightReportsProps) {
           <div className="space-y-1">
             <h2 className="text-xl font-semibold text-slate-900">Your Reports</h2>
             <p className="text-sm text-slate-600">{data.nextGeneration}</p>
-            <p className="text-sm font-medium text-slate-700">{data.frequency}</p>
           </div>
         </div>
-        {data.plan === 'free' ? (
-          <p className="mt-3 text-sm text-indigo-700">
-            {data.upgradeMessage}{' '}
-            <button
-              type="button"
-              onClick={() => void handleUpgradeToPro()}
-              disabled={upgradeLoading}
-              className="font-semibold underline disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              View plans
-            </button>
-          </p>
-        ) : null}
+
         {data.insufficientDataMessage ? (
           <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
             {data.insufficientDataMessage}
           </p>
         ) : null}
+
+        {generateNotice ? (
+          <p className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+            {generateNotice}
+          </p>
+        ) : null}
       </div>
 
-      {data.reportList.length === 0 ? (
+      {data.weeklyGeneration ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Weeks in {data.weeklyGeneration.monthLabel}</h3>
+            <p className="text-sm text-slate-600">
+              Generate report is enabled only for the previous completed week.
+            </p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {data.weeklyGeneration.weeks.map((slot) => {
+              const generating = generatingWeekStart === slot.weekStart;
+              const disabled = !slot.canGenerate || generating;
+
+              return (
+                <div key={slot.weekStart} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{slot.label}</p>
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                      {getWeekStatusLabel(slot.status)}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-600">
+                    Tracked days: Journal {slot.journalDaysTracked} • Mood {slot.moodDaysTracked}
+                  </p>
+
+                  {slot.insufficientData ? (
+                    <p className="text-xs text-amber-700">{slot.message}</p>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => void handleGenerateWeeklyReport(slot.weekStart)}
+                    className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {getGenerateButtonLabel(slot, generating)}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {groupedReports.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-sm text-slate-600">
-          No reports yet. Keep journaling and tracking mood to unlock deeper insights.
+          No reports yet. Generate the previous week report once enough data is available.
         </div>
       ) : (
-        <div className="grid gap-4">
-          {data.reportList.map((report, index) => (
-            <article key={report.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 capitalize">
-                    {report.periodType} report {index === 0 ? '• Latest' : ''}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {formatPeriodLabel(report)} · Generated {formatCreatedAt(report.createdAt)}
-                  </p>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-700">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  Growth {report.metrics.emotionalGrowthScore}/100
-                </div>
-              </div>
+        <div className="space-y-6">
+          {groupedReports.map((group) => (
+            <section key={group.key} className="space-y-3">
+              <h3 className="text-lg font-semibold text-slate-900">{group.monthLabel}</h3>
+              <div className="grid gap-4">
+                {group.reports.map((report, index) => (
+                  <article key={report.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 capitalize">
+                          {report.periodType} report {group.key === groupedReports[0]?.key && index === 0 ? '• Latest' : ''}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {formatPeriodLabel(report)} · Generated {formatCreatedAt(report.createdAt)}
+                        </p>
+                      </div>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-700">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        Growth {report.metrics.emotionalGrowthScore}/100
+                      </div>
+                    </div>
 
-              <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
-                <div className="rounded-lg bg-slate-50 px-3 py-2">
-                  Volatility: <span className="font-semibold">{report.metrics.emotionalVolatilityScore}/100</span>
-                </div>
-                <div className="rounded-lg bg-slate-50 px-3 py-2">
-                  Growth: <span className="font-semibold">{report.metrics.emotionalGrowthScore}/100</span>
-                </div>
-                <div className="rounded-lg bg-slate-50 px-3 py-2">
-                  Forecast confidence: <span className="font-semibold">{report.metrics.forecastConfidence}/100</span>
-                </div>
-              </div>
+                    <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                        Volatility: <span className="font-semibold">{report.metrics.emotionalVolatilityScore}/100</span>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                        Growth: <span className="font-semibold">{report.metrics.emotionalGrowthScore}/100</span>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                        Forecast confidence: <span className="font-semibold">{report.metrics.forecastConfidence}/100</span>
+                      </div>
+                    </div>
 
-              <p className="text-sm text-slate-700 whitespace-pre-line">
-                {report.markdown && report.markdown.trim().length > 0 ? report.markdown : report.markdownPreview}
-              </p>
-            </article>
+                    <p className="text-sm text-slate-700 whitespace-pre-line">
+                      {report.markdown && report.markdown.trim().length > 0 ? report.markdown : report.markdownPreview}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}

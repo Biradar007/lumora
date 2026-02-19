@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getServerAuth, getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer';
-import type { Role } from '@/types/domain';
 
 interface UpsertResponse {
   profile: {
@@ -17,7 +16,7 @@ interface UpsertResponse {
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
-    let payload: { role?: Role; age?: number; gender?: string } = {};
+    let payload: { age?: number; gender?: string } = {};
     if (rawBody) {
       try {
         payload = JSON.parse(rawBody) as typeof payload;
@@ -46,8 +45,6 @@ export async function POST(request: Request) {
     const displayName = decoded.name ?? null;
     const photoUrl = decoded.picture ?? null;
 
-    const requestedRole: Role =
-      payload.role === 'therapist' ? 'therapist' : payload.role === 'admin' ? 'admin' : 'user';
     const requestedAge =
       typeof payload.age === 'number' && Number.isFinite(payload.age) ? Math.round(payload.age) : undefined;
     const requestedGender =
@@ -97,7 +94,7 @@ export async function POST(request: Request) {
       return NextResponse.json(response);
     }
 
-    const role: Role = requestedRole;
+    const role = 'user';
     const profilePayload: Record<string, unknown> = {
       uid,
       id: uid,
