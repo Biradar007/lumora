@@ -167,12 +167,12 @@ export function buildUsageResponse(plan: UserPlan, usage: UsageState, now: Date)
   return response;
 }
 
-export function shouldApplyFreeCooldown(nextDailyCount: number): boolean {
-  if (nextDailyCount === FREE_DAILY_COOLDOWN_START) {
+export function shouldApplyFreeCooldown(nextMessageCount: number): boolean {
+  if (nextMessageCount === FREE_DAILY_COOLDOWN_START) {
     return true;
   }
-  if (nextDailyCount <= FREE_DAILY_COOLDOWN_START) {
+  if (nextMessageCount <= FREE_DAILY_COOLDOWN_START) {
     return false;
   }
-  return (nextDailyCount - FREE_DAILY_COOLDOWN_START) % FREE_DAILY_COOLDOWN_STEP === 0;
+  return (nextMessageCount - FREE_DAILY_COOLDOWN_START) % FREE_DAILY_COOLDOWN_STEP === 0;
 }

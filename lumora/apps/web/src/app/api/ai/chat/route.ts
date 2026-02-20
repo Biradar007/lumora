@@ -249,11 +249,12 @@ export async function POST(request: Request) {
           throw new CooldownError(buildUsageResponse(freshPlan, freshUsage, now));
         }
 
-        freshUsage.messagesUsed += 1;
+        const nextMessageCount = freshUsage.messagesUsed + 1;
+        freshUsage.messagesUsed = nextMessageCount;
         const nextDailyCount = (freshUsage.dailyCounts[todayKey] ?? 0) + 1;
         freshUsage.dailyCounts[todayKey] = nextDailyCount;
 
-        if (shouldApplyFreeCooldown(nextDailyCount)) {
+        if (nextMessageCount < FREE_MONTHLY_MESSAGE_LIMIT && shouldApplyFreeCooldown(nextMessageCount)) {
           freshUsage.cooldownUntil = new Date(now.getTime() + FREE_COOLDOWN_SECONDS * 1000);
         } else if (freshUsage.cooldownUntil && freshUsage.cooldownUntil.getTime() <= now.getTime()) {
           freshUsage.cooldownUntil = null;

@@ -434,6 +434,8 @@ export function ChatInterface() {
         throw new Error('Unable to resolve session.');
       }
 
+      await addMessage(uid, sessionId, 'user', trimmed);
+
       const token = await user.getIdToken();
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -493,7 +495,6 @@ export function ChatInterface() {
         applyUsage(data.usage);
       }
 
-      await addMessage(uid, sessionId, 'user', trimmed);
       await addMessage(
         uid,
         sessionId,
@@ -648,11 +649,21 @@ export function ChatInterface() {
               <h3 className="font-semibold text-gray-800">Chat</h3>
               <p className="text-sm text-green-600">Online • Always here for you</p>
               {usageSummary ? <p className="text-xs text-slate-500">{usageSummary}</p> : null}
-              {usage?.plan === 'free' && periodResetLabel ? (
+              {/* {usage?.plan === 'free' && periodResetLabel ? (
                 <p className="text-xs text-slate-500">Resets on: {periodResetLabel}</p>
-              ) : null}
-              {cooldownActive ? <p className="text-xs font-medium text-amber-600">Cooldown: {cooldownRemaining}s</p> : null}
+              ) : null} */}
+              {/* {cooldownActive ? <p className="text-xs font-medium text-amber-600">Cooldown: {cooldownRemaining}s</p> : null} */}
             </div>
+            {usage?.plan === 'free' ? (
+              <button
+                type="button"
+                onClick={() => void handleUpgradeToPro()}
+                disabled={upgradeLoading}
+                className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {upgradeLoading ? 'Redirecting…' : 'Upgrade to Pro'}
+              </button>
+            ) : null}
           </header>
 
           {limitReached ? (
