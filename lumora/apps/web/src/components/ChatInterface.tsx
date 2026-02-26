@@ -152,6 +152,42 @@ export function ChatInterface() {
     }
   }, []);
 
+  const refreshUsage = useCallback(async () => {
+    if (!user) {
+      setUsage(null);
+      setCooldownRemaining(0);
+      setLimitReached(false);
+      return;
+    }
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/me', {
+        method: 'GET',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = (await response.json()) as MeResponse;
+      applyUsage({
+        plan: payload.user.plan,
+        messagesUsed: payload.usage.messagesUsed,
+        messagesRemaining: payload.usage.messagesRemaining,
+        periodEnd: payload.usage.periodEnd,
+        cooldownUntil: payload.usage.cooldownUntil,
+        retryAfterSeconds: payload.usage.retryAfterSeconds,
+      });
+    } catch (error) {
+      console.error('Failed to load chat usage', error);
+    }
+  }, [applyUsage, user]);
+
   useEffect(() => {
     if (!uid) {
       setSessions([]);
@@ -207,56 +243,44 @@ export function ChatInterface() {
   }, [uid, activeSessionId, messagesLimit]);
 
   useEffect(() => {
-    if (!user) {
-      setUsage(null);
-      setCooldownRemaining(0);
-      setLimitReached(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadUsage = async () => {
-      try {
-        const token = await user.getIdToken();
-        const response = await fetch('/api/me', {
-          method: 'GET',
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-          cache: 'no-store',
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const payload = (await response.json()) as MeResponse;
-        if (cancelled) {
-          return;
-        }
-
-        applyUsage({
-          plan: payload.user.plan,
-          messagesUsed: payload.usage.messagesUsed,
-          messagesRemaining: payload.usage.messagesRemaining,
-          periodEnd: payload.usage.periodEnd,
-          cooldownUntil: payload.usage.cooldownUntil,
-          retryAfterSeconds: payload.usage.retryAfterSeconds,
-        });
-      } catch (error) {
-        console.error('Failed to load chat usage', error);
-      }
-    };
-
-    void loadUsage();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [applyUsage, user]);
+    void refreshUsage();
+  }, [refreshUsage]);
 
   const cooldownActive = cooldownRemaining > 0;
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const refreshOnActive = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+      void refreshUsage();
+    };
+
+    window.addEventListener('focus', refreshOnActive);
+    window.addEventListener('pageshow', refreshOnActive);
+    document.addEventListener('visibilitychange', refreshOnActive);
+
+    return () => {
+      window.removeEventListener('focus', refreshOnActive);
+      window.removeEventListener('pageshow', refreshOnActive);
+      document.removeEventListener('visibilitychange', refreshOnActive);
+    };
+  }, [refreshUsage, user]);
+
+  useEffect(() => {
+    if (!user || usage?.plan === 'pro') {
+      return;
+    }
+    const interval = window.setInterval(() => {
+      void refreshUsage();
+    }, 15000);
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [refreshUsage, usage?.plan, user]);
 
   useEffect(() => {
     if (!cooldownActive) {
@@ -655,28 +679,32 @@ export function ChatInterface() {
               {/* {cooldownActive ? <p className="text-xs font-medium text-amber-600">Cooldown: {cooldownRemaining}s</p> : null} */}
             </div>
             {usage?.plan === 'free' ? (
-              <button
-                type="button"
-                onClick={() => void handleUpgradeToPro()}
-                disabled={upgradeLoading}
-                className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {upgradeLoading ? 'Redirecting…' : 'Upgrade to Pro'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleUpgradeToPro()}
+                  disabled={upgradeLoading}
+                  className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {upgradeLoading ? 'Redirecting…' : 'Upgrade to Pro'}
+                </button>
+              </div>
             ) : null}
           </header>
 
           {limitReached ? (
             <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <p className="font-medium">You&apos;ve used 30 messages this month.</p>
-              <button
-                type="button"
-                onClick={() => void handleUpgradeToPro()}
-                disabled={upgradeLoading}
-                className="mt-1 inline-flex text-sm font-semibold text-amber-800 underline disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                Upgrade to Pro
-              </button>
+              <div className="mt-1 flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => void handleUpgradeToPro()}
+                  disabled={upgradeLoading}
+                  className="inline-flex text-sm font-semibold text-amber-800 underline disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  Upgrade to Pro
+                </button>
+              </div>
             </div>
           ) : null}
 

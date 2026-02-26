@@ -8,6 +8,7 @@ type StripeClient = {
   checkout: {
     sessions: {
       create: (params: Record<string, unknown>) => Promise<Record<string, unknown>>;
+      retrieve: (id: string, params?: Record<string, unknown>) => Promise<Record<string, unknown>>;
     };
   };
   billingPortal: {

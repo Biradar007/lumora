@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthGate } from '@/components/AuthGate';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,9 +16,23 @@ type MeResponse = {
 
 function BillingSuccessContent() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const sessionId = searchParams.get('session_id')?.trim() ?? '';
+  const nextPath = useMemo(() => {
+    const value = searchParams.get('next');
+    if (!value) {
+      return '/user/dashboard';
+    }
+    if (!value.startsWith('/') || value.startsWith('//')) {
+      return '/user/dashboard';
+    }
+    return value;
+  }, [searchParams]);
 
   const refreshStatus = useCallback(async () => {
     if (!user) {
@@ -28,6 +43,20 @@ function BillingSuccessContent() {
     setError(null);
     try {
       const token = await user.getIdToken();
+
+      if (sessionId) {
+        await fetch('/api/billing/confirm-session', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionId,
+          }),
+        });
+      }
+
       const response = await fetch('/api/me', {
         method: 'GET',
         headers: {
@@ -48,11 +77,35 @@ function BillingSuccessContent() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [sessionId, user]);
 
   useEffect(() => {
     void refreshStatus();
   }, [refreshStatus]);
+
+  useEffect(() => {
+    if (!user || plan === 'pro') {
+      return;
+    }
+    const interval = window.setInterval(() => {
+      void refreshStatus();
+    }, 4000);
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [plan, refreshStatus, user]);
+
+  useEffect(() => {
+    if (plan !== 'pro') {
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      router.replace(nextPath);
+    }, 700);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [nextPath, plan, router]);
 
   return (
     <div className="mx-auto w-full max-w-xl px-4 py-12 sm:px-6">
@@ -79,10 +132,10 @@ function BillingSuccessContent() {
             {loading ? 'Refreshing…' : 'Refresh status'}
           </button>
           <Link
-            href="/user/dashboard"
+            href={nextPath}
             className="inline-flex items-center rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Back to dashboard
+            Continue
           </Link>
         </div>
 
