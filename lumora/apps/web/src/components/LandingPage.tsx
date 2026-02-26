@@ -13,10 +13,6 @@ declare global {
     feather?: {
       replace: () => void
     }
-    THREE?: unknown
-    VANTA?: {
-      WAVES: (options: Record<string, unknown>) => { destroy?: () => void }
-    }
   }
 }
 
@@ -111,8 +107,7 @@ interface LandingPageProps {
 export function LandingPage({ onEnterApp }: LandingPageProps) {
   const { user } = useAuth()
   const router = useRouter()
-  const vantaContainerRef = useRef<HTMLDivElement | null>(null)
-  const vantaInstanceRef = useRef<{ destroy?: () => void } | null>(null)
+  const heroContainerRef = useRef<HTMLDivElement | null>(null)
   const [upgradeLoading, setUpgradeLoading] = useState(false)
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
 
@@ -144,7 +139,6 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
 
   useEffect(() => {
     let isMounted = true
-    const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
     let detachFormListener: (() => void) | undefined
 
     const initialise = async () => {
@@ -153,31 +147,11 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         await loadScript("https://unpkg.com/aos@2.3.1/dist/aos.js")
         await loadScript("https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js")
 
-        if (!prefersReduced && !window.THREE) {
-          await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js")
-        }
-
-        if (!prefersReduced) {
-          await loadScript("https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js")
-        }
-
         if (!isMounted) {
           return
         }
 
-        if (!prefersReduced && window.VANTA && window.THREE && vantaContainerRef.current && !vantaInstanceRef.current) {
-          vantaInstanceRef.current = window.VANTA.WAVES({
-            el: vantaContainerRef.current,
-            color: 0xb8a9f5, // Soft lavender (lighter, less saturated purple)
-            backgroundColor: 0xfdfbff, // Very light off-white with subtle warmth
-            waveHeight: 15, // Slightly taller waves for more fluid motion
-            shininess: 25, // Reduced shine for softer appearance
-            waveSpeed: 0.5, // Slightly faster for more noticeable movement
-            zoom: 0.9, // Slightly more zoomed for smoother waves
-          })
-        }
-
-        if (!prefersReduced && window.AOS) {
+        if (window.AOS) {
           window.AOS.init({ duration: 700, once: true })
         }
 
@@ -192,23 +166,111 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
 
     return () => {
       isMounted = false
+      detachFormListener?.()
+    }
+  }, [])
 
-      if (vantaInstanceRef.current) {
-        vantaInstanceRef.current.destroy?.()
-        vantaInstanceRef.current = null
+  useEffect(() => {
+    const container = heroContainerRef.current
+    if (!container) {
+      return
+    }
+
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches
+    if (coarsePointer) {
+      return
+    }
+
+    let rafId = 0
+    const restX = 0.14
+    const restY = 0.2
+    const restHue = 228
+    const restSat = 86
+    const restAlpha = 0.22
+    let targetX = restX
+    let targetY = restY
+    let smoothX = restX
+    let smoothY = restY
+    let targetHue = restHue
+    let smoothHue = restHue
+    let targetSat = restSat
+    let smoothSat = restSat
+    let targetAlpha = restAlpha
+    let smoothAlpha = restAlpha
+
+    const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
+    const getColorFromPosition = (x: number, y: number) => {
+      const dx = x - 0.5
+      const dy = y - 0.45
+      const angle = Math.atan2(dy, dx)
+      const hue = ((angle * 180) / Math.PI + 360) % 360
+      const distance = Math.min(1, Math.hypot(dx, dy) / 0.65)
+      const saturation = 74 + distance * 24
+      const alpha = 0.28 + distance * 0.18
+      return { hue, saturation, alpha }
+    }
+
+    const updateVars = () => {
+      container.style.setProperty("--mx", `${smoothX * 100}%`)
+      container.style.setProperty("--my", `${smoothY * 100}%`)
+      container.style.setProperty("--cursor-hue", smoothHue.toFixed(1))
+      container.style.setProperty("--cursor-sat", smoothSat.toFixed(1))
+      container.style.setProperty("--cursor-alpha", smoothAlpha.toFixed(3))
+    }
+
+    const animate = () => {
+      smoothX += (targetX - smoothX) * 0.1
+      smoothY += (targetY - smoothY) * 0.1
+      const hueDelta = ((targetHue - smoothHue + 540) % 360) - 180
+      smoothHue = (smoothHue + hueDelta * 0.12 + 360) % 360
+      smoothSat += (targetSat - smoothSat) * 0.1
+      smoothAlpha += (targetAlpha - smoothAlpha) * 0.1
+      updateVars()
+      rafId = window.requestAnimationFrame(animate)
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = container.getBoundingClientRect()
+      if (!rect.width || !rect.height) {
+        return
       }
 
-      detachFormListener?.()
+      targetX = clamp01((event.clientX - rect.left) / rect.width)
+      targetY = clamp01((event.clientY - rect.top) / rect.height)
+      const { hue, saturation, alpha } = getColorFromPosition(targetX, targetY)
+      targetHue = hue
+      targetSat = saturation
+      targetAlpha = alpha
+    }
+
+    const handlePointerLeave = () => {
+      targetX = restX
+      targetY = restY
+      targetHue = restHue
+      targetSat = restSat
+      targetAlpha = restAlpha
+    }
+
+    updateVars()
+    rafId = window.requestAnimationFrame(animate)
+    window.addEventListener("pointermove", handlePointerMove, { passive: true })
+    window.addEventListener("pointerleave", handlePointerLeave)
+
+    return () => {
+      window.cancelAnimationFrame(rafId)
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("pointerleave", handlePointerLeave)
     }
   }, [])
 
   return (
     <div className="min-h-screen font-sans antialiased bg-gradient-to-br from-calm-50 via-white to-serene-50">
-      <div ref={vantaContainerRef} className="relative overflow-hidden">
+      <div ref={heroContainerRef} className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          {/* <div className="absolute inset-x-1/2 top-[-10%] h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-serene-400/30 via-accent/30 to-primary/20 opacity-60" /> */}
-          <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-gradient-to-tr from-serene-400/20 via-white/10 to-transparent blur-3xl" />
-          <div className="absolute -bottom-48 -right-24 h-[30rem] w-[30rem] rounded-full bg-accent/30 blur-[160px]" />
+          <div className="landing-reactive-colors absolute inset-0" />
+          <div className="landing-aurora absolute inset-0" />
+          <div className="landing-grid absolute inset-0" />
+          <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
         </div>
 
         <nav className="relative z-10 px-6 py-7 flex items-center">
@@ -219,21 +281,19 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Lumora
                 </h1>
-                <span className="text-sm text-gray-500">(Beta)</span>
               </div>
-              <p className="text-sm font-bold text-gray-500 hidden sm:block">Light for the mind</p>
             </div>
           </div>
         </nav>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32 md:pt-28 md:pb-40 text-center">
-          <div className="mx-auto flex max-w-4xl flex-col items-center gap-7">
+          <div className="mx-auto flex max-w-4xl flex-col items-center gap-7 px-6 py-10 md:px-10 md:py-12">
             <h1
               className="text-5xl font-bold leading-tight text-foreground md:text-7xl text-balance"
               data-aos="fade-up"
               data-aos-delay="60"
             >
-              Light for the mind.
+              Light for the mind
             </h1>
             <p
               className="max-w-2xl text-lg text-muted-foreground md:text-xl leading-relaxed text-pretty"
@@ -273,7 +333,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-serene-50/30 via-accent/5 to-calm-50/40">
+      <div className="bg-gradient-to-b from-serene-50/40 via-accent/5 to-calm-50/40">
         <section id="features" className="relative z-10 -mt-16 bg-transparent py-28">
           <div className="max-w-7xl mx-auto px-6">
             <div className="mx-auto max-w-3xl text-center mb-16" data-aos="fade-up">
@@ -366,52 +426,82 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           </div>
         </section>
 
-        <section id="pricing" className="relative z-10 bg-transparent py-12">
+        <section id="pricing" className="relative z-10 bg-transparent py-20">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="mx-auto max-w-3xl text-center mb-10" data-aos="fade-up">
-              <h2 className="text-3xl font-bold text-foreground md:text-4xl text-balance">Pricing</h2>
-              <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-                Start free. Upgrade when you need unlimited AI chat.
+            <div className="mx-auto max-w-3xl text-center mb-12" data-aos="fade-up">
+              <h2 className="mt-3 text-3xl font-bold text-foreground md:text-4xl text-balance">
+                Start free, upgrade when you are ready
+              </h2>
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed">
+                Everything you need to journal, track moods, and chat. Pro removes limits.
               </p>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
-              <div
-                className="rounded-3xl border border-calm-200/70 bg-white/80 p-8 shadow-sm"
-                data-aos="fade-up"
-                data-aos-delay="40"
-              >
-                <p className="text-sm font-semibold uppercase tracking-wide text-slate-600">Free</p>
-                <p className="mt-3 text-3xl font-bold text-foreground">$0</p>
-                <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-                  <li>AI Chat</li>
-                  <li>Mood tracking, journal, and dashboard</li>
-                </ul>
-              </div>
-
-              <div
-                className="rounded-3xl border border-serene-300/70 bg-gradient-to-br from-serene-50 to-white p-8 shadow-sm"
-                data-aos="fade-up"
-                data-aos-delay="100"
-              >
-                <p className="text-sm font-semibold uppercase tracking-wide text-serene-700">Pro</p>
-                <p className="mt-3 text-3xl font-bold text-foreground">Unlimited</p>
-                <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-                  <li>Unlimited AI chat</li>
-                  <li>No cooldown restrictions</li>
-                  <li>Mood tracking, journal, and dashboard</li>
-                  {/* <li>Weekly AI Reports</li> */}
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => void handleUpgradeToPro()}
-                  disabled={upgradeLoading}
-                  className="mt-7 rounded-full bg-gradient-to-r from-serene-400 to-accent px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
+            <div className="grid gap-4 md:grid-cols-2">
+                <article
+                  className="rounded-[1.4rem] border border-calm-200/80 bg-white/90 p-7 shadow-sm transition-all hover:scale-[1.02] hover:shadow-xl hover:border-serene-400/30"
+                  data-aos="fade-up"
+                  data-aos-delay="40"
                 >
-                  {upgradeLoading ? "Opening..." : "Upgrade to Pro"}
-                </button>
-                {upgradeError ? <p className="mt-3 text-sm text-rose-600">{upgradeError}</p> : null}
-              </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Free</p>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                      Default
+                    </span>
+                  </div>
+                  <p className="mt-4 text-4xl font-bold text-foreground">$0</p>
+                  <p className="mt-1 text-sm text-slate-500">Perfect to get started</p>
+                  <ul className="mt-6 space-y-3 text-sm text-slate-600">
+                    <li className="flex items-start gap-2.5">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                      AI chat with monthly free usage
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                      Mood tracking and journaling tools
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                      Personal dashboard and history
+                    </li>
+                  </ul>
+                </article>
+
+                <article
+                  className="relative overflow-hidden rounded-[1.4rem] border border-indigo-300/70 bg-gradient-to-br from-indigo-50/90 via-white to-rose-50/80 p-7 shadow-[0_24px_60px_-36px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.02] hover:shadow-[0_28px_72px_-34px_rgba(99,102,241,0.65)] hover:border-indigo-400/80"
+                  data-aos="fade-up"
+                  data-aos-delay="100"
+                >
+                  <div className="absolute right-4 top-4 rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                    Most popular
+                  </div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Pro</p>
+                  <p className="mt-4 text-4xl font-bold text-foreground">$9</p>
+                  <p className="mt-1 text-sm text-slate-600">per month</p>
+                  <ul className="mt-6 space-y-3 text-sm text-slate-700">
+                    <li className="flex items-start gap-2.5">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                      Unlimited AI chat
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                      No cooldown restrictions
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                      All free features included
+                    </li>
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => void handleUpgradeToPro()}
+                    disabled={upgradeLoading}
+                    className="mt-7 rounded-full bg-gradient-to-r from-serene-400 to-accent px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {upgradeLoading ? "Opening..." : "Upgrade to Pro"}
+                  </button>
+                  {upgradeError ? <p className="mt-3 text-sm text-rose-600">{upgradeError}</p> : null}
+                </article>
             </div>
           </div>
         </section>
@@ -427,9 +517,6 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
               </h1>
             </div>
           </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Light for the mind.</p>
-              </div>
             </div>
             <div className="flex items-center gap-8 text-sm">
               <a
@@ -454,6 +541,54 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           <p className="mt-10 text-center text-xs text-muted-foreground">© 2025 Lumora. All rights reserved. </p>
         </footer>
       </div>
+      <style jsx global>{`
+        .landing-reactive-colors {
+          opacity: 0.8;
+          background: radial-gradient(
+            29rem 29rem at var(--mx, 50%) var(--my, 42%),
+            hsla(var(--cursor-hue, 240), calc(var(--cursor-sat, 88) * 1%), 68%, var(--cursor-alpha, 0.34)) 0%,
+            hsla(var(--cursor-hue, 240), calc(var(--cursor-sat, 88) * 1%), 71%, calc(var(--cursor-alpha, 0.34) * 0.62)) 30%,
+            hsla(var(--cursor-hue, 240), calc(var(--cursor-sat, 88) * 0.9%), 73%, calc(var(--cursor-alpha, 0.34) * 0.26)) 54%,
+            transparent 72%
+          );
+          filter: blur(24px) saturate(1.2);
+          animation: reactiveBreath 8s ease-in-out infinite alternate;
+          will-change: background;
+        }
+
+        .landing-aurora {
+          opacity: 0.42;
+          background:
+            radial-gradient(38% 42% at 15% 20%, rgba(160, 183, 255, 0.46), transparent 72%),
+            radial-gradient(34% 42% at 85% 24%, rgba(255, 186, 214, 0.38), transparent 74%),
+            radial-gradient(44% 46% at 50% 80%, rgba(176, 165, 255, 0.34), transparent 75%);
+          filter: blur(2px);
+        }
+
+        .landing-grid {
+          opacity: 0.24;
+          background-image:
+            linear-gradient(to right, rgba(124, 139, 255, 0.09) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(124, 139, 255, 0.09) 1px, transparent 1px);
+          background-size: 42px 42px;
+          mask-image: radial-gradient(circle at 50% 36%, rgba(0, 0, 0, 0.95), transparent 82%);
+        }
+
+        @keyframes reactiveBreath {
+          0% {
+            opacity: 0.72;
+          }
+          100% {
+            opacity: 0.86;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .landing-reactive-colors {
+            animation: none !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }
