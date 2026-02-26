@@ -38,14 +38,14 @@ const menuItems = [
     preview: false,
     requiresAuth: true,
   },
-  // {
-  //   id: 'resources' as ViewType,
-  //   label: 'Resources',
-  //   icon: BookOpen,
-  //   color: 'text-green-600',
-  //   preview: true,
-  //   requiresAuth: true,
-  // },
+  {
+    id: 'resources' as ViewType,
+    label: 'Resources',
+    icon: BookOpen,
+    color: 'text-green-600',
+    preview: true,
+    requiresAuth: true,
+  },
   {
     id: 'dashboard' as ViewType,
     label: 'Dashboard',
