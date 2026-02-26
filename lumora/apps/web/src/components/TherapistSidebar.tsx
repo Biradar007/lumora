@@ -90,9 +90,9 @@ export function TherapistSidebar({
                   <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     Lumora
                   </span>
-                  <span className="text-sm text-gray-500">(Beta)</span>
+                  {/* <span className="text-sm text-gray-500">(Beta)</span> */}
                 </div>
-                  <p className="text-xs sm:text-sm font-bold text-muted-foreground mt-0.5">Light for the mind</p>
+                  {/* <p className="text-xs sm:text-sm font-bold text-muted-foreground mt-0.5">Light for the mind</p> */}
               </div>
             </div>
             {isMobile ? (
