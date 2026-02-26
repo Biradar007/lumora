@@ -289,7 +289,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-3">Judgment-Free Zone</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                            Express yourself freely in a safe, confidential space without fear of judgment.
+                            Express yourself freely in a safe and confidential space without fear of judgment.
                 </p>
               </div>
 
