@@ -13,6 +13,10 @@ declare global {
     feather?: {
       replace: () => void
     }
+    THREE?: unknown
+    VANTA?: {
+      WAVES: (options: Record<string, unknown>) => { destroy?: () => void }
+    }
   }
 }
 
@@ -107,7 +111,8 @@ interface LandingPageProps {
 export function LandingPage({ onEnterApp }: LandingPageProps) {
   const { user } = useAuth()
   const router = useRouter()
-  const heroContainerRef = useRef<HTMLDivElement | null>(null)
+  const vantaContainerRef = useRef<HTMLDivElement | null>(null)
+  const vantaInstanceRef = useRef<{ destroy?: () => void } | null>(null)
   const [upgradeLoading, setUpgradeLoading] = useState(false)
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
 
@@ -139,6 +144,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
 
   useEffect(() => {
     let isMounted = true
+    const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
     let detachFormListener: (() => void) | undefined
 
     const initialise = async () => {
@@ -147,11 +153,31 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         await loadScript("https://unpkg.com/aos@2.3.1/dist/aos.js")
         await loadScript("https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js")
 
+        if (!prefersReduced && !window.THREE) {
+          await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js")
+        }
+
+        if (!prefersReduced) {
+          await loadScript("https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js")
+        }
+
         if (!isMounted) {
           return
         }
 
-        if (window.AOS) {
+        if (!prefersReduced && window.VANTA && window.THREE && vantaContainerRef.current && !vantaInstanceRef.current) {
+          vantaInstanceRef.current = window.VANTA.WAVES({
+            el: vantaContainerRef.current,
+            color: 0xb8a9f5,
+            backgroundColor: 0xfdfbff,
+            waveHeight: 15,
+            shininess: 25,
+            waveSpeed: 0.5,
+            zoom: 0.9,
+          })
+        }
+
+        if (!prefersReduced && window.AOS) {
           window.AOS.init({ duration: 700, once: true })
         }
 
@@ -166,111 +192,22 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
 
     return () => {
       isMounted = false
-      detachFormListener?.()
-    }
-  }, [])
 
-  useEffect(() => {
-    const container = heroContainerRef.current
-    if (!container) {
-      return
-    }
-
-    const coarsePointer = window.matchMedia("(pointer: coarse)").matches
-    if (coarsePointer) {
-      return
-    }
-
-    let rafId = 0
-    const restX = 0.14
-    const restY = 0.2
-    const restHue = 228
-    const restSat = 86
-    const restAlpha = 0.22
-    let targetX = restX
-    let targetY = restY
-    let smoothX = restX
-    let smoothY = restY
-    let targetHue = restHue
-    let smoothHue = restHue
-    let targetSat = restSat
-    let smoothSat = restSat
-    let targetAlpha = restAlpha
-    let smoothAlpha = restAlpha
-
-    const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
-    const getColorFromPosition = (x: number, y: number) => {
-      const dx = x - 0.5
-      const dy = y - 0.45
-      const angle = Math.atan2(dy, dx)
-      const hue = ((angle * 180) / Math.PI + 360) % 360
-      const distance = Math.min(1, Math.hypot(dx, dy) / 0.65)
-      const saturation = 74 + distance * 24
-      const alpha = 0.28 + distance * 0.18
-      return { hue, saturation, alpha }
-    }
-
-    const updateVars = () => {
-      container.style.setProperty("--mx", `${smoothX * 100}%`)
-      container.style.setProperty("--my", `${smoothY * 100}%`)
-      container.style.setProperty("--cursor-hue", smoothHue.toFixed(1))
-      container.style.setProperty("--cursor-sat", smoothSat.toFixed(1))
-      container.style.setProperty("--cursor-alpha", smoothAlpha.toFixed(3))
-    }
-
-    const animate = () => {
-      smoothX += (targetX - smoothX) * 0.1
-      smoothY += (targetY - smoothY) * 0.1
-      const hueDelta = ((targetHue - smoothHue + 540) % 360) - 180
-      smoothHue = (smoothHue + hueDelta * 0.12 + 360) % 360
-      smoothSat += (targetSat - smoothSat) * 0.1
-      smoothAlpha += (targetAlpha - smoothAlpha) * 0.1
-      updateVars()
-      rafId = window.requestAnimationFrame(animate)
-    }
-
-    const handlePointerMove = (event: PointerEvent) => {
-      const rect = container.getBoundingClientRect()
-      if (!rect.width || !rect.height) {
-        return
+      if (vantaInstanceRef.current) {
+        vantaInstanceRef.current.destroy?.()
+        vantaInstanceRef.current = null
       }
 
-      targetX = clamp01((event.clientX - rect.left) / rect.width)
-      targetY = clamp01((event.clientY - rect.top) / rect.height)
-      const { hue, saturation, alpha } = getColorFromPosition(targetX, targetY)
-      targetHue = hue
-      targetSat = saturation
-      targetAlpha = alpha
-    }
-
-    const handlePointerLeave = () => {
-      targetX = restX
-      targetY = restY
-      targetHue = restHue
-      targetSat = restSat
-      targetAlpha = restAlpha
-    }
-
-    updateVars()
-    rafId = window.requestAnimationFrame(animate)
-    window.addEventListener("pointermove", handlePointerMove, { passive: true })
-    window.addEventListener("pointerleave", handlePointerLeave)
-
-    return () => {
-      window.cancelAnimationFrame(rafId)
-      window.removeEventListener("pointermove", handlePointerMove)
-      window.removeEventListener("pointerleave", handlePointerLeave)
+      detachFormListener?.()
     }
   }, [])
 
   return (
     <div className="min-h-screen font-sans antialiased bg-gradient-to-br from-calm-50 via-white to-serene-50">
-      <div ref={heroContainerRef} className="relative overflow-hidden">
+      <div ref={vantaContainerRef} className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          <div className="landing-reactive-colors absolute inset-0" />
-          <div className="landing-aurora absolute inset-0" />
-          <div className="landing-grid absolute inset-0" />
-          <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
+          <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-gradient-to-tr from-serene-400/20 via-white/10 to-transparent blur-3xl" />
+          <div className="absolute -bottom-48 -right-24 h-[30rem] w-[30rem] rounded-full bg-accent/30 blur-[160px]" />
         </div>
 
         <nav className="relative z-10 px-6 py-7 flex items-center">
@@ -410,7 +347,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   Reflect on your feelings with daily journaling prompts that help you process emotions and track growth.                </p>
               </div>
 
-               {/* <div
+               <div
                 className="group relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-sm border border-calm-200/60 p-8 shadow-sm transition-all hover:shadow-xl hover:scale-[1.02] hover:border-serene-400/30"
                 data-aos="fade-up"
                 data-aos-delay="160">
@@ -421,7 +358,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
                   Book appointments or reach out directly to licensed therapists from within the app.
                 </p>
-              </div> */}
+              </div>
             </div>
           </div>
         </section>
@@ -541,54 +478,6 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           <p className="mt-10 text-center text-xs text-muted-foreground">© 2025 Lumora. All rights reserved. </p>
         </footer>
       </div>
-      <style jsx global>{`
-        .landing-reactive-colors {
-          opacity: 0.8;
-          background: radial-gradient(
-            29rem 29rem at var(--mx, 50%) var(--my, 42%),
-            hsla(var(--cursor-hue, 240), calc(var(--cursor-sat, 88) * 1%), 68%, var(--cursor-alpha, 0.34)) 0%,
-            hsla(var(--cursor-hue, 240), calc(var(--cursor-sat, 88) * 1%), 71%, calc(var(--cursor-alpha, 0.34) * 0.62)) 30%,
-            hsla(var(--cursor-hue, 240), calc(var(--cursor-sat, 88) * 0.9%), 73%, calc(var(--cursor-alpha, 0.34) * 0.26)) 54%,
-            transparent 72%
-          );
-          filter: blur(24px) saturate(1.2);
-          animation: reactiveBreath 8s ease-in-out infinite alternate;
-          will-change: background;
-        }
-
-        .landing-aurora {
-          opacity: 0.42;
-          background:
-            radial-gradient(38% 42% at 15% 20%, rgba(160, 183, 255, 0.46), transparent 72%),
-            radial-gradient(34% 42% at 85% 24%, rgba(255, 186, 214, 0.38), transparent 74%),
-            radial-gradient(44% 46% at 50% 80%, rgba(176, 165, 255, 0.34), transparent 75%);
-          filter: blur(2px);
-        }
-
-        .landing-grid {
-          opacity: 0.24;
-          background-image:
-            linear-gradient(to right, rgba(124, 139, 255, 0.09) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(124, 139, 255, 0.09) 1px, transparent 1px);
-          background-size: 42px 42px;
-          mask-image: radial-gradient(circle at 50% 36%, rgba(0, 0, 0, 0.95), transparent 82%);
-        }
-
-        @keyframes reactiveBreath {
-          0% {
-            opacity: 0.72;
-          }
-          100% {
-            opacity: 0.86;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .landing-reactive-colors {
-            animation: none !important;
-          }
-        }
-      `}</style>
     </div>
   )
 }

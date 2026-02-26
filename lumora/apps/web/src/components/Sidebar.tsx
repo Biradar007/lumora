@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, Heart, BarChart3, AlertCircle, PenSquare, FileText, X } from 'lucide-react';
+import { MessageCircle, Heart, BarChart3, AlertCircle, PenSquare, FileText, X, BookOpen } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthUI } from '@/contexts/AuthUIContext';
 import type { ViewType } from './user/viewTypes';
@@ -38,14 +38,14 @@ const menuItems = [
     preview: false,
     requiresAuth: true,
   },
-  // {
-  //   id: 'resources' as ViewType,
-  //   label: 'Resources',
-  //   icon: BookOpen,
-  //   color: 'text-green-600',
-  //   preview: true,
-  //   requiresAuth: true,
-  // },
+  {
+    id: 'resources' as ViewType,
+    label: 'Resources',
+    icon: BookOpen,
+    color: 'text-green-600',
+    preview: true,
+    requiresAuth: true,
+  },
   {
     id: 'dashboard' as ViewType,
     label: 'Dashboard',
