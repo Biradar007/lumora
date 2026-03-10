@@ -3,6 +3,7 @@
 import { type FormEvent, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { doc, getDoc, getFirestore } from "firebase/firestore"
+import { getAuth, sendPasswordResetEmail } from "firebase/auth"
 import { FirebaseError } from "firebase/app"
 import { Loader2, MailCheck } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
@@ -18,7 +19,7 @@ import {
 } from "@/lib/auth"
 import type { Role } from "@/types/domain"
 
-type Mode = "login" | "register"
+type Mode = "login" | "register" | "forgot"
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -47,6 +48,10 @@ function resolveRole(value: unknown): Role {
     return value
   }
   return "user"
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
 }
 
 async function fetchUserRole(uid: string): Promise<Role> {
@@ -91,6 +96,8 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
   })
   const [googleDetailError, setGoogleDetailError] = useState<string | null>(null)
   const [googleDetailSubmitting, setGoogleDetailSubmitting] = useState(false)
+  const [forgotSubmitting, setForgotSubmitting] = useState(false)
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null)
 
   const [loginValues, setLoginValues] = useState({ email: "", password: "" })
 
@@ -125,24 +132,39 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
     setCodeStatusMessage(null)
   }, [])
 
-  const toggleMode = useCallback(() => {
+  const switchMode = useCallback((nextMode: Mode) => {
     resetMessages()
-    setMode((prev) => (prev === "login" ? "register" : "login"))
+    setForgotMessage(null)
+    setMode(nextMode)
     setLoading(false)
+    setForgotSubmitting(false)
     setSendingCode(false)
     setSocialLoading(false)
     setCodeSent(false)
-    setRegisterValues({
-      name: "",
-      email: "",
-      password: "",
-      role: "user",
-      code: "",
-      age: undefined,
-      gender: genderOptions[0]?.value,
-    })
     setGoogleCompletion(null)
   }, [resetMessages])
+
+  const goToLogin = useCallback(() => {
+    if (registerValues.email) {
+      setLoginValues((prev) => ({ ...prev, email: prev.email || registerValues.email }))
+    }
+    switchMode("login")
+  }, [registerValues.email, switchMode])
+
+  const goToRegister = useCallback(() => {
+    if (loginValues.email) {
+      setRegisterValues((prev) => ({ ...prev, email: prev.email || loginValues.email.toLowerCase() }))
+    }
+    switchMode("register")
+  }, [loginValues.email, switchMode])
+
+  const goToForgot = useCallback(() => {
+    const fallbackEmail = loginValues.email || registerValues.email
+    if (fallbackEmail) {
+      setLoginValues((prev) => ({ ...prev, email: fallbackEmail }))
+    }
+    switchMode("forgot")
+  }, [loginValues.email, registerValues.email, switchMode])
 
   const handleGoogleSignIn = useCallback(async () => {
     resetMessages()
@@ -427,6 +449,32 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
     }
   }, [logout])
 
+  const handleForgotPasswordSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      resetMessages()
+      setForgotMessage(null)
+
+      const email = normalizeEmail(loginValues.email)
+      if (!email) {
+        setForgotMessage("If an account exists for that email, you'll receive a reset link shortly.")
+        return
+      }
+
+      setForgotSubmitting(true)
+      const auth = getAuth(getFirebaseApp())
+      try {
+        await sendPasswordResetEmail(auth, email)
+      } catch (error) {
+        console.error("Failed to send password reset email", error)
+      } finally {
+        setForgotMessage("If an account exists for that email, you'll receive a reset link.")
+        setForgotSubmitting(false)
+      }
+    },
+    [loginValues.email, resetMessages],
+  )
+
   return (
     <>
       <div
@@ -436,33 +484,43 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
       >
         <div className="flex flex-col items-center text-center mb-6">
           <h2 className="text-2xl font-semibold text-indigo-900">
-            {mode === "login" ? "Welcome back to Lumora" : "Create your Lumora account"}
+            {mode === "login"
+              ? "Welcome back to Lumora"
+              : mode === "register"
+                ? "Create your Lumora account"
+                : "Reset your password"}
           </h2>
           <p className="mt-2 text-sm text-indigo-700/80">
-            {mode === "login" ? "Sign in to continue your journey with personalized support." : null}
+            {mode === "login"
+              ? "Sign in to continue your journey with personalized support."
+              : mode === "register"
+                ? "Create your profile to personalize your support experience."
+                : "Enter your account email and we'll send a reset link."}
           </p>
         </div>
 
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={socialLoading}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 font-medium text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {socialLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
-            Continue with Google
-          </button>
+        {mode !== "forgot" && (
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={socialLoading}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 font-medium text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {socialLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
+              Continue with Google
+            </button>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-indigo-100" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-indigo-400">or with email</span>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-indigo-100" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-3 text-indigo-400">or with email</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {mode === "login" ? (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -491,12 +549,12 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
             <div className="flex items-center justify-between text-sm">
               <button
                 type="button"
-                onClick={() => router.push("/forgot-password")}
+                onClick={goToForgot}
                 className="text-indigo-600 font-medium hover:underline"
               >
                 Forgot password?
               </button>
-              <button type="button" onClick={toggleMode} className="text-indigo-500 hover:underline">
+              <button type="button" onClick={goToRegister} className="text-indigo-500 hover:underline">
                 Need an account?
               </button>
             </div>
@@ -518,7 +576,7 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? "Signing you in…" : "Log In"}
             </button>
-            {onContinueAsGuest && (
+            {/* {onContinueAsGuest && (
               <button
                 type="button"
                 onClick={onContinueAsGuest}
@@ -526,9 +584,9 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
               >
                 No Thanks, Just Browse
               </button>
-            )}
+            )} */}
           </form>
-        ) : (
+        ) : mode === "register" ? (
           <form onSubmit={handleRegisterSubmit} className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-indigo-900 mb-1">Full name</label>
@@ -685,20 +743,48 @@ export function AuthForm({ initialMode = "login", onContinueAsGuest }: AuthFormP
 
             <div className="text-sm text-indigo-700/80 text-center pt-1">
               Already have an account?{" "}
-              <button type="button" onClick={toggleMode} className="text-indigo-600 font-semibold hover:underline">
+              <button type="button" onClick={goToLogin} className="text-indigo-600 font-semibold hover:underline">
                 Log in instead
               </button>
             </div>
+          </form>
+        ) : (
+          <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-indigo-900 mb-1">Email</label>
+              <input
+                type="email"
+                value={loginValues.email}
+                onChange={(event) => setLoginValues((prev) => ({ ...prev, email: event.target.value }))}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="w-full rounded-lg border border-indigo-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+            </div>
 
-            {onContinueAsGuest && (
-              <button
-                type="button"
-                onClick={onContinueAsGuest}
-                className="w-full inline-flex justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
-              >
-                No Thanks, Just Browse
-              </button>
+            {forgotMessage && (
+              <p className="text-sm text-indigo-700/80 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                {forgotMessage}
+              </p>
             )}
+
+            <button
+              type="submit"
+              disabled={forgotSubmitting}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {forgotSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {forgotSubmitting ? "Sending reset link…" : "Send reset link"}
+            </button>
+
+            <div className="flex items-center justify-between text-sm">
+              <button type="button" onClick={goToLogin} className="text-indigo-600 font-medium hover:underline">
+                Back to login
+              </button>
+              <button type="button" onClick={goToRegister} className="text-indigo-500 hover:underline">
+                Need an account?
+              </button>
+            </div>
           </form>
         )}
       </div>
