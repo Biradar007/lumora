@@ -20,7 +20,7 @@ const menuItems = [
     icon: MessageCircle,
     color: 'text-blue-600',
     preview: false,
-    requiresAuth: false,
+    requiresAuth: true,
   },
   {
     id: 'mood' as ViewType,
