@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, PenLine, Bold, Italic, List, ListOrdered, Type, MinusCircle, X } from 'lucide-react';
+import { Loader2, PenLine, Bold, Italic, List, ListOrdered, Type, MinusCircle, Pencil, Trash2, X } from 'lucide-react';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import type { JournalEntry } from '@/types/domain';
 import { extractPlainText, sanitizeJournalHtml } from '@/lib/journalHtml';
@@ -47,6 +47,8 @@ export function Journal() {
   const [selectedFontSize, setSelectedFontSize] = useState<string>(FONT_SIZE_OPTIONS[1].value);
   const [errors, setErrors] = useState<JournalErrorState>({});
   const [expandedEntry, setExpandedEntry] = useState<JournalEntry | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const selectionRef = useRef<Range | null>(null);
 
@@ -177,30 +179,117 @@ export function Journal() {
     }
     setSubmitting(true);
     try {
-      const response = await fetch('/api/journals', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ content: sanitizedHtml }),
-      });
+      const isEditing = Boolean(editingEntryId);
+      const response = await fetch(
+        isEditing ? `/api/journals/${encodeURIComponent(editingEntryId ?? '')}` : '/api/journals',
+        {
+          method: isEditing ? 'PATCH' : 'POST',
+          headers,
+          body: JSON.stringify({ content: sanitizedHtml }),
+        }
+      );
       if (!response.ok) {
-        throw new Error('Failed to save journal entry.');
+        throw new Error(isEditing ? 'Failed to update journal entry.' : 'Failed to save journal entry.');
       }
       const data = (await response.json()) as { entry: JournalEntry };
-      setEntries((prev) => [data.entry, ...prev]);
+
+      if (isEditing) {
+        setEntries((prev) =>
+          prev
+            .map((entry) => (entry.id === data.entry.id ? data.entry : entry))
+            .sort((a, b) => b.createdAt - a.createdAt)
+        );
+        setExpandedEntry((prev) => (prev && prev.id === data.entry.id ? data.entry : prev));
+        setErrors((prev) => ({ ...prev, submit: undefined }));
+      } else {
+        setEntries((prev) => [data.entry, ...prev]);
+        setErrors((prev) => ({ ...prev, submit: undefined }));
+      }
+
       if (editor) {
         editor.innerHTML = '';
       }
       setContent('');
+      setEditingEntryId(null);
       selectionRef.current = null;
-      setErrors((prev) => ({ ...prev, submit: undefined }));
     } catch (error) {
       console.error(error);
       setErrors((prev) => ({
         ...prev,
-        submit: 'We could not save this entry. Please try again.',
+        submit:
+          editingEntryId !== null
+            ? 'We could not update this entry. Please try again.'
+            : 'We could not save this entry. Please try again.',
       }));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleStartEditing = (entry: JournalEntry) => {
+    const sanitizedHtml = sanitizeJournalHtml(entry.content);
+    setEditingEntryId(entry.id);
+    setContent(sanitizedHtml);
+    setErrors((prev) => ({ ...prev, submit: undefined }));
+
+    window.requestAnimationFrame(() => {
+      const editor = editorRef.current;
+      if (!editor) {
+        return;
+      }
+      editor.innerHTML = sanitizedHtml;
+      editor.focus();
+      const selection = window.getSelection();
+      if (!selection) {
+        return;
+      }
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      captureSelection();
+    });
+  };
+
+  const handleCancelEditing = () => {
+    const editor = editorRef.current;
+    setEditingEntryId(null);
+    setContent('');
+    setErrors((prev) => ({ ...prev, submit: undefined }));
+    selectionRef.current = null;
+    if (editor) {
+      editor.innerHTML = '';
+    }
+  };
+
+  const handleDeleteEntry = async (entry: JournalEntry) => {
+    const confirmed = window.confirm('Delete this journal entry? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+    setDeletingEntryId(entry.id);
+    try {
+      const response = await fetch(`/api/journals/${encodeURIComponent(entry.id)}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete journal entry.');
+      }
+      setEntries((prev) => prev.filter((item) => item.id !== entry.id));
+      setExpandedEntry((prev) => (prev?.id === entry.id ? null : prev));
+      if (editingEntryId === entry.id) {
+        handleCancelEditing();
+      }
+    } catch (error) {
+      console.error(error);
+      setErrors((prev) => ({
+        ...prev,
+        fetch: 'We could not delete this entry. Please try again.',
+      }));
+    } finally {
+      setDeletingEntryId(null);
     }
   };
 
@@ -415,7 +504,7 @@ export function Journal() {
         </div>
         <div className="space-y-2">
           <label htmlFor="journal-entry" className="text-sm font-medium text-slate-700">
-            What&apos;s on your mind?
+            {editingEntryId ? 'Edit your journal entry' : "What's on your mind?"}
           </label>
           <div className="relative">
             <div
@@ -455,13 +544,23 @@ export function Journal() {
           {errors.submit && <p className="text-xs font-medium text-rose-600">{errors.submit}</p>}
         </div>
         <div className="flex justify-end">
+          {editingEntryId ? (
+            <button
+              type="button"
+              onClick={handleCancelEditing}
+              className="mr-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              disabled={submitting}
+            >
+              Cancel edit
+            </button>
+          ) : null}
           <button
             type="submit"
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
             disabled={submitting}
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Save entry
+            {editingEntryId ? 'Update entry' : 'Save entry'}
           </button>
         </div>
       </form>
@@ -489,9 +588,28 @@ export function Journal() {
             const preview = buildEntryPreview(entry.content);
             return (
               <article key={entry.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  {new Date(entry.createdAt).toLocaleString()}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    {new Date(entry.createdAt).toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditing(entry)}
+                      className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-600"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteEntry(entry)}
+                      className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
+                      disabled={deletingEntryId === entry.id}
+                    >
+                      {deletingEntryId === entry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    </button>
+                  </div>
+                </div>
                 <p className="mt-3 text-sm text-slate-700 leading-relaxed whitespace-pre-line">{preview.text}</p>
                 {preview.truncated ? (
                   <button
@@ -533,7 +651,29 @@ export function Journal() {
                 dangerouslySetInnerHTML={{ __html: sanitizeJournalHtml(expandedEntry.content) }}
               />
             </div>
-            <div className="flex justify-end border-t border-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleStartEditing(expandedEntry);
+                    setExpandedEntry(null);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteEntry(expandedEntry)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={deletingEntryId === expandedEntry.id}
+                >
+                  {deletingEntryId === expandedEntry.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Delete
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setExpandedEntry(null)}

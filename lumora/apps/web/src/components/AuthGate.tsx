@@ -6,7 +6,7 @@ import { AuthForm } from '@/components/AuthForm';
 import { AuthUIProvider } from '@/contexts/AuthUIContext';
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { user, loading, guestMode, enableGuestMode, profileCompletionPending } = useAuth();
+  const { user, loading, profileCompletionPending } = useAuth();
   const [promptVisible, setPromptVisible] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(true);
 
@@ -27,17 +27,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!guestMode && !promptVisible) {
+    if (!promptVisible) {
       setPromptVisible(true);
       setShowLoginForm(true);
     }
-  }, [guestMode, loading, profileCompletionPending, promptVisible, user]);
-
-  const handleContinueAsGuest = useCallback(() => {
-    enableGuestMode();
-    setPromptVisible(false);
-    setShowLoginForm(false);
-  }, [enableGuestMode]);
+  }, [loading, profileCompletionPending, promptVisible, user]);
 
   const requestLogin = useCallback(() => {
     setPromptVisible(true);
@@ -59,7 +53,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         {promptVisible && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 px-4 py-8 backdrop-blur-sm">
             <div className="rounded-2xl bg-white shadow-2xl border border-indigo-100">
-              {showLoginForm ? <AuthForm onContinueAsGuest={handleContinueAsGuest} /> : null}
+              {showLoginForm ? <AuthForm /> : null}
             </div>
           </div>
         )}
