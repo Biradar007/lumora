@@ -37,6 +37,9 @@ export async function POST(request: Request) {
     if (auth.role === 'therapist' && connection.therapistId !== auth.userId) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
+    if (connection.clientRecordId && !connection.linkedUserId) {
+      return NextResponse.json({ error: 'client_not_registered' }, { status: 400 });
+    }
     const appointmentsCollection = db.collection('appointments');
     const existingSnapshot = await appointmentsCollection.where('connectionId', '==', body.connectionId).get();
     const hasActiveAppointment = existingSnapshot.docs.some((docSnapshot) => {
@@ -52,7 +55,7 @@ export async function POST(request: Request) {
       id: appointmentRef.id,
       connectionId: body.connectionId,
       therapistId: connection.therapistId,
-      userId: connection.userId,
+      userId: connection.linkedUserId ?? connection.userId,
       start: body.start,
       end: body.end,
       status: auth.role === 'therapist' ? 'CONFIRMED' : 'PENDING',

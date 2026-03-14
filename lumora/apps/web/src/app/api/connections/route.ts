@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerFirestore } from '@/lib/firestoreServer';
 import { jsonError, requireAuth } from '@/lib/apiAuth';
+import { hydrateTherapistConnections } from '@/lib/therapistClients';
 import type { Connection } from '@/types/domain';
 
 export const runtime = 'nodejs';
@@ -13,6 +14,14 @@ export async function GET(request: Request) {
     const field = auth.role === 'therapist' ? 'therapistId' : 'userId';
     const snapshot = await connectionsRef.where(field, '==', auth.userId).get();
     const connections: Connection[] = snapshot.docs.map((docSnapshot) => docSnapshot.data() as Connection);
+    if (auth.role === 'therapist') {
+      const hydratedConnections = await hydrateTherapistConnections({
+        db,
+        therapistId: auth.userId,
+        connections,
+      });
+      return NextResponse.json({ connections: hydratedConnections });
+    }
     return NextResponse.json({ connections });
   } catch (error) {
     return jsonError(error);

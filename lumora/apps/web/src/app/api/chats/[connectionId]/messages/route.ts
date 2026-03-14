@@ -55,6 +55,9 @@ export async function POST(request: Request, context: RouteContext) {
     if (!connection) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
+    if (connection.clientRecordId && !connection.linkedUserId) {
+      return NextResponse.json({ error: 'client_not_registered' }, { status: 400 });
+    }
     if (connection.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'connection_inactive' }, { status: 400 });
     }

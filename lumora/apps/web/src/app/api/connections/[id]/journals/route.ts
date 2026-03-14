@@ -25,6 +25,9 @@ export async function GET(request: Request, context: RouteContext) {
     if (connection.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'connection_inactive' }, { status: 403 });
     }
+    if (connection.clientRecordId && !connection.linkedUserId) {
+      return NextResponse.json({ error: 'client_not_registered' }, { status: 403 });
+    }
 
     const consentSnapshot = await db
       .collection('consents')
@@ -40,7 +43,10 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'consent_required' }, { status: 403 });
     }
 
-    const journalsSnapshot = await db.collection('journals').where('userId', '==', connection.userId).get();
+    const journalsSnapshot = await db
+      .collection('journals')
+      .where('userId', '==', connection.linkedUserId ?? connection.userId)
+      .get();
     const entries: JournalEntry[] = journalsSnapshot.docs
       .map((docSnapshot) => docSnapshot.data() as JournalEntry)
       .sort((a, b) => b.createdAt - a.createdAt);
