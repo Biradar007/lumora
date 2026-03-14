@@ -45,6 +45,14 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
         setExistingAppointment(null);
         return;
       }
+      if (match.requiresRegistration) {
+        setExistingAppointment(null);
+        setTherapistProfile(null);
+        setAvailableSlots([]);
+        setAvailabilityLoading(false);
+        setAvailabilityError(null);
+        return;
+      }
       {
         const appointmentResponse = await fetch('/api/appointments', { headers });
         if (appointmentResponse.ok) {
@@ -214,6 +222,30 @@ export function ScheduleSessionContent({ connectionId, className, onBack, backLa
 
   if (!connection) {
     return <p className="text-sm text-slate-500">Connection not found.</p>;
+  }
+
+  if (connection.requiresRegistration) {
+    return (
+      <div className={containerClassName}>
+        <header className="space-y-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {backText}
+            </button>
+          ) : null}
+          <h1 className="text-2xl font-semibold text-slate-900">Scheduling opens after account linking</h1>
+          <p className="text-sm text-slate-600">
+            This client has been added to your list, but they need to sign in or register with Lumora before
+            appointments can be scheduled in-app.
+          </p>
+        </header>
+      </div>
+    );
   }
 
   return (

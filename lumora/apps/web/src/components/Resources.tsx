@@ -480,9 +480,9 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
           ) : null}
           <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Verified Lumora therapists</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Your Lumora therapists</h2>
               <p className="text-sm text-slate-600">
-                Manage the Lumora therapists you&apos;re connected with today and revisit past connections all in one place.
+                Manage your connected therapists here. The public directory still shows verified clinicians only.
               </p>
             </div>
             <Link
@@ -551,9 +551,16 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                       <div>
                         <h3 className="flex items-center gap-1 text-sm font-semibold text-slate-900">
                           <span>{therapist.displayName ?? therapist.email ?? therapist.id}</span>
-                                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                          {therapist.status === 'VERIFIED' ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                          ) : null}
                         </h3>
                         {therapist.email && <p className="text-xs text-slate-500">{therapist.email}</p>}
+                        {therapist.status !== 'VERIFIED' ? (
+                          <p className="text-[11px] text-slate-500">
+                            Connected therapist. This profile is not publicly listed in the verified directory yet.
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     {therapist.bio ? (

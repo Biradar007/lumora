@@ -39,6 +39,9 @@ export async function POST(request: Request, context: RouteContext) {
       therapistId: auth.userId,
       status: 'ACTIVE',
       startedAt: now,
+      updatedAt: now,
+      linkedUserId: requestData.userId,
+      connectionSource: 'request_accepted',
     };
 
     const consentRef = db.collection('consents').doc();

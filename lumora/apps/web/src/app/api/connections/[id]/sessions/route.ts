@@ -38,6 +38,9 @@ export async function GET(request: Request, context: RouteContext) {
     if (connection.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'connection_inactive' }, { status: 403 });
     }
+    if (connection.clientRecordId && !connection.linkedUserId) {
+      return NextResponse.json({ error: 'client_not_registered' }, { status: 403 });
+    }
 
     const consentSnapshot = await db
       .collection('consents')
@@ -56,7 +59,7 @@ export async function GET(request: Request, context: RouteContext) {
 
     const sessionsSnapshot = await db
       .collection('users')
-      .doc(connection.userId)
+      .doc(connection.linkedUserId ?? connection.userId)
       .collection('sessions')
       .orderBy('updatedAt', 'desc')
       .get();

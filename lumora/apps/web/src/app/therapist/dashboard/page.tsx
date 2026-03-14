@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
-import { useAuth } from '@/contexts/AuthContext';
 import type { ConnectionRequest, Appointment, Connection } from '@/types/domain';
 import { Loader2 } from 'lucide-react';
 
@@ -55,7 +54,6 @@ const fetchCalendarStatus = async (headers: HeadersInit): Promise<CalendarStatus
 
 export default function TherapistDashboard() {
   const headers = useApiHeaders();
-  const { user } = useAuth();
   const shouldFetch = Boolean(headers['x-user-id']);
 
   const { data: dashboardData } = useSWR<DashboardData>(
@@ -109,6 +107,20 @@ export default function TherapistDashboard() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">Client management</h1>
+          <p className="text-sm text-slate-600">
+            Add a client manually at any time. Admin verification does not block this workflow.
+          </p>
+        </div>
+        <Link
+          href="/therapist/clients?addClient=1"
+          className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+        >
+          Add client
+        </Link>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-medium text-slate-700">Requests inbox</h2>

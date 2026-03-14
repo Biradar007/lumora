@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
+import { AddClientModal, type AddClientResult } from '@/components/AddClientModal';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { sanitizeJournalHtml } from '@/lib/journalHtml';
 import type {
@@ -34,9 +35,31 @@ const formatAppointmentRange = (appointment: Appointment) => {
   return `${formatter.format(new Date(appointment.start))} – ${formatter.format(new Date(appointment.end))}`;
 };
 
+interface FlashMessage {
+  tone: 'success' | 'warning';
+  text: string;
+}
+
+const getConnectionBadge = (connection: Connection): FlashMessage => {
+  if (connection.connectionSource === 'therapist_added' && connection.requiresRegistration) {
+    if (connection.clientEmail) {
+      return connection.inviteEmailStatus === 'sent'
+        ? { tone: 'success', text: 'Invite sent' }
+        : connection.inviteEmailStatus === 'failed'
+          ? { tone: 'warning', text: 'Invite failed' }
+          : { tone: 'warning', text: 'Awaiting signup' };
+    }
+    return { tone: 'warning', text: 'Added manually' };
+  }
+  return connection.status === 'ACTIVE'
+    ? { tone: 'success', text: 'Connected' }
+    : { tone: 'warning', text: 'Connection ended' };
+};
+
 export default function TherapistClientsPage() {
   const headers = useApiHeaders();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [journalEntries, setJournalEntries] = useState<Record<string, JournalEntry[]>>({});
   const [journalLoading, setJournalLoading] = useState<Record<string, boolean>>({});
   const [journalError, setJournalError] = useState<Record<string, string>>({});
@@ -52,7 +75,9 @@ export default function TherapistClientsPage() {
   const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
+  const [flashMessage, setFlashMessage] = useState<FlashMessage | null>(null);
   const canFetch = Boolean(headers['x-user-id']);
+  const addClientOpen = searchParams.get('addClient') === '1';
 
   const {
     data: connectionsData,
@@ -150,6 +175,16 @@ export default function TherapistClientsPage() {
           : null;
 
   const hasConnections = connections.length > 0;
+
+  useEffect(() => {
+    if (!flashMessage) {
+      return undefined;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setFlashMessage(null);
+    }, 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [flashMessage]);
 
   const sharedConnections = useMemo(() => {
     const map: Record<string, ConsentScopes> = {};
@@ -418,20 +453,59 @@ export default function TherapistClientsPage() {
     }
   };
 
+  const handleOpenAddClient = () => {
+    router.push('/therapist/clients?addClient=1', { scroll: false });
+  };
+
+  const handleCloseAddClient = () => {
+    router.replace('/therapist/clients', { scroll: false });
+  };
+
+  const handleClientCreated = async (result: AddClientResult) => {
+    await mutateConnections(
+      (current) => ({
+        connections: [result.connection, ...(current?.connections ?? []).filter((connection) => connection.id !== result.connection.id)],
+      }),
+      { revalidate: false }
+    );
+
+    setFlashMessage(
+      result.invite.status === 'failed'
+        ? { tone: 'warning', text: 'Client added, but the invite email could not be sent.' }
+        : result.invite.status === 'sent'
+          ? { tone: 'success', text: 'Client added and invite email sent.' }
+          : { tone: 'success', text: 'Client added successfully.' }
+    );
+
+    handleCloseAddClient();
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <header className="space-y-3">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => router.push('/therapist/dashboard')}
+              className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to dashboard
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
+              <p className="text-sm text-slate-600">View and manage all client connections.</p>
+            </div>
+          </div>
           <button
             type="button"
-            onClick={() => router.push('/therapist/dashboard')}
-            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            onClick={handleOpenAddClient}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to dashboard
+            <Plus className="h-4 w-4" />
+            Add client
           </button>
-          <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
-          <p className="text-sm text-slate-600">View and manage all client connections.</p>
         </header>
         <p className="text-sm text-slate-500">Loading clients…</p>
       </div>
@@ -440,18 +514,41 @@ export default function TherapistClientsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => router.push('/therapist/dashboard')}
+            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to dashboard
+          </button>
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
+            <p className="text-sm text-slate-600">View and manage all client connections.</p>
+          </div>
+        </div>
         <button
           type="button"
-          onClick={() => router.push('/therapist/dashboard')}
-          className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          onClick={handleOpenAddClient}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to dashboard
+          <Plus className="h-4 w-4" />
+          Add client
         </button>
-        <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
-        <p className="text-sm text-slate-600">View and manage all client connections.</p>
       </header>
+      {flashMessage ? (
+        <div
+          className={`rounded-xl border p-4 text-sm ${
+            flashMessage.tone === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-amber-200 bg-amber-50 text-amber-800'
+          }`}
+        >
+          {flashMessage.text}
+        </div>
+      ) : null}
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>
       ) : null}
@@ -459,41 +556,76 @@ export default function TherapistClientsPage() {
         {!hasConnections && <p className="text-sm text-slate-500">No connections yet.</p>}
         {connections.map((connection) => {
           const isActive = connection.status === 'ACTIVE';
+          const canUseInteractiveFeatures = isActive && !connection.requiresRegistration;
           const disconnectBusy = Boolean(disconnecting[connection.id]);
+          const badge = getConnectionBadge(connection);
           return (
             <div
               key={connection.id}
               className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
             >
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium text-slate-700">User {connection.userId}</p>
-                <p className="text-xs text-slate-500">
-                  Connected since {new Date(connection.startedAt).toLocaleDateString()}
-                  {connection.status !== 'ACTIVE' ? ` • Status: ${connection.status.toLowerCase()}` : ''}
-                </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-lg font-semibold text-slate-900">
+                      {connection.clientDisplayName ?? connection.clientEmail ?? connection.userId}
+                    </p>
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        badge.tone === 'success'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {badge.text}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                    <span>Connected {new Date(connection.startedAt).toLocaleDateString()}</span>
+                    <span>
+                      {connection.connectionSource === 'therapist_added' ? 'Added by therapist' : 'Requested via Lumora'}
+                    </span>
+                    {connection.clientEmail ? <span>{connection.clientEmail}</span> : null}
+                    {connection.clientPhone ? <span>{connection.clientPhone}</span> : null}
+                  </div>
+                  {connection.clientNotes ? (
+                    <p className="text-sm text-slate-600">
+                      <span className="font-medium text-slate-700">Notes:</span> {connection.clientNotes}
+                    </p>
+                  ) : null}
+                  {connection.requiresRegistration ? (
+                    <p className="text-sm text-slate-500">
+                      Messaging, scheduling, and shared data unlock after this client signs in or registers with Lumora.
+                    </p>
+                  ) : null}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link
-                  href={`/therapist/clients/chat/${connection.id}`}
-                  className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                    isActive
-                      ? 'border border-indigo-200 text-indigo-600 hover:border-indigo-300'
-                      : 'border border-slate-200 text-slate-600 bg-slate-50 cursor-pointer'
-                  }`}
-                >
-                  {isActive ? 'Open chat' : 'View chat history'}
-                </Link>
-                {isActive ? (
+                {canUseInteractiveFeatures || !isActive ? (
+                  <Link
+                    href={`/therapist/clients/chat/${connection.id}`}
+                    className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                      isActive
+                        ? 'border border-indigo-200 text-indigo-600 hover:border-indigo-300'
+                        : 'border border-slate-200 bg-slate-50 text-slate-600'
+                    }`}
+                  >
+                    {isActive ? 'Open chat' : 'View chat history'}
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-500">
+                    Awaiting signup
+                  </span>
+                )}
+                {canUseInteractiveFeatures ? (
                   activeAppointments[connection.id] ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedAppointment(activeAppointments[connection.id] ?? null)}
-                        className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300"
-                      >
-                        View appointment
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAppointment(activeAppointments[connection.id] ?? null)}
+                      className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300"
+                    >
+                      View appointment
+                    </button>
                   ) : (
                     <Link
                       href={`/therapist/clients/schedule/${connection.id}`}
@@ -521,6 +653,11 @@ export default function TherapistClientsPage() {
                 {!isActive ? (
                   <p className="text-[11px] text-slate-500">
                     This connection has ended. AI chats and journals remain hidden from your view.
+                  </p>
+                ) : connection.requiresRegistration ? (
+                  <p className="text-[11px] text-slate-500">
+                    Shared chats, journals, and mood data will appear here after the client links their Lumora
+                    account and grants consent.
                   </p>
                 ) : null}
                 {sharedConnections[connection.id]?.chatSummary ? (
@@ -738,6 +875,7 @@ export default function TherapistClientsPage() {
           </div>
         </div>
       ) : null}
+      <AddClientModal isOpen={addClientOpen} onClose={handleCloseAddClient} onCreated={handleClientCreated} />
     </div>
   );
 }

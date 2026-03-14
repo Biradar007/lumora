@@ -60,6 +60,45 @@ export interface ConnectionRequest {
 
 export type ConnectionStatus = 'ACTIVE' | 'ENDED';
 
+export type ClientStatus = 'invited' | 'active';
+
+export type InviteEmailStatus = 'not_requested' | 'sent' | 'failed';
+
+export interface ClientRecord {
+  id: string;
+  tenantId?: string;
+  firstName: string;
+  lastName?: string | null;
+  email?: string | null;
+  emailLower?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+  createdByTherapistId: string;
+  createdAt: number;
+  updatedAt: number;
+  status: ClientStatus;
+  linkedUserId?: string | null;
+  inviteEmailStatus: InviteEmailStatus;
+  inviteEmailSentAt?: number;
+  inviteEmailFailedAt?: number;
+  inviteEmailError?: string | null;
+}
+
+export interface TherapistClientLink {
+  clientId: string;
+  connectionId: string;
+  connectedAt: number;
+  connectionSource: 'therapist_added';
+  therapistVerifiedAtAddTime: boolean;
+  emailSent: boolean;
+  inviteEmailStatus: InviteEmailStatus;
+  clientStatus: ClientStatus;
+  linkedUserId?: string | null;
+  inviteEmailSentAt?: number;
+  inviteEmailFailedAt?: number;
+  updatedAt?: number;
+}
+
 export interface Connection {
   id: string;
   tenantId?: string;
@@ -68,6 +107,22 @@ export interface Connection {
   status: ConnectionStatus;
   startedAt: number;
   endedAt?: number;
+  updatedAt?: number;
+  clientRecordId?: string;
+  linkedUserId?: string | null;
+  createdByTherapistId?: string;
+  connectionSource?: 'request_accepted' | 'therapist_added';
+  therapistVerifiedAtAddTime?: boolean;
+  emailSent?: boolean;
+  inviteEmailStatus?: InviteEmailStatus;
+  clientStatus?: ClientStatus;
+  clientDisplayName?: string;
+  clientFirstName?: string;
+  clientLastName?: string | null;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
+  clientNotes?: string | null;
+  requiresRegistration?: boolean;
 }
 
 export interface ConsentScopes {
