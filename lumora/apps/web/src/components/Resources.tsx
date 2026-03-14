@@ -235,7 +235,7 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
 
   const updateConsent = async (
     connectionId: string,
-    updates: Partial<Pick<ConsentScopes, 'chatSummary' | 'journals'>>
+    updates: Partial<Pick<ConsentScopes, 'chatSummary' | 'journals' | 'moodTrends'>>
   ) => {
     const previousState: ConsentState = consents[connectionId]
       ? {
@@ -645,6 +645,25 @@ export function Resources({ onNavigateToCrisis }: ResourcesProps) {
                               Sharing preferences
                             </p>
                             <div className="space-y-3">
+                              <label className="flex items-center justify-between gap-4">
+                                <span className="flex-1 text-xs">
+                                  Allow therapist to review my mood history
+                                  <span className="block text-[11px] text-slate-500">
+                                    Share mood check-ins so your therapist can spot trends between sessions.
+                                  </span>
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                  checked={scopes.moodTrends}
+                                  disabled={pending || disconnectBusy}
+                                  onChange={(event) =>
+                                    connectionId
+                                      ? updateConsent(connectionId, { moodTrends: event.target.checked })
+                                      : undefined
+                                  }
+                                />
+                              </label>
                               <label className="flex items-center justify-between gap-4">
                                 <span className="flex-1 text-xs">
                                   Allow therapist to review my AI chat sessions
