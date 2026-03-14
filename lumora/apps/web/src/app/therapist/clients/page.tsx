@@ -339,15 +339,6 @@ export default function TherapistClientsPage() {
                       <span className="font-medium text-slate-700">Upcoming appointment:</span> {formatAppointmentRange(appointment)}
                     </p>
                   ) : null}
-                  {connection.requiresRegistration ? (
-                    <p className="text-sm text-slate-500">
-                      Shared data appears on the client overview page once this client links a Lumora account and grants consent.
-                    </p>
-                  ) : (
-                    <p className="text-sm text-slate-500">
-                      Open the client overview page to review profile details, mood trends, journals, and AI chats that the client has shared.
-                    </p>
-                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
