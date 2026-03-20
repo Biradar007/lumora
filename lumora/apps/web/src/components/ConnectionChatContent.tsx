@@ -47,7 +47,7 @@ export function ConnectionChatContent({
     if (!connection) {
       return true;
     }
-    return connection.status !== 'ACTIVE';
+    return connection.status !== 'ACTIVE' || Boolean(connection.requiresRegistration);
   }, [connection]);
 
   const containerClassName = ['flex flex-1 flex-col gap-4 min-h-[60vh]', className].filter(Boolean).join(' ');
@@ -74,6 +74,10 @@ export function ConnectionChatContent({
           <p className="text-xs text-slate-500">Loading connection…</p>
         ) : !connection ? (
           <p className="text-xs text-slate-500">We could not find this connection. Chat is read-only.</p>
+        ) : connection.requiresRegistration ? (
+          <p className="text-xs text-slate-500">
+            This client has not linked a Lumora account yet. Chat becomes available after signup or login.
+          </p>
         ) : connection.status !== 'ACTIVE' ? (
           <p className="text-xs text-slate-500">
             This connection has ended. You can review past messages, but new messages are disabled.

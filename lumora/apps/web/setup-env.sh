@@ -18,8 +18,6 @@ MAIL_PASSWORD=your-email-password
 
 # Counseling Configuration (optional)
 COUNSELING_INBOX=caps@example.edu
-COUNSELING_CONTACTS_JSON='[{"name":"CSUF CAPS","phone":"+1-(657) 278-3040","email":"caps@csuf.edu","hours":"Mon–Fri 8:00 AM–5:00 PM","location":"Titan Hall 1st & 3rd Floor
-1111 N. State College Blvd"}]'
 
 # Google Calendar Integration (required for calendar sync)
 GOOGLE_CLIENT_ID=136249787281-k7gms7o44ijn1q3sqd9hrmdov08idfd4.apps.googleusercontent.com

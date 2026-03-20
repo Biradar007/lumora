@@ -35,6 +35,9 @@ export async function GET(request: Request, context: RouteContext) {
     if (connection.therapistId !== auth.userId) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
+    if (connection.clientRecordId && !connection.linkedUserId) {
+      return NextResponse.json({ error: 'client_not_registered' }, { status: 403 });
+    }
 
     const consentSnapshot = await db
       .collection('consents')
@@ -50,7 +53,11 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'consent_required' }, { status: 403 });
     }
 
-    const sessionRef = db.collection('users').doc(connection.userId).collection('sessions').doc(sessionId);
+    const sessionRef = db
+      .collection('users')
+      .doc(connection.linkedUserId ?? connection.userId)
+      .collection('sessions')
+      .doc(sessionId);
     const sessionSnapshot = await sessionRef.get();
     if (!sessionSnapshot.exists) {
       return NextResponse.json({ error: 'session_not_found' }, { status: 404 });

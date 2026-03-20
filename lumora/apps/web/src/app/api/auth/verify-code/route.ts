@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { createHash } from 'crypto';
 import { getServerAuth, getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer';
+import { linkInvitedClientsToUserAccount } from '@/lib/therapistClients';
 import { hashOtpCode, normalizeEmail } from '@/lib/otp';
 
 const MAX_ATTEMPTS = 5;
@@ -207,6 +208,11 @@ export async function POST(request: Request) {
 
     const userDocRef = db.collection('users').doc(uid);
     await userDocRef.set(sanitizeForFirestore(profile), { merge: true });
+    await linkInvitedClientsToUserAccount({
+      db,
+      userId: uid,
+      email,
+    });
 
     await codeRef.update({
       status: 'verified',

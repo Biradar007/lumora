@@ -33,10 +33,12 @@ export async function sendMail({
   to,
   subject,
   text,
+  html,
 }: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
 }) {
   const mailer = resolveTransporter();
   const from = env.MAIL_USER || 'no-reply@lumora.local';
@@ -45,5 +47,6 @@ export async function sendMail({
     from,
     subject,
     text,
+    html,
   });
 }

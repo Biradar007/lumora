@@ -187,9 +187,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Lumora
                 </h1>
-                <span className="text-sm text-gray-500">(Beta)</span>
               </div>
-              <p className="text-sm font-bold text-gray-500 hidden sm:block">Light for the mind</p>
             </div>
           </div>
         </nav>
@@ -289,7 +287,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-3">Judgment-Free Zone</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                            Express yourself freely in a safe, confidential space without fear of judgment.
+                            Express yourself freely in a safe and confidential space without fear of judgment.
                 </p>
               </div>
 
@@ -345,9 +343,6 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
               </h1>
             </div>
           </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Light for the mind.</p>
-              </div>
             </div>
             <div className="flex items-center gap-8 text-sm">
               <a

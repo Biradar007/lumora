@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerAuth, getServerFirestore, sanitizeForFirestore } from '@/lib/firestoreServer';
+import { linkInvitedClientsToUserAccount } from '@/lib/therapistClients';
 import type { Role } from '@/types/domain';
 
 interface UpsertResponse {
@@ -81,6 +82,11 @@ export async function POST(request: Request) {
       const update = sanitizeForFirestore(updatePayload);
 
       await docRef.set(update, { merge: true });
+      await linkInvitedClientsToUserAccount({
+        db,
+        userId: uid,
+        email,
+      });
 
       const response: UpsertResponse = {
         profile: {
@@ -124,6 +130,11 @@ export async function POST(request: Request) {
     const profile = sanitizeForFirestore(profilePayload);
 
     await docRef.set(profile);
+    await linkInvitedClientsToUserAccount({
+      db,
+      userId: uid,
+      email,
+    });
 
     const response: UpsertResponse = {
       profile: {

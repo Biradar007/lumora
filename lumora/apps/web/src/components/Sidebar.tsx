@@ -20,7 +20,7 @@ const menuItems = [
     icon: MessageCircle,
     color: 'text-blue-600',
     preview: false,
-    requiresAuth: false,
+    requiresAuth: true,
   },
   {
     id: 'mood' as ViewType,
@@ -51,7 +51,7 @@ const menuItems = [
     label: 'Dashboard',
     icon: BarChart3,
     color: 'text-purple-600',
-    preview: true,
+    preview: false,
     requiresAuth: true,
   },
   {
@@ -100,9 +100,7 @@ export function Sidebar({ activeView, onNavigate, isOpen, onClose }: SidebarProp
 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         Lumora
                     </h1>
-                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">(Beta)</span>
                   </div>
-                  <p className="text-xs sm:text-sm font-bold text-muted-foreground mt-0.5">Light for the mind</p>
                 </div>
               </div>
 
