@@ -1,19 +1,15 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import Image from "next/image"
 
 declare global {
   interface Window {
     AOS?: {
-      init: (options?: { duration?: number; once?: boolean }) => void
+      init: (options?: { duration?: number; once?: boolean; easing?: string }) => void
     }
     feather?: {
       replace: () => void
-    }
-    THREE?: unknown
-    VANTA?: {
-      WAVES: (options: Record<string, unknown>) => { destroy?: () => void }
     }
   }
 }
@@ -52,7 +48,7 @@ const loadStylesheet = (href: string) =>
 
 function attachEarlyFormListener() {
   const form = document.getElementById("early-form") as HTMLFormElement | null
-  if (!form) return () => {}
+  if (!form) return () => { }
 
   const statusEl = document.getElementById("form-status")
   const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement | null
@@ -107,9 +103,6 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onEnterApp }: LandingPageProps) {
-  const vantaContainerRef = useRef<HTMLDivElement | null>(null)
-  const vantaInstanceRef = useRef<{ destroy?: () => void } | null>(null)
-
   useEffect(() => {
     let isMounted = true
     const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -121,28 +114,8 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         await loadScript("https://unpkg.com/aos@2.3.1/dist/aos.js")
         await loadScript("https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js")
 
-        if (!prefersReduced && !window.THREE) {
-          await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js")
-        }
-
-        if (!prefersReduced) {
-          await loadScript("https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js")
-        }
-
         if (!isMounted) {
           return
-        }
-
-        if (!prefersReduced && window.VANTA && window.THREE && vantaContainerRef.current && !vantaInstanceRef.current) {
-          vantaInstanceRef.current = window.VANTA.WAVES({
-            el: vantaContainerRef.current,
-            color: 0xb8a9f5, // Soft lavender (lighter, less saturated purple)
-            backgroundColor: 0xfdfbff, // Very light off-white with subtle warmth
-            waveHeight: 15, // Slightly taller waves for more fluid motion
-            shininess: 25, // Reduced shine for softer appearance
-            waveSpeed: 0.5, // Slightly faster for more noticeable movement
-            zoom: 0.9, // Slightly more zoomed for smoother waves
-          })
         }
 
         if (!prefersReduced && window.AOS) {
@@ -161,22 +134,19 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
     return () => {
       isMounted = false
 
-      if (vantaInstanceRef.current) {
-        vantaInstanceRef.current.destroy?.()
-        vantaInstanceRef.current = null
-      }
-
       detachFormListener?.()
     }
   }, [])
 
   return (
-    <div className="min-h-screen font-sans antialiased bg-gradient-to-br from-calm-50 via-white to-serene-50">
-      <div ref={vantaContainerRef} className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          {/* <div className="absolute inset-x-1/2 top-[-10%] h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-serene-400/30 via-accent/30 to-primary/20 opacity-60" /> */}
-          <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-gradient-to-tr from-serene-400/20 via-white/10 to-transparent blur-3xl" />
-          <div className="absolute -bottom-48 -right-24 h-[30rem] w-[30rem] rounded-full bg-accent/30 blur-[160px]" />
+    <div className="min-h-screen font-sans antialiased overflow-hidden bg-gradient-to-br from-calm-50 via-white to-serene-50">
+      <div className="relative">
+        {/* Calming animated CSS gradients replacing Vanta waves */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          {/* Using mix-blend-multiply for darker, deeply visible colors */}
+          <div className="absolute top-[-10%] right-[-10%] h-[40rem] w-[40rem] rounded-full bg-serene-400/80 mix-blend-multiply blur-[80px] animate-blob" />
+          <div className="absolute bottom-[-10%] left-[-5%] h-[45rem] w-[45rem] rounded-full bg-accent/60 mix-blend-multiply blur-[90px] animate-blob-delayed" />
+          <div className="absolute top-[30%] right-[20%] h-[30rem] w-[30rem] rounded-full bg-calm-500/70 mix-blend-multiply blur-[70px] animate-blob-slow" />
         </div>
 
         <nav className="relative z-10 px-6 py-7 flex items-center">
@@ -244,7 +214,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           <div className="max-w-7xl mx-auto px-6">
             <div className="mx-auto max-w-3xl text-center mb-16" data-aos="fade-up">
               <h2 className="text-3xl font-bold text-foreground md:text-4xl text-balance">Features that care for you
-</h2>
+              </h2>
               <p className="mt-4 text-lg text-muted-foreground leading-relaxed text-pretty">
                 An AI companion offers personalized support for your mental wellbeing
               </p>
@@ -260,7 +230,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-3">Always Available</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                            Get support whenever you need it, day or night, without waiting for appointments.
+                  Get support whenever you need it, day or night, without waiting for appointments.
                 </p>
               </div>
 
@@ -274,7 +244,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-3">Personalized Support</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                            Our AI learns about you and adapts to provide the most relevant support for your needs.
+                  Our AI learns about you and adapts to provide the most relevant support for your needs.
                 </p>
               </div>
 
@@ -287,11 +257,11 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-3">Judgment-Free Zone</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                            Express yourself freely in a safe and confidential space without fear of judgment.
+                  Express yourself freely in a safe and confidential space without fear of judgment.
                 </p>
               </div>
 
-               <div
+              <div
                 className="group relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-sm border border-calm-200/60 p-8 shadow-sm transition-all hover:shadow-xl hover:scale-[1.02] hover:border-serene-400/30"
                 data-aos="fade-up"
                 data-aos-delay="160">
@@ -300,7 +270,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-3">Mood Tracking</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                    Track your emotional patterns and receive insights to better understand your wellbeing.
+                  Track your emotional patterns and receive insights to better understand your wellbeing.
                 </p>
               </div>
 
@@ -316,7 +286,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   Reflect on your feelings with daily journaling prompts that help you process emotions and track growth.                </p>
               </div>
 
-               <div
+              <div
                 className="group relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-sm border border-calm-200/60 p-8 shadow-sm transition-all hover:shadow-xl hover:scale-[1.02] hover:border-serene-400/30"
                 data-aos="fade-up"
                 data-aos-delay="160">
@@ -336,13 +306,13 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           <div className="max-w-7xl mx-auto flex flex-col gap-10 px-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-center gap-2 text-center">
-            <div className="relative w-9 h-9 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
-            <div className="flex flex-col items-center leading-tight">
-              <h1 className="text-l font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Lumora
-              </h1>
-            </div>
-          </div>
+                <div className="relative w-9 h-9 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
+                <div className="flex flex-col items-center leading-tight">
+                  <h1 className="text-l font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Lumora
+                  </h1>
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-8 text-sm">
               <a
