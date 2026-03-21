@@ -45,9 +45,9 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
         >
           <div className="absolute inset-0 bg-gradient-to-br from-calm-50 via-white to-serene-50" />
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute top-[-10%] right-[-10%] h-[36rem] w-[36rem] rounded-full bg-serene-400/80 mix-blend-multiply blur-[80px] animate-blob" />
-            <div className="absolute bottom-[-12%] left-[-8%] h-[40rem] w-[40rem] rounded-full bg-accent/60 mix-blend-multiply blur-[90px] animate-blob-delayed" />
-            <div className="absolute top-[28%] right-[18%] h-[28rem] w-[28rem] rounded-full bg-calm-500/70 mix-blend-multiply blur-[70px] animate-blob-slow" />
+            <div className="absolute top-[-16%] left-[-30%] h-[18rem] w-[18rem] rounded-full bg-serene-400/30 mix-blend-multiply blur-[78px] animate-blob md:top-[-10%] md:left-auto md:right-[-10%] md:h-[36rem] md:w-[36rem] md:bg-serene-400/80 md:blur-[80px]" />
+            <div className="absolute bottom-[-18%] left-[-24%] h-[22rem] w-[22rem] rounded-full bg-accent/34 mix-blend-multiply blur-[88px] animate-blob-delayed md:bottom-[-12%] md:left-[-8%] md:h-[40rem] md:w-[40rem] md:bg-accent/60 md:blur-[90px]" />
+            <div className="absolute top-[28%] right-[-28%] h-[18rem] w-[18rem] rounded-full bg-calm-500/28 mix-blend-multiply blur-[84px] animate-blob-slow md:top-[28%] md:right-[18%] md:h-[28rem] md:w-[28rem] md:bg-calm-500/70 md:blur-[70px]" />
           </div>
 
           <div className="relative min-h-screen">
