@@ -144,17 +144,17 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         {/* Calming animated CSS gradients replacing Vanta waves */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
           {/* Using mix-blend-multiply for darker, deeply visible colors */}
-          <div className="absolute top-[-10%] right-[-10%] h-[40rem] w-[40rem] rounded-full bg-serene-400/80 mix-blend-multiply blur-[80px] animate-blob" />
-          <div className="absolute bottom-[-10%] left-[-5%] h-[45rem] w-[45rem] rounded-full bg-accent/60 mix-blend-multiply blur-[90px] animate-blob-delayed" />
-          <div className="absolute top-[30%] right-[20%] h-[30rem] w-[30rem] rounded-full bg-calm-500/70 mix-blend-multiply blur-[70px] animate-blob-slow" />
+          <div className="absolute top-[-16%] left-[-30%] h-[18rem] w-[18rem] rounded-full bg-serene-400/30 mix-blend-multiply blur-[78px] animate-blob md:top-[-10%] md:left-auto md:right-[-10%] md:h-[40rem] md:w-[40rem] md:bg-serene-400/80 md:blur-[80px]" />
+          <div className="absolute bottom-[-18%] left-[-24%] h-[22rem] w-[22rem] rounded-full bg-accent/34 mix-blend-multiply blur-[88px] animate-blob-delayed md:bottom-[-10%] md:right-auto md:left-[-5%] md:h-[45rem] md:w-[45rem] md:bg-accent/60 md:blur-[90px]" />
+          <div className="absolute top-[28%] right-[-28%] h-[18rem] w-[18rem] rounded-full bg-calm-500/28 mix-blend-multiply blur-[84px] animate-blob-slow md:top-[30%] md:left-auto md:right-[20%] md:h-[30rem] md:w-[30rem] md:bg-calm-500/70 md:blur-[70px]" />
         </div>
 
-        <nav className="relative z-10 px-6 py-7 flex items-center">
-          <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
+        <nav className="relative z-10 flex items-center px-5 py-5 sm:px-6 sm:py-7">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="relative h-10 w-10 rounded-full bg-gradient-to-b from-yellow-300 via-purple-400 to-blue-500 shadow-[0_0_32px_8px_rgba(147,112,219,0.24)] sm:h-12 sm:w-12 sm:shadow-[0_0_40px_10px_rgba(147,112,219,0.3)]" />
             <div>
               <div className="flex items-baseline gap-2">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-lg font-bold text-transparent sm:text-xl">
                   Lumora
                 </h1>
               </div>
@@ -162,37 +162,37 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           </div>
         </nav>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32 md:pt-28 md:pb-40 text-center">
-          <div className="mx-auto flex max-w-4xl flex-col items-center gap-7">
+        <div className="relative z-10 mx-auto max-w-7xl px-5 pt-14 pb-24 text-center sm:px-6 sm:pt-20 sm:pb-32 md:pt-28 md:pb-40">
+          <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 sm:gap-7">
             <h1
-              className="text-5xl font-bold leading-tight text-foreground md:text-7xl text-balance"
+              className="max-w-[10ch] text-4xl font-bold leading-[0.95] text-foreground sm:max-w-[12ch] sm:text-5xl sm:leading-tight md:max-w-none md:text-7xl text-balance"
               data-aos="fade-up"
               data-aos-delay="60"
             >
               Light for the mind.
             </h1>
             <p
-              className="max-w-2xl text-lg text-muted-foreground md:text-xl leading-relaxed text-pretty"
+              className="max-w-[20rem] text-base leading-8 text-muted-foreground sm:max-w-2xl sm:text-lg md:text-xl md:leading-relaxed text-pretty"
               data-aos="fade-up"
               data-aos-delay="110"
             >
               A calm space designed to support your mental wellbeing anytime, anywhere.
             </p>
             <div
-              className="flex flex-col items-center gap-4 sm:flex-row sm:gap-5 mt-2"
+              className="mt-3 flex flex-col items-center gap-4 sm:mt-2 sm:flex-row sm:gap-5"
               data-aos="fade-up"
               data-aos-delay="160"
             >
               <button
                 type="button"
                 onClick={onEnterApp}
-                className="w-full sm:w-auto rounded-full bg-gradient-to-r from-serene-400 to-accent px-9 py-4 text-[15px] font-semibold text-white shadow-lg shadow-serene-400/30 transition-all hover:shadow-xl hover:shadow-serene-400/40 hover:scale-[1.02] active:scale-95"
+                className="w-auto min-w-[15rem] rounded-full bg-gradient-to-r from-serene-400 to-accent px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-serene-400/30 transition-all hover:shadow-xl hover:shadow-serene-400/40 hover:scale-[1.02] active:scale-95 sm:min-w-0 sm:px-9 sm:py-4 sm:text-[15px]"
               >
                 Start Exploring
               </button>
             </div>
             <div
-              className="flex flex-col items-center gap-5 pt-6 text-sm text-muted-foreground md:flex-row md:gap-8"
+              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 pt-5 text-[15px] text-muted-foreground sm:pt-6 sm:text-sm md:gap-8"
               data-aos="fade-up"
               data-aos-delay="200"
             >
